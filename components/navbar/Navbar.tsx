@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MenuIcon, X, Search, User, Bell, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle } from "lucide-react";
-import { Avatar } from "../ui/Avatar";
+import { MenuIcon, X, Search, Bell, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle, User } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Logo } from "./Logo";
-import NavList from "./NavList";
 import { useRouter } from 'next/navigation'
 
 export const Navbar = () => {
@@ -93,7 +91,9 @@ export const Navbar = () => {
           </div>
 
               <div className="transform hover:scale-105 transition-transform duration-300">
-          <Avatar />
+              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                <User className="h-5 w-5 text-gray-600" />
+              </div>
               </div>
 
               <div 

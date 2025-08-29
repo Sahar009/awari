@@ -44,7 +44,7 @@ const reviews = [
   },
 ];
 
-export const Testimonial = () => {
+const Testimonial = () => {
   return (
     <div className="h-screen w-full relative mt-12">
       {/* Background image */}
@@ -98,3 +98,5 @@ export const Testimonial = () => {
     </div>
   );
 };
+
+export default Testimonial;

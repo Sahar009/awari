@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
@@ -14,9 +14,10 @@ const api: AxiosInstance = axios.create({
 
 // Request interceptor for adding auth token
 api.interceptors.request.use(
-  (config: AxiosRequestConfig) => {
-    const token = localStorage.getItem('token');
-    if (token && config.headers) {
+  (config: InternalAxiosRequestConfig) => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (token) {
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;

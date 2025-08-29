@@ -1,8 +1,4 @@
-import HeroSlider from "@/components/slider/HeroSlider";
-import { Navbar } from "@/components/navbar/Navbar";
-import Image from "next/image";
 import HomeScreen from "./home/page";
-import { Footer } from "@/components/footer/Footer";
 
 export default function Home() {
   return (

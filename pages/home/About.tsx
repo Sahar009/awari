@@ -2,7 +2,7 @@
 import { CheckCircle2, PhoneIcon } from "lucide-react";
 import Image from "next/image";
 
-export const About = () => {
+const About = () => {
   return (
     <div className="bg-primary px-6 py-8 rounded-3xl w-full min-h-screen lg:h-screen flex lg:flex-row flex-col items-center justify-center lg:justify-around">
       <div className="lg:w-[45%] w-full hidden lg:flex">
@@ -48,3 +48,5 @@ export const About = () => {
     </div>
   );
 };
+
+export default About;

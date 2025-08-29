@@ -35,7 +35,7 @@ const serviceData: selectCardProps[] = [
   },
 ];
 
-export const Service = () => {
+const Service = () => {
   return (
     <section className="py-12 px-6">
       <div className="text-center mb-10 flex flex-col items-center">
@@ -60,3 +60,5 @@ export const Service = () => {
     </section>
   );
 };
+
+export default Service;

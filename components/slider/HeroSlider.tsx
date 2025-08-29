@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState, useCallback, useRef } from "react";
+import Image from "next/image";
 import "./heroslider.css";
 import { Button } from "@/components/ui/Button";
 
@@ -109,28 +110,24 @@ const slides = [
 const HeroSlider = () => {
   const [current, setCurrent] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [direction, setDirection] = useState(0);
   const intervalTime = 6000;
   const transitionDuration = 800;
   const sliderRef = useRef<HTMLDivElement>(null);
 
   const nextSlide = useCallback(() => {
     if (isTransitioning) return;
-    setDirection(1);
     setIsTransitioning(true);
     setCurrent((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
   }, [isTransitioning]);
 
   const prevSlide = useCallback(() => {
     if (isTransitioning) return;
-    setDirection(-1);
     setIsTransitioning(true);
     setCurrent((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
   }, [isTransitioning]);
 
   const goToSlide = useCallback((index: number) => {
     if (isTransitioning || index === current) return;
-    setDirection(index > current ? 1 : -1);
     setIsTransitioning(true);
     setCurrent(index);
   }, [current, isTransitioning]);
@@ -158,10 +155,6 @@ const HeroSlider = () => {
             className={`slide-item absolute inset-0 flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 w-full h-full pt-4 transition-all duration-1000 ease-out ${
               index === current 
                 ? "opacity-100 translate-x-0 scale-100 z-20" 
-                : index === (current + 1) % slides.length
-                ? "opacity-0 translate-x-full scale-95 z-10"
-                : index === (current - 1 + slides.length) % slides.length
-                ? "opacity-0 -translate-x-full scale-95 z-10"
                 : "opacity-0 translate-x-0 scale-90 z-0"
             }`}
           >
@@ -183,11 +176,11 @@ const HeroSlider = () => {
                       {word}
                     </span>
                   ))}
-              </h1>
+                </h1>
 
                 <p className="slide-description text-sm sm:text-base md:text-lg lg:text-lg sm:text-xl md:text-2xl text-slate-200 leading-relaxed max-w-2xl mb-6 sm:mb-8">
-                {slide.description.join(" ")}
-              </p>
+                  {slide.description.join(" ")}
+                </p>
 
                 <div className="slide-button">
                   <Button 
@@ -207,17 +200,16 @@ const HeroSlider = () => {
               <div className="image-wrapper relative group max-w-md lg:max-w-none mx-auto lg:mx-0">
                 <div className={`absolute inset-0 bg-gradient-to-br ${slide.gradient} rounded-2xl lg:rounded-3xl opacity-80 group-hover:opacity-90 transition-opacity duration-500`}></div>
                 
-              <img
-                  className="slide-image w-full h-48 sm:h-56 md:h-64 lg:h-[65vh] object-cover rounded-2xl lg:rounded-3xl shadow-xl lg:shadow-2xl transform transition-all duration-1000 ease-out group-hover:scale-105"
-                src={slide.img}
-                alt={slide.header}
-                  style={{
-                    transform: index === current ? 'scale(1) rotate(0deg)' : 'scale(1.1) rotate(2deg)',
-                    filter: index === current ? 'brightness(1) saturate(1.1)' : 'brightness(0.8) saturate(0.8)'
-                  }}
+              <div className="slide-image w-full h-48 sm:h-56 md:h-64 lg:h-[65vh] relative rounded-2xl lg:rounded-3xl shadow-xl lg:shadow-2xl transform transition-all duration-1000 ease-out group-hover:scale-105 overflow-hidden">
+                <Image
+                  src={slide.img}
+                  alt={slide.header}
+                  fill
+                  className="object-cover"
+                  priority
                 />
+              </div>
                 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent rounded-2xl lg:rounded-3xl"></div>
                 
                
                 <div className="absolute top-3 sm:top-4 right-3 sm:right-4 bg-white/20 backdrop-blur-md px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-white/30">

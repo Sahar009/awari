@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { MapPin, Home } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { Favourite } from "./Favourite";
 import { useRouter } from "next/navigation";
 
