@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { MapPin, Home } from "lucide-react";
 import { Favourite } from "./Favourite";
+import { useRouter } from "next/navigation";
 
 interface CardProps {
   ImageSrc?: string;
@@ -25,10 +26,11 @@ export const Card: React.FC<CardProps> = ({
   location,
   type,
 }) => {
+  const router = useRouter();
   return (
     <div className=" bg-white shadow-lg rounded-2xl overflow-hidden hover:shadow-2xl transition-shadow duration-300">
       {/* Image Section */}
-      <div className="relative w-full h-56">
+      <div onClick={() => router.push("/product-details")} className="relative w-full h-56">
         <Image
           src={ImageSrc}
           fill

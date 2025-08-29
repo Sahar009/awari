@@ -1,9 +1,12 @@
 import { HomePage } from "@/pages/home/HomePage";
+import MainLayout from "../mainLayout";
 
 
 const HomeScreen = () => {
   return (
-    <HomePage/>
+    <MainLayout>
+      <HomePage/>
+    </MainLayout>
   )
 }
 

@@ -20,7 +20,7 @@ export const Button: React.FC<ButtonProps> = ({
     "rounded-lg px-6 py-2 font-bold transition-colors duration-200";
 
   const variantStyles: Record<string, string> = {
-    primary: "bg-primary text-white hover:bg-blue-700",
+    primary: "bg-primary text-white hover:opacity-100",
     secondary: "bg-gray-200 text-gray-800 hover:bg-gray-300",
     outline: "border-2 border-primary text-primary hover:bg-blue-50",
   };

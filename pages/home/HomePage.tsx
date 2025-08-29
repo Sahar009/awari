@@ -1,11 +1,13 @@
 "use client";
 import Container from "@/components/Container";
-import HeroSlider from "./HeroSlider";
+import HeroSlider from "../../components/slider/HeroSlider";
 
 import { FeatureList } from "./FeatureList";
 import { SearchFilter } from "@/components/SearchFilter";
 import { About } from "./About";
 import { Service } from "./Service";
+import { Testimonial } from "./Testimonial";
+import { CardDetails } from "./CardDetails";
 
 export const HomePage = () => {
   return (
@@ -21,10 +23,11 @@ export const HomePage = () => {
       <Container>
         <div className="space-y-10">
           <FeatureList />
-          <Service />
           <About />
+          <Service />
         </div>
       </Container>
+      <Testimonial />
     </div>
   );
 };

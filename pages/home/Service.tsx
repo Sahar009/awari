@@ -1,5 +1,5 @@
 "use client"; 
-import { selectCardProps, ServiceCard } from "@/components/ui/serviceCard";
+import { selectCardProps, ServiceCard } from "@/components/ui/ServiceCard";
 import { HousePlugIcon } from "lucide-react";
 
 const serviceData: selectCardProps[] = [
@@ -42,7 +42,7 @@ export const Service = () => {
         <h4 className="text-secondary-color font-semibold tracking-wide text-sm uppercase">
           Our Services
         </h4>
-        <h1 className="text-4xl lg:text-5xl font-bold text-primary w-3/4  mt-2">
+        <h1 className="text-4xl lg:text-5xl font-bold  w-3/4  mt-2">
           We are committed to discovering the perfect property for you
         </h1>
       </div>
