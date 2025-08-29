@@ -6,6 +6,7 @@ import { Avatar } from "../ui/Avatar";
 import { Button } from "../ui/Button";
 import { Logo } from "./Logo";
 import NavList from "./NavList";
+import { useRouter } from 'next/navigation'
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,6 +21,8 @@ export const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const router = useRouter()
+
   return (
     <>
     
@@ -31,7 +34,7 @@ export const Navbar = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-row items-center justify-between">
             <div className="transform hover:scale-105 transition-transform duration-300">
-              <Logo />
+        <Logo />
             </div>
 
             <div className="hidden lg:flex items-center space-x-8">
@@ -65,7 +68,7 @@ export const Navbar = () => {
               ))}
             </div>
 
-            <div className="flex flex-row items-center gap-4">
+        <div className="flex flex-row items-center gap-4">
               <div className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110">
                 <Search size={20} className="text-slate-600" />
               </div>
@@ -83,13 +86,14 @@ export const Navbar = () => {
               <div className="hidden lg:flex transform hover:scale-105 transition-transform duration-300">
                 <Button 
                   variant="primary" 
-                  label="Sign Up" 
+                  label="Sign In" 
                   className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300"
+                  onClick={() => router.push('/auth/login')}
                 />
-              </div>
+          </div>
 
               <div className="transform hover:scale-105 transition-transform duration-300">
-                <Avatar />
+          <Avatar />
               </div>
 
               <div 
@@ -111,7 +115,7 @@ export const Navbar = () => {
       >
         <div className="flex items-center justify-between px-6 py-6 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white">
           <div className="transform hover:scale-105 transition-transform duration-300">
-            <Logo />
+          <Logo />
           </div>
           <div 
             className="p-2 rounded-lg hover:bg-slate-100 transition-all duration-300 cursor-pointer transform hover:scale-110"
@@ -160,6 +164,7 @@ export const Navbar = () => {
             <Button 
               variant="primary" 
               label="Sign Up Now" 
+              onClick={() => router.push('/auth/register')}
               className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             />
           </div>

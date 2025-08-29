@@ -183,11 +183,11 @@ const HeroSlider = () => {
                       {word}
                     </span>
                   ))}
-                </h1>
+              </h1>
 
                 <p className="slide-description text-sm sm:text-base md:text-lg lg:text-lg sm:text-xl md:text-2xl text-slate-200 leading-relaxed max-w-2xl mb-6 sm:mb-8">
-                  {slide.description.join(" ")}
-                </p>
+                {slide.description.join(" ")}
+              </p>
 
                 <div className="slide-button">
                   <Button 
@@ -207,10 +207,10 @@ const HeroSlider = () => {
               <div className="image-wrapper relative group max-w-md lg:max-w-none mx-auto lg:mx-0">
                 <div className={`absolute inset-0 bg-gradient-to-br ${slide.gradient} rounded-2xl lg:rounded-3xl opacity-80 group-hover:opacity-90 transition-opacity duration-500`}></div>
                 
-                <img
+              <img
                   className="slide-image w-full h-48 sm:h-56 md:h-64 lg:h-[65vh] object-cover rounded-2xl lg:rounded-3xl shadow-xl lg:shadow-2xl transform transition-all duration-1000 ease-out group-hover:scale-105"
-                  src={slide.img}
-                  alt={slide.header}
+                src={slide.img}
+                alt={slide.header}
                   style={{
                     transform: index === current ? 'scale(1) rotate(0deg)' : 'scale(1.1) rotate(2deg)',
                     filter: index === current ? 'brightness(1) saturate(1.1)' : 'brightness(0.8) saturate(0.8)'

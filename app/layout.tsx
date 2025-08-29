@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Exo } from "next/font/google";
 import "./globals.css";
+import { Providers } from "./providers";
+
 
 const geistSans = Exo({
   variable: "--font-geist-sans",
@@ -21,10 +23,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-       
-      >
-        {children}
+      <body className={geistSans.variable}>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
