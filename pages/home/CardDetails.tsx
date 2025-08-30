@@ -25,7 +25,7 @@ const listing: Listing = {
   location: "Lekki, Lagos, Nigeria",
   rating: 4.86,
   reviewsCount: 128,
-  pricePerNight: 120,
+  pricePerNight: 120000,
   images: [
     "/assets/images/slider1.jpg",
     "/assets/images/slider1.jpg",
@@ -130,7 +130,7 @@ export const CardDetails = () => {
         <div className="w-full lg:w-[40%]">
           <div className="border rounded-xl shadow-md p-6 sticky top-20">
             <div className="flex items-baseline gap-1 mb-4">
-              <span className="text-xl font-semibold">${listing.pricePerNight}</span>
+              <span className="text-xl font-semibold">₦ {listing.pricePerNight}</span>
               <span className="text-gray-600">night</span>
             </div>
 
