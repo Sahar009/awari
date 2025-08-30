@@ -9,7 +9,7 @@ export const demoCards = [
     Title: "Luxury Apartment",
     description:
       "A modern 3-bedroom apartment with a spacious living room, balcony, and city views.",
-    price: "$1,200/mo",
+    price: "₦1,800,000/year",
     liked: <Heart className="text-red-500" />,
     location: "Lekki, Lagos",
     type: "For Rent",
@@ -19,7 +19,7 @@ export const demoCards = [
     Title: "Beachfront Villa",
     description:
       "Exclusive 5-bedroom villa with private pool, beachfront access, and premium finishes.",
-    price: "$450,000",
+    price: "₦675,000,000",
     liked: <Heart className="text-gray-400" />,
     location: "Victoria Island, Lagos",
     type: "For Sale",
@@ -29,7 +29,7 @@ export const demoCards = [
     Title: "Cozy Studio",
     description:
       "Affordable and fully furnished studio apartment ideal for short stays.",
-    price: "$60/night",
+    price: "₦90,000/night",
     liked: <Heart className="text-red-500" />,
     location: "Ikeja, Lagos",
     type: "Shortlet",
@@ -39,7 +39,7 @@ export const demoCards = [
     Title: "Family Home",
     description:
       "Spacious 4-bedroom family home with garden, parking, and nearby schools.",
-    price: "$2,000/mo",
+    price: "₦3,000,000/year",
     liked: <Heart className="text-gray-400" />,
     location: "Surulere, Lagos",
     type: "For Rent",
@@ -49,17 +49,17 @@ export const demoCards = [
     Title: "Penthouse Suite",
     description:
       "Luxury penthouse with rooftop lounge, panoramic city views, and smart home features.",
-    price: "$750,000",
+    price: "₦1,125,000,000",
     liked: <Heart className="text-red-500" />,
     location: "Banana Island, Lagos",
     type: "For Sale",
   },
-   {
+  {
     ImageSrc: "/assets/images/slider1.jpg",
     Title: "Beachfront Villa",
     description:
       "Exclusive 5-bedroom villa with private pool, beachfront access, and premium finishes.",
-    price: "$450,000",
+    price: "₦675,000,000",
     liked: <Heart className="text-gray-400" />,
     location: "Victoria Island, Lagos",
     type: "For Sale",
@@ -69,7 +69,7 @@ export const demoCards = [
     Title: "Cozy Studio",
     description:
       "Affordable and fully furnished studio apartment ideal for short stays.",
-    price: "$60/night",
+    price: "₦90,000/night",
     liked: <Heart className="text-red-500" />,
     location: "Ikeja, Lagos",
     type: "Shortlet",
@@ -79,7 +79,7 @@ export const demoCards = [
     Title: "Family Home",
     description:
       "Spacious 4-bedroom family home with garden, parking, and nearby schools.",
-    price: "$2,000/mo",
+    price: "₦3,000,000/year",
     liked: <Heart className="text-gray-400" />,
     location: "Surulere, Lagos",
     type: "For Rent",
@@ -89,7 +89,7 @@ export const demoCards = [
     Title: "Penthouse Suite",
     description:
       "Luxury penthouse with rooftop lounge, panoramic city views, and smart home features.",
-    price: "$750,000",
+    price: "₦1,125,000,000",
     liked: <Heart className="text-red-500" />,
     location: "Banana Island, Lagos",
     type: "For Sale",
