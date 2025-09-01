@@ -1,24 +1,18 @@
 import { apiService, ApiResponse } from './api';
-import { User } from '../store/slices/authSlice';
+import { User, RegisterRequest, LoginRequest, GoogleSignInRequest } from '../store/slices/authSlice';
 
 // Authentication interfaces
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
+export interface LoginCredentials extends LoginRequest {}
 
-export interface RegisterData {
-  name: string;
-  email: string;
-  password: string;
-  password_confirmation: string;
-  phone?: string;
-}
+export interface RegisterData extends RegisterRequest {}
 
 export interface AuthResponse {
-  user: User;
-  token: string;
-  message?: string;
+  success: boolean;
+  message: string;
+  data: {
+    user: User;
+    token: string;
+  };
 }
 
 export interface PasswordResetData {
@@ -47,6 +41,11 @@ export const authService = {
   // User registration
   register: async (userData: RegisterData): Promise<ApiResponse<AuthResponse>> => {
     return apiService.post<AuthResponse>('/auth/register', userData);
+  },
+
+  // Google Sign-In
+  googleSignIn: async (googleData: GoogleSignInRequest): Promise<ApiResponse<AuthResponse>> => {
+    return apiService.post<AuthResponse>('/auth/google', googleData);
   },
 
   // User logout
@@ -135,4 +134,5 @@ export const authService = {
 };
 
 export default authService;
+
 

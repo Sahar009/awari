@@ -1,22 +1,20 @@
-// Temporarily disabled Redux hooks to avoid Provider context issues
-// These will be re-enabled once we have the Redux Provider working properly
+import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
+import type { RootState, AppDispatch } from './store';
 
-// Temporary mock hooks that return dummy values
-export const useAuth = () => ({ 
-  user: null, 
-  token: null, 
-  isAuthenticated: false, 
-  isLoading: false, 
-  error: null 
-});
+// Use throughout your app instead of plain `useDispatch` and `useSelector`
+export const useAppDispatch = () => useDispatch<AppDispatch>();
+export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
-export const useAuthError = () => null;
+// Auth selectors
+export const useAuth = () => useAppSelector((state) => state.auth);
 
-export const useAuthLoading = () => false;
+export const useAuthError = () => useAppSelector((state) => state.auth.error);
 
-export const useUser = () => null;
+export const useAuthLoading = () => useAppSelector((state) => state.auth.isLoading);
 
-export const useIsAuthenticated = () => false;
+export const useUser = () => useAppSelector((state) => state.auth.user);
+
+export const useIsAuthenticated = () => useAppSelector((state) => state.auth.isAuthenticated);
 
 // Property selectors
 export const useProperties = () => [];

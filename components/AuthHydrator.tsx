@@ -1,10 +1,14 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useAppDispatch } from '../store/store';
-import { hydrate } from '../store/slices/authSlice';
+import { useEffect, ReactNode } from 'react';
+import { useAppDispatch } from '@/store/hooks';
+import { hydrate } from '@/store/slices/authSlice';
 
-export default function AuthHydrator() {
+interface AuthHydratorProps {
+  children: ReactNode;
+}
+
+export function AuthHydrator({ children }: AuthHydratorProps) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
@@ -12,6 +16,10 @@ export default function AuthHydrator() {
     dispatch(hydrate());
   }, [dispatch]);
 
-  return null; // This component doesn't render anything
+  return <>{children}</>;
 }
+
+export default AuthHydrator;
+
+
 

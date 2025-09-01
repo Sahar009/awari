@@ -1,14 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MenuIcon, X, Search, Bell, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle, User } from "lucide-react";
+import { MenuIcon, X, Search, Bell, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle, User, LogOut, Settings, UserCircle, ChevronDown } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Logo } from "./Logo";
-import { useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { logoutUser } from '@/store/slices/authSlice';
+import { firebaseAuth } from '@/services/firebaseAuth';
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { user, isAuthenticated, isLoading } = useAppSelector((state) => state.auth);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Navbar Auth State:', { user, isAuthenticated, isLoading });
+  }, [user, isAuthenticated, isLoading]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,7 +32,28 @@ export const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const router = useRouter()
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.user-menu-container')) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      // For now, just use Redux logout
+      await dispatch(logoutUser()).unwrap();
+      router.push('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   return (
     <>
@@ -36,13 +70,19 @@ export const Navbar = () => {
             </div>
 
             <div className="hidden lg:flex items-center space-x-8">
-              {[
+              {(isAuthenticated ? [
+                { name: "Dashboard", href: "/home", description: "Your dashboard" },
+                { name: "Properties", href: "#properties", description: "Browse listings" },
+                { name: "My Listings", href: "/my-listings", description: "Manage properties" },
+                { name: "Favorites", href: "/favorites", description: "Saved properties" },
+                { name: "Messages", href: "/messages", description: "Your conversations" },
+              ] : [
                 { name: "Properties", href: "#properties", description: "Browse listings" },
                 { name: "Rentals", href: "#rentals", description: "Find your home" },
                 { name: "Sales", href: "#sales", description: "Buy property" },
                 { name: "Shortlets", href: "#shortlets", description: "Book stays" },
                 { name: "About", href: "#about", description: "Learn more" },
-              ].map((item, index) => (
+              ]).map((item, index) => (
                 <div key={item.name} className="group relative">
                   <a
                     href={item.href}
@@ -67,34 +107,152 @@ export const Navbar = () => {
             </div>
 
         <div className="flex flex-row items-center gap-4">
+              {/* Search Icon - Always visible */}
               <div className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110">
                 <Search size={20} className="text-slate-600" />
               </div>
 
-              <div className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110 relative">
-                <Bell size={20} className="text-slate-600" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse"></span>
-              </div>
+              {/* Conditional rendering based on authentication status */}
+              {isAuthenticated ? (
+                <>
+                  {/* Notifications */}
+                  <div className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110 relative">
+                    <Bell size={20} className="text-slate-600" />
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse"></span>
+                  </div>
 
-              <div className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110 relative">
-                <MessageCircle size={20} className="text-slate-600" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-secondary-color rounded-full animate-pulse"></span>
-              </div>
+                  {/* Messages */}
+                  <div className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110 relative">
+                    <MessageCircle size={20} className="text-slate-600" />
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-secondary-color rounded-full animate-pulse"></span>
+                  </div>
 
-              <div className="hidden lg:flex transform hover:scale-105 transition-transform duration-300">
-                <Button 
-                  variant="primary" 
-                  label="Sign In" 
-                  className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300"
-                  onClick={() => router.push('/auth/login')}
-                />
-          </div>
+                  {/* User Menu */}
+                  <div className="relative user-menu-container">
+                    <div 
+                      className="flex items-center gap-2 p-2 rounded-xl hover:bg-slate-100 transition-all duration-300 cursor-pointer transform hover:scale-105"
+                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
+                        {user?.avatarUrl ? (
+                          <img 
+                            src={user.avatarUrl} 
+                            alt="Profile" 
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <User className="h-4 w-4 text-white" />
+                        )}
+                      </div>
+                      <div className="hidden lg:block">
+                        <p className="text-sm font-medium text-slate-700">
+                          {user?.firstName || 'User'}
+                        </p>
+                      </div>
+                      <ChevronDown 
+                        size={16} 
+                        className={`text-slate-500 transition-transform duration-200 ${
+                          isUserMenuOpen ? 'rotate-180' : ''
+                        }`} 
+                      />
+                    </div>
 
-              <div className="transform hover:scale-105 transition-transform duration-300">
-              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-                <User className="h-5 w-5 text-gray-600" />
-              </div>
-              </div>
+                    {/* User Dropdown Menu */}
+                    {isUserMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-slate-200/50 backdrop-blur-lg z-50">
+                        <div className="p-4 border-b border-slate-200">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
+                              {user?.avatarUrl ? (
+                                <img 
+                                  src={user.avatarUrl} 
+                                  alt="Profile" 
+                                  className="w-12 h-12 rounded-full object-cover"
+                                />
+                              ) : (
+                                <User className="h-6 w-6 text-white" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-slate-800">
+                                {user?.firstName} {user?.lastName}
+                              </p>
+                              <p className="text-sm text-slate-500">{user?.email}</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="p-2">
+                          <a
+                            href="/profile"
+                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <UserCircle size={20} className="text-slate-600" />
+                            <span className="text-slate-700">Profile</span>
+                          </a>
+                          
+                          <a
+                            href="/settings"
+                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <Settings size={20} className="text-slate-600" />
+                            <span className="text-slate-700">Settings</span>
+                          </a>
+                          
+                          <a
+                            href="/my-listings"
+                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <Building2 size={20} className="text-slate-600" />
+                            <span className="text-slate-700">My Listings</span>
+                          </a>
+                          
+                          <a
+                            href="/favorites"
+                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <Home size={20} className="text-slate-600" />
+                            <span className="text-slate-700">Favorites</span>
+                          </a>
+                          
+                          <div className="border-t border-slate-200 my-2"></div>
+                          
+                          <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 transition-colors duration-200 w-full text-left"
+                          >
+                            <LogOut size={20} className="text-red-600" />
+                            <span className="text-red-600">Sign Out</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Sign In Button - Only show when not authenticated */}
+                  <div className="hidden lg:flex transform hover:scale-105 transition-transform duration-300">
+                    <Button 
+                      variant="primary" 
+                      label="Sign In" 
+                      className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300"
+                      onClick={() => router.push('/auth/login')}
+                    />
+                  </div>
+
+                  {/* User Icon - Only show when not authenticated */}
+                  <div className="transform hover:scale-105 transition-transform duration-300">
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                      <User className="h-5 w-5 text-gray-600" />
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div 
                 className="lg:hidden cursor-pointer p-2 rounded-lg hover:bg-slate-100 transition-all duration-300 transform hover:scale-110" 
@@ -126,7 +284,40 @@ export const Navbar = () => {
         </div>
 
         <div className="flex flex-col gap-2 px-6 py-6">
-          {[
+          {/* User Profile Section - Only show when authenticated */}
+          {isAuthenticated && (
+            <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl border border-primary/10">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
+                  {user?.avatarUrl ? (
+                    <img 
+                      src={user.avatarUrl} 
+                      alt="Profile" 
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-6 w-6 text-white" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-800">
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                  <p className="text-sm text-slate-500">{user?.email}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(isAuthenticated ? [
+            { name: "Dashboard", href: "/home", description: "Your dashboard", icon: Home },
+            { name: "Properties", href: "#properties", description: "Browse all listings", icon: Building2 },
+            { name: "My Listings", href: "/my-listings", description: "Manage your properties", icon: HomeIcon },
+            { name: "Favorites", href: "/favorites", description: "Saved properties", icon: DollarSign },
+            { name: "Messages", href: "/messages", description: "Your conversations", icon: MessageCircle },
+            { name: "Profile", href: "/profile", description: "Edit your profile", icon: UserCircle },
+            { name: "Settings", href: "/settings", description: "Account settings", icon: Settings },
+          ] : [
             { name: "Home", href: "#home", description: "Welcome to AWARI", icon: Home },
             { name: "Properties", href: "#properties", description: "Browse all listings", icon: Building2 },
             { name: "Rentals", href: "#rentals", description: "Find your perfect home", icon: HomeIcon },
@@ -135,7 +326,7 @@ export const Navbar = () => {
             { name: "About", href: "#about", description: "Learn about AWARI", icon: Info },
             { name: "Contact", href: "#contact", description: "Get in touch", icon: Phone },
             { name: "FAQ", href: "#faq", description: "Find answers", icon: HelpCircle },
-          ].map((item, index) => (
+          ]).map((item, index) => (
             <a
               key={item.name}
               href={item.href}
@@ -160,14 +351,51 @@ export const Navbar = () => {
             </a>
           ))}
           
-          <div className="mt-6 p-4">
-            <Button 
-              variant="primary" 
-              label="Sign Up Now" 
-              onClick={() => router.push('/auth/register')}
-              className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-            />
-          </div>
+          {/* Conditional bottom section based on authentication status */}
+          {isAuthenticated ? (
+            <div className="mt-6 p-4 space-y-3">
+              <Button 
+                variant="primary" 
+                label="Add Property" 
+                onClick={() => {
+                  router.push('/add-property');
+                  setIsOpen(false);
+                }}
+                className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              />
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setIsOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 p-3 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-300 transform hover:scale-105"
+              >
+                <LogOut size={20} />
+                <span className="font-medium">Sign Out</span>
+              </button>
+            </div>
+          ) : (
+            <div className="mt-6 p-4 space-y-3">
+              <Button 
+                variant="primary" 
+                label="Sign In" 
+                onClick={() => {
+                  router.push('/auth/login');
+                  setIsOpen(false);
+                }}
+                className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              />
+              <Button 
+                variant="secondary" 
+                label="Sign Up Now" 
+                onClick={() => {
+                  router.push('/auth/register');
+                  setIsOpen(false);
+                }}
+                className="w-full bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              />
+            </div>
+          )}
         </div>
       </div>
 

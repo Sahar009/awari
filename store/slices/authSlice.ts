@@ -140,9 +140,11 @@ const authSlice = createSlice({
     hydrate: (state) => {
       if (typeof window !== 'undefined') {
         const token = localStorage.getItem('token');
+        console.log('Hydrating auth state, token found:', !!token);
         if (token) {
           state.token = token;
           state.isAuthenticated = true;
+          console.log('Auth state hydrated with token');
         }
       }
     },
@@ -160,7 +162,9 @@ const authSlice = createSlice({
         state.token = action.payload.data.token;
         state.isAuthenticated = true;
         state.error = null;
+        console.log('Registration successful - storing token:', action.payload.data.token);
         localStorage.setItem('token', action.payload.data.token);
+        console.log('Token stored in localStorage');
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -179,7 +183,9 @@ const authSlice = createSlice({
         state.token = action.payload.data.token;
         state.isAuthenticated = true;
         state.error = null;
+        console.log('Login successful - storing token:', action.payload.data.token);
         localStorage.setItem('token', action.payload.data.token);
+        console.log('Token stored in localStorage');
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;

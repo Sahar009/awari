@@ -2,17 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { Logo } from '@/components/navbar/Logo';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { loginUser, googleSignIn, clearError } from '@/store/slices/authSlice';
+import { firebaseAuth } from '@/services/firebaseAuth';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { isLoading, error, isAuthenticated } = useAppSelector((state) => state.auth);
+  
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [currentNotification, setCurrentNotification] = useState(0);
 
   // Rotating notifications
@@ -43,6 +49,20 @@ export default function LoginPage() {
     return () => clearInterval(interval);
   }, [notifications.length]);
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/home');
+    }
+  }, [isAuthenticated, router]);
+
+  // Clear errors when component unmounts
+  useEffect(() => {
+    return () => {
+      dispatch(clearError());
+    };
+  }, [dispatch]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -53,15 +73,30 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
+    dispatch(clearError());
     
-    // Temporary simple login logic
-    setTimeout(() => {
-      setIsSubmitting(false);
-      console.log('Login data:', formData);
-      // Here you would normally call your API
-    }, 1000);
+    try {
+      console.log('Starting login with data:', formData);
+      const result = await dispatch(loginUser(formData)).unwrap();
+      console.log('Login successful:', result);
+      console.log('Navigating to home page...');
+      router.push('/home');
+    } catch (error) {
+      console.error('Login failed:', error);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    dispatch(clearError());
+    
+    try {
+      // For now, use mock Google sign-in
+      const mockGoogleToken = 'mock-google-token';
+      await dispatch(googleSignIn({ idToken: mockGoogleToken })).unwrap();
+      router.push('/home');
+    } catch (error) {
+      console.error('Google sign-in failed:', error);
+    }
   };
 
   return (
@@ -156,11 +191,9 @@ export default function LoginPage() {
               {/* Google Sign In Button */}
               <button
                 type="button"
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 hover:shadow-md transition-all duration-200 cursor-pointer"
-                onClick={() => {
-                  // Handle Google sign in
-                  console.log('Google sign in');
-                }}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 hover:shadow-md transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleGoogleSignIn}
+                disabled={isLoading}
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -237,10 +270,10 @@ export default function LoginPage() {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isLoading}
                 className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none group"
               >
-                {isSubmitting ? (
+                {isLoading ? (
                   <div className="flex items-center justify-center space-x-2">
                     <Loader2 className="w-5 h-5 animate-spin" />
                     <span>Signing in...</span>
