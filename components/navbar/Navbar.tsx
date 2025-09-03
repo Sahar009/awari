@@ -77,11 +77,11 @@ export const Navbar = () => {
                 { name: "Favorites", href: "/favorites", description: "Saved properties" },
                 { name: "Messages", href: "/messages", description: "Your conversations" },
               ] : [
-                { name: "Properties", href: "#properties", description: "Browse listings" },
-                { name: "Rentals", href: "#rentals", description: "Find your home" },
-                { name: "Sales", href: "#sales", description: "Buy property" },
-                { name: "Shortlets", href: "#shortlets", description: "Book stays" },
-                { name: "About", href: "#about", description: "Learn more" },
+                { name: "Properties", href: "/browse-listing", description: "Browse listings" },
+                { name: "Rentals", href: "/rentals", description: "Find your home" },
+                { name: "Sales", href: "/sales", description: "Buy property" },
+                { name: "Shortlets", href: "/shortlets", description: "Book stays" },
+                { name: "About", href: "/about", description: "Learn more" },
               ]).map((item, index) => (
                 <div key={item.name} className="group relative">
                   <a

@@ -43,6 +43,10 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
 export interface GoogleSignInRequest {
   idToken: string;
 }
@@ -98,6 +102,18 @@ export const loginUser = createAsyncThunk(
   }
 );
 
+export  const forgotPassword = createAsyncThunk(
+  'auth/forgotpassword',
+  async (credentials: ForgotPasswordRequest, { rejectWithValue }) => {
+    try{
+     const response = await apiService.post<AuthResponse>('/auth/forgot-password', credentials);
+     return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'forgot password failed')
+    }
+  }
+)
+
 export const googleSignIn = createAsyncThunk(
   'auth/googleSignIn',
   async (googleData: GoogleSignInRequest, { rejectWithValue }) => {
@@ -123,6 +139,9 @@ export const logoutUser = createAsyncThunk(
     }
   }
 );
+
+
+
 
 // Slice
 const authSlice = createSlice({
@@ -188,6 +207,26 @@ const authSlice = createSlice({
         console.log('Token stored in localStorage');
       })
       .addCase(loginUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+
+      //forgot password
+      builder
+      .addCase(forgotPassword.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(forgotPassword.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.data.user;
+        state.token = action.payload.data.token;
+        state.isAuthenticated = true;
+        state.error = null;
+        console.log('forgot password email sent succesfully');
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });
