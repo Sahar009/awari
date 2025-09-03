@@ -77,11 +77,11 @@ export const Navbar = () => {
                 { name: "Favorites", href: "/favorites", description: "Saved properties" },
                 { name: "Messages", href: "/messages", description: "Your conversations" },
               ] : [
-                { name: "Properties", href: "#properties", description: "Browse listings" },
-                { name: "Rentals", href: "#rentals", description: "Find your home" },
-                { name: "Sales", href: "#sales", description: "Buy property" },
-                { name: "Shortlets", href: "#shortlets", description: "Book stays" },
-                { name: "About", href: "#about", description: "Learn more" },
+                { name: "Properties", href: "/browse-listing", description: "Browse listings" },
+                { name: "Rentals", href: "/rentals", description: "Find your home" },
+                { name: "Sales", href: "/sales", description: "Buy property" },
+                { name: "Shortlets", href: "/shortlets", description: "Book stays" },
+                { name: "About", href: "/about", description: "Learn more" },
               ]).map((item, index) => (
                 <div key={item.name} className="group relative">
                   <a
@@ -318,14 +318,14 @@ export const Navbar = () => {
             { name: "Profile", href: "/profile", description: "Edit your profile", icon: UserCircle },
             { name: "Settings", href: "/settings", description: "Account settings", icon: Settings },
           ] : [
-            { name: "Home", href: "#home", description: "Welcome to AWARI", icon: Home },
-            { name: "Properties", href: "#properties", description: "Browse all listings", icon: Building2 },
-            { name: "Rentals", href: "#rentals", description: "Find your perfect home", icon: HomeIcon },
-            { name: "Sales", href: "#sales", description: "Buy your dream property", icon: DollarSign },
-            { name: "Shortlets & Hotels", href: "#shortlets", description: "Book amazing stays", icon: Hotel },
+            { name: "Home", href: "/home", description: "Welcome to AWARI", icon: Home },
+            { name: "Properties", href: "/browse-listing", description: "Browse all listings", icon: Building2 },
+            { name: "Rentals", href: "/rentals", description: "Find your perfect home", icon: HomeIcon },
+            { name: "Sales", href: "/sales", description: "Buy your dream property", icon: DollarSign },
+            { name: "Shortlets & Hotels", href: "/shortlets", description: "Book amazing stays", icon: Hotel },
             { name: "About", href: "#about", description: "Learn about AWARI", icon: Info },
-            { name: "Contact", href: "#contact", description: "Get in touch", icon: Phone },
-            { name: "FAQ", href: "#faq", description: "Find answers", icon: HelpCircle },
+            { name: "Contact", href: "/contact", description: "Get in touch", icon: Phone },
+            { name: "FAQ", href: "/faq", description: "Find answers", icon: HelpCircle },
           ]).map((item, index) => (
             <a
               key={item.name}

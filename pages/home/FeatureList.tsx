@@ -5,7 +5,7 @@ import { Heart } from "lucide-react";
 
 export const demoCards = [
   {
-    ImageSrc: "/assets/images/slider4.jpg",
+    ImageSrc: "/assets/images/houseimg (11).jpg",
     Title: "Luxury Apartment",
     description:
       "A modern 3-bedroom apartment with a spacious living room, balcony, and city views.",
@@ -15,7 +15,7 @@ export const demoCards = [
     type: "For Rent",
   },
   {
-    ImageSrc: "/assets/images/slider1.jpg",
+    ImageSrc: "/assets/images/houseimg (8).jpg",
     Title: "Beachfront Villa",
     description:
       "Exclusive 5-bedroom villa with private pool, beachfront access, and premium finishes.",
@@ -25,7 +25,7 @@ export const demoCards = [
     type: "For Sale",
   },
   {
-    ImageSrc: "/assets/images/slider3.jpg",
+    ImageSrc: "/assets/images/image1.jpg",
     Title: "Cozy Studio",
     description:
       "Affordable and fully furnished studio apartment ideal for short stays.",
@@ -35,7 +35,7 @@ export const demoCards = [
     type: "Shortlet",
   },
   {
-    ImageSrc: "/assets/images/slider2.jpg",
+    ImageSrc: "/assets/images/houseimg (3).jpg",
     Title: "Family Home",
     description:
       "Spacious 4-bedroom family home with garden, parking, and nearby schools.",
@@ -45,7 +45,7 @@ export const demoCards = [
     type: "For Rent",
   },
   {
-    ImageSrc: "/assets/images/slider4.jpg",
+    ImageSrc: "/assets/images/houseimg (4).jpg",
     Title: "Penthouse Suite",
     description:
       "Luxury penthouse with rooftop lounge, panoramic city views, and smart home features.",
@@ -55,7 +55,7 @@ export const demoCards = [
     type: "For Sale",
   },
   {
-    ImageSrc: "/assets/images/slider1.jpg",
+    ImageSrc: "/assets/images/houseimg (5).jpg",
     Title: "Beachfront Villa",
     description:
       "Exclusive 5-bedroom villa with private pool, beachfront access, and premium finishes.",
@@ -65,7 +65,7 @@ export const demoCards = [
     type: "For Sale",
   },
   {
-    ImageSrc: "/assets/images/slider3.jpg",
+    ImageSrc: "/assets/images/houseimg (6).jpg",
     Title: "Cozy Studio",
     description:
       "Affordable and fully furnished studio apartment ideal for short stays.",
@@ -75,7 +75,7 @@ export const demoCards = [
     type: "Shortlet",
   },
   {
-    ImageSrc: "/assets/images/slider2.jpg",
+    ImageSrc: "/assets/images/houseimg (7).jpg",
     Title: "Family Home",
     description:
       "Spacious 4-bedroom family home with garden, parking, and nearby schools.",
@@ -85,7 +85,7 @@ export const demoCards = [
     type: "For Rent",
   },
   {
-    ImageSrc: "/assets/images/slider4.jpg",
+    ImageSrc: "/assets/images/houseimg (8).jpg",
     Title: "Penthouse Suite",
     description:
       "Luxury penthouse with rooftop lounge, panoramic city views, and smart home features.",
@@ -93,6 +93,36 @@ export const demoCards = [
     liked: <Heart className="text-red-500" />,
     location: "Banana Island, Lagos",
     type: "For Sale",
+  },
+  {
+    ImageSrc: "/assets/images/houseimg (9).jpg",
+    Title: "Penthouse Suite",
+    description:
+      "Luxury penthouse with rooftop lounge, panoramic city views, and smart home features.",
+    price: "₦1,125,000,000",
+    liked: <Heart className="text-red-500" />,
+    location: "Banana Island, Lagos",
+    type: "For Sale",
+  },
+  {
+    ImageSrc: "/assets/images/houseimg (10).jpg",
+    Title: "Beachfront Villa",
+    description:
+      "Exclusive 5-bedroom villa with private pool, beachfront access, and premium finishes.",
+    price: "₦675,000,000",
+    liked: <Heart className="text-gray-400" />,
+    location: "Victoria Island, Lagos",
+    type: "For Sale",
+  },
+  {
+    ImageSrc: "/assets/images/houseimg (11).jpg",
+    Title: "Cozy Studio",
+    description:
+      "Affordable and fully furnished studio apartment ideal for short stays.",
+    price: "₦90,000/night",
+    liked: <Heart className="text-red-500" />,
+    location: "Ikeja, Lagos",
+    type: "Shortlet",
   },
 ];
 
