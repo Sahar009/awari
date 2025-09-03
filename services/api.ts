@@ -41,7 +41,7 @@ api.interceptors.response.use(
       
       // Clear token and redirect to login
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      window.location.href = '/auth/login';
       return Promise.reject(error);
     }
 
@@ -114,6 +114,9 @@ export const apiService = {
 };
 
 export default api;
+
+
+
 
 
 

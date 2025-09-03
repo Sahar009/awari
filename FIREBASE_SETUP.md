@@ -77,3 +77,5 @@ Your backend should have an endpoint like `/auth/google` that:
 - Always verify Firebase tokens on the backend
 - Use HTTPS in production
 - Configure proper CORS settings
+
+

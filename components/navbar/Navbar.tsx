@@ -7,7 +7,6 @@ import { Logo } from "./Logo";
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logoutUser } from '@/store/slices/authSlice';
-import { firebaseAuth } from '@/services/firebaseAuth';
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);

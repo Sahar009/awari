@@ -7,7 +7,6 @@ import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react
 import { Logo } from '@/components/navbar/Logo';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { registerUser, googleSignIn, clearError } from '@/store/slices/authSlice';
-import { firebaseAuth } from '@/services/firebaseAuth';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -81,8 +80,12 @@ export default function RegisterPage() {
       console.log('Starting registration with data:', formData);
       const result = await dispatch(registerUser(formData)).unwrap();
       console.log('Registration successful:', result);
-      console.log('Navigating to home page...');
-      router.push('/home');
+      
+      // Store email for verification page
+      localStorage.setItem('pendingVerificationEmail', formData.email);
+      
+      console.log('Navigating to verification page...');
+      router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`);
     } catch (error) {
       console.error('Registration failed:', error);
     }

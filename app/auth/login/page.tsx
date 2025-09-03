@@ -7,7 +7,6 @@ import { Eye, EyeOff, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { Logo } from '@/components/navbar/Logo';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loginUser, googleSignIn, clearError } from '@/store/slices/authSlice';
-import { firebaseAuth } from '@/services/firebaseAuth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -235,9 +234,17 @@ export default function LoginPage() {
 
               {/* Password Field */}
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-slate-700">
-                  Password
-                </label>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="password" className="text-sm font-medium text-slate-700">
+                    Password
+                  </label>
+                  <Link
+                    href="/auth/forgotpassword"
+                    className="text-sm text-primary hover:text-primary/80 font-medium transition-colors duration-200"
+                  >
+                    Forgot Password?
+                  </Link>
+                </div>
                 <div className="relative group">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 w-5 h-5 group-focus-within:text-primary transition-colors duration-200" />
                   <input

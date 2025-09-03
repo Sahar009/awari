@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {  Mail,  ArrowRight, Loader2 } from 'lucide-react';
 import { Logo } from '@/components/navbar/Logo';
@@ -73,11 +72,17 @@ export default function ForgotPassword() {
         dispatch(clearError());
         
         try {
-          console.log('Starting login with data:', formData);
+          console.log('Starting forgot password with data:', formData);
           const result = await dispatch(forgotPassword(formData)).unwrap();
-          console.log('Login successful:', result);
+          console.log('Forgot password successful:', result);
+          
+          // Store email for reset password page
+          localStorage.setItem('pendingResetEmail', formData.email);
+          
+          console.log('Navigating to reset password page...');
+          router.push(`/auth/reset-password?email=${encodeURIComponent(formData.email)}`);
         } catch (error) {
-          console.error('Login failed:', error);
+          console.error('Forgot password failed:', error);
         }
       };
     
@@ -210,11 +215,11 @@ export default function ForgotPassword() {
                     {isLoading ? (
                       <div className="flex items-center justify-center space-x-2">
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Signing in...</span>
+                        <span>Sending...</span>
                       </div>
                     ) : (
                       <div className="flex items-center justify-center space-x-2">
-                        <span>Send</span>
+                        <span>Send Reset Code</span>
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" />
                       </div>
                     )}

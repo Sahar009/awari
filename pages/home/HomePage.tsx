@@ -7,7 +7,6 @@ import { SearchFilter } from "@/components/SearchFilter";
 import About from "./About";
 import Service from "./Service";
 import Testimonial from "./Testimonial";
-import CardDetails from "./CardDetails";
 
 const HomePage = () => {
   return (

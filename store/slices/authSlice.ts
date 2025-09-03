@@ -47,6 +47,21 @@ export interface ForgotPasswordRequest {
   email: string;
 }
 
+export interface VerifyEmailRequest {
+  email: string;
+  verificationCode: string;
+}
+
+export interface ResendVerificationRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  resetToken: string;
+  newPassword: string;
+}
+
 export interface GoogleSignInRequest {
   idToken: string;
 }
@@ -58,6 +73,11 @@ export interface AuthResponse {
     user: User;
     token: string;
   };
+}
+
+export interface VerificationResponse {
+  success: boolean;
+  message: string;
 }
 
 export interface AuthState {
@@ -102,7 +122,7 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-export  const forgotPassword = createAsyncThunk(
+export const forgotPassword = createAsyncThunk(
   'auth/forgotpassword',
   async (credentials: ForgotPasswordRequest, { rejectWithValue }) => {
     try{
@@ -113,6 +133,42 @@ export  const forgotPassword = createAsyncThunk(
     }
   }
 )
+
+export const verifyEmail = createAsyncThunk(
+  'auth/verifyEmail',
+  async (verificationData: VerifyEmailRequest, { rejectWithValue }) => {
+    try {
+      const response = await apiService.post<VerificationResponse>('/auth/verify-email', verificationData);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Email verification failed');
+    }
+  }
+);
+
+export const resendVerificationEmail = createAsyncThunk(
+  'auth/resendVerificationEmail',
+  async (emailData: ResendVerificationRequest, { rejectWithValue }) => {
+    try {
+      const response = await apiService.post<VerificationResponse>('/auth/resend-verification', emailData);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to resend verification email');
+    }
+  }
+);
+
+export const resetPassword = createAsyncThunk(
+  'auth/resetPassword',
+  async (resetData: ResetPasswordRequest, { rejectWithValue }) => {
+    try {
+      const response = await apiService.post<VerificationResponse>('/auth/reset-password', resetData);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Password reset failed');
+    }
+  }
+);
 
 export const googleSignIn = createAsyncThunk(
   'auth/googleSignIn',
@@ -179,11 +235,12 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.user = action.payload.data.user;
         state.token = action.payload.data.token;
-        state.isAuthenticated = true;
+        state.isAuthenticated = false; // Don't set as authenticated until email is verified
         state.error = null;
         console.log('Registration successful - storing token:', action.payload.data.token);
         localStorage.setItem('token', action.payload.data.token);
         console.log('Token stored in localStorage');
+        console.log('Registration message:', action.payload.message);
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -227,6 +284,59 @@ const authSlice = createSlice({
         console.log('forgot password email sent succesfully');
       })
       .addCase(forgotPassword.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // Email verification
+    builder
+      .addCase(verifyEmail.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(verifyEmail.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+        if (state.user) {
+          state.user.emailVerified = true;
+          state.user.status = 'active';
+        }
+        state.isAuthenticated = true; // Set as authenticated after email verification
+        console.log('Email verification successful:', action.payload.message);
+      })
+      .addCase(verifyEmail.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // Resend verification email
+    builder
+      .addCase(resendVerificationEmail.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(resendVerificationEmail.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+        console.log('Verification email resent successfully:', action.payload.message);
+      })
+      .addCase(resendVerificationEmail.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // Reset password
+    builder
+      .addCase(resetPassword.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(resetPassword.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+        console.log('Password reset successful:', action.payload.message);
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });
