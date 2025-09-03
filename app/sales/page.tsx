@@ -7,7 +7,7 @@ import Sales from "@/pages/sales/Sales";
 export default function SalesPage() {
   return (
     <MainLayout>
-      <BreadCrumbs header="Buy Property" location="Sales" />
+      <BreadCrumbs header="Buy your dream Property" location="Sales" />
       <Sales />
     </MainLayout>
   );

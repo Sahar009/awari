@@ -7,7 +7,7 @@ import About from "@/pages/about/About";
 export default function AboutPage() {
   return (
     <MainLayout>
-      <BreadCrumbs header="Learn More" location="About Us"/>
+      <BreadCrumbs header="Learn about Awari" location="About Us"/>
       <About/>
     </MainLayout>
   );

@@ -25,14 +25,14 @@ export const BreadCrumbs: React.FC<BreadCrumbProps> = ({
       {/* Overlay Gradient */}
       {/* <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div> */}
 
-      <div className="absolute top-0 left-0 z-10 flex flex-col justify-between h-full w-[80%] px-16 py-12">
+      <div className="absolute top-0 left-0 z-10 flex flex-col justify-between h-full w-full lg:w-[80%] md:px-16 px-6 py-12">
         {/* Top Section - Logo/Brand */}
         <div className="flex flex-col items-start justify-center animate-fadeInDown w-full h-full mt-6">
           <div className="transform hover:scale-105 transition-transform duration-300"></div>
           <h1 className="lg:text-5xl  text-4xl font-bold text-purple-100">
             {header}
           </h1>
-          <p className="text-2xl text-white font-light my-8  flex flex-row items-center gap-2">
+          <p className="md:text-2xl text-xl text-white font-light my-8  flex flex-row items-center gap-2">
             Home <ArrowRight className="text-white" size={20} /> {location}
           </p>
         </div>

@@ -7,7 +7,7 @@ import { BreadCrumbs } from '@/components/BreadCrumbs'
 export default function PropertiesPage() {
   return (
     <MainLayout>
-        <BreadCrumbs header='Browse Listing' location='Properties'/>
+        <BreadCrumbs header='Browse all listings' location='Properties'/>
          <Properties/>
     </MainLayout>
   )

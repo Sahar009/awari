@@ -7,7 +7,7 @@ import Shortlets from "@/pages/shortlets/Shortlets";
 export default function ShortletsPage() {
   return (
     <MainLayout>
-      <BreadCrumbs header="Book stay" location="Shortlets" />
+      <BreadCrumbs header="Booking amazing stays" location="Shortlets" />
        <Shortlets/>
     </MainLayout>
   );

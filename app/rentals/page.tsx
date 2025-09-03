@@ -7,7 +7,7 @@ import Rental from "@/pages/rentals/Rental";
 export default function RentalPage() {
   return (
     <MainLayout>
-      <BreadCrumbs header="Find Your Home" location="Rentals" />
+      <BreadCrumbs header="Find your perfect home" location="Rentals" />
       <Rental />
     </MainLayout>
   );
