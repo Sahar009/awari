@@ -1,7 +1,5 @@
 "use client";
-
 import { ArrowRight } from "lucide-react";
-
 interface BreadCrumbProps {
   header: string;
   location: string;

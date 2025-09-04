@@ -215,3 +215,31 @@
 .animate-shake {
   animation: shake 0.6s ease-in-out;
 }
+
+
+.getintouch {
+  position: relative;
+  
+}
+
+.getintouch::after {
+  content: "";
+  position: absolute;
+  height: 1px;
+  width: 40%;
+  background: rgb(229, 135, 12);
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+}
+
+.getintouch::before {
+  content: "";
+  position: absolute;
+  height: 1px;
+  width: 40%;
+  background: rgb(229, 135, 12);
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+}
