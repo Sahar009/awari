@@ -308,6 +308,31 @@ export const Navbar = () => {
             </div>
           )}
 
+          {/* Authentication buttons for non-authenticated users - Top of menu */}
+          {!isAuthenticated && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl border border-primary/10 space-y-3">
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">Join AWARI Today</h3>
+              <Button 
+                variant="primary" 
+                label="Sign In" 
+                onClick={() => {
+                  router.push('/auth/login');
+                  setIsOpen(false);
+                }}
+                className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              />
+              <Button 
+                variant="secondary" 
+                label="Create Account" 
+                onClick={() => {
+                  router.push('/auth/register');
+                  setIsOpen(false);
+                }}
+                className="w-full bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              />
+            </div>
+          )}
+
           {(isAuthenticated ? [
             { name: "Dashboard", href: "/home", description: "Your dashboard", icon: Home },
             { name: "Properties", href: "#properties", description: "Browse all listings", icon: Building2 },
@@ -350,8 +375,8 @@ export const Navbar = () => {
             </a>
           ))}
           
-          {/* Conditional bottom section based on authentication status */}
-          {isAuthenticated ? (
+          {/* Bottom section for authenticated users only */}
+          {isAuthenticated && (
             <div className="mt-6 p-4 space-y-3">
               <Button 
                 variant="primary" 
@@ -372,27 +397,6 @@ export const Navbar = () => {
                 <LogOut size={20} />
                 <span className="font-medium">Sign Out</span>
               </button>
-            </div>
-          ) : (
-            <div className="mt-6 p-4 space-y-3">
-              <Button 
-                variant="primary" 
-                label="Sign In" 
-                onClick={() => {
-                  router.push('/auth/login');
-                  setIsOpen(false);
-                }}
-                className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-              />
-              <Button 
-                variant="secondary" 
-                label="Sign Up Now" 
-                onClick={() => {
-                  router.push('/auth/register');
-                  setIsOpen(false);
-                }}
-                className="w-full bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-              />
             </div>
           )}
         </div>
