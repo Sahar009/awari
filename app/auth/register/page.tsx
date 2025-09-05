@@ -82,7 +82,7 @@ export default function RegisterPage() {
       const result = await dispatch(registerUser(formData)).unwrap();
       console.log('Registration successful - Full result:', result);
       
-      if (result && (result as any).user && (result as any).token) {
+      if (result && result.user && result.token) {
         // Store email for verification page
         localStorage.setItem('pendingVerificationEmail', formData.email);
         

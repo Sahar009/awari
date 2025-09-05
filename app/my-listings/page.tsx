@@ -2,13 +2,13 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Building2, Eye, Edit, Trash2 } from 'lucide-react';
+import { Plus, Building2 } from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
 import Container from '@/components/Container';
 
 export default function MyListingsPage() {
   const router = useRouter();
-  const { isAuthenticated, user, token } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, token } = useAppSelector((state) => state.auth);
 
   // Redirect if not authenticated (check both isAuthenticated and token)
   useEffect(() => {

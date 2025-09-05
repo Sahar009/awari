@@ -10,11 +10,7 @@ import {
   FileText, 
   MapPin, 
   DollarSign, 
-  Home,
-  Upload,
-  X,
-  Eye,
-  Plus
+  X
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { createProperty, clearError } from '@/store/slices/propertySlice';
@@ -179,10 +175,10 @@ export default function AddPropertyPage() {
     }
 
     // Ensure price is a number
-    if (!formData.price || formData.price === '') {
-      alert('Please enter a valid price');
-      return;
-    }
+    // if (!formData.price || formData.price === '') {
+    //   alert('Please enter a valid price');
+    //   return;
+    // }
 
     try {
       // Convert form data to match CreatePropertyRequest interface
