@@ -1,6 +1,22 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { apiService } from '../../services/api';
 
+// Property creation interface
+export interface CreatePropertyRequest {
+  title: string;
+  description: string;
+  propertyType: string;
+  listingType: string;
+  price: number;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  images: File[];
+  videos: File[];
+  documents: File[];
+}
+
 // Types
 export interface Property {
   id: string;
@@ -122,6 +138,49 @@ export const searchProperties = createAsyncThunk(
   }
 );
 
+export const createProperty = createAsyncThunk(
+  'property/createProperty',
+  async (propertyData: CreatePropertyRequest, { rejectWithValue }) => {
+    try {
+      // Create FormData for multipart/form-data upload
+      const formData = new FormData();
+      
+      // Add text fields
+      formData.append('title', propertyData.title);
+      formData.append('description', propertyData.description);
+      formData.append('propertyType', propertyData.propertyType);
+      formData.append('listingType', propertyData.listingType);
+      formData.append('price', propertyData.price.toString());
+      formData.append('address', propertyData.address);
+      formData.append('city', propertyData.city);
+      formData.append('state', propertyData.state);
+      formData.append('country', propertyData.country);
+      
+      // Add files
+      propertyData.images.forEach((file) => {
+        formData.append('images', file);
+      });
+      
+      propertyData.videos.forEach((file) => {
+        formData.append('videos', file);
+      });
+      
+      propertyData.documents.forEach((file) => {
+        formData.append('documents', file);
+      });
+
+      const response = await apiService.post<Property>('/properties/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to create property');
+    }
+  }
+);
+
 // Slice
 const propertySlice = createSlice({
   name: 'property',
@@ -190,6 +249,23 @@ const propertySlice = createSlice({
         state.currentPage = 1;
       })
       .addCase(searchProperties.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // Create Property
+    builder
+      .addCase(createProperty.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(createProperty.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.properties.unshift(action.payload);
+        state.filteredProperties.unshift(action.payload);
+        state.error = null;
+      })
+      .addCase(createProperty.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });
