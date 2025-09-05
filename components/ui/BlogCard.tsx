@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export interface BlogProps {
     imgSrc: string;
@@ -10,8 +11,9 @@ export interface BlogProps {
 }
 
 export const BlogCard: React.FC<BlogProps> = ({imgSrc,time, reads, title, content}) => {
+     const router = useRouter()
   return (
-    <div className="transform hover:scale-105 transition-transform duration-300 flex flex-col gap-4 items-start w-full shadow-lg p-4 rounded-2xl border-none hover:border-b-4 border-r-purple-400 hover:border-orange-500/40">
+    <div  onClick={()=> router.push('/blog/blog-details')} className="transform hover:scale-105 transition-transform duration-300 flex flex-col gap-4 items-start w-full shadow-lg p-4 rounded-2xl border-none hover:border-b-4 border-r-purple-400 hover:border-orange-500/40">
       <div className="">
         <Image 
         src={imgSrc} 

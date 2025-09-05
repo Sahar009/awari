@@ -1,7 +1,6 @@
 "use client";
 import { BreadCrumbs } from "@/components/BreadCrumbs";
 import MainLayout from "../mainLayout";
-import FaqPage from "@/pages/faq/FaqPage";
 import Container from "@/components/Container";
 import { FaqItem, FaqItemProps } from "@/components/FaqItems";
 
@@ -34,12 +33,12 @@ export default function FAQ() {
       <BreadCrumbs header="FAQ" location="FAQ" />
       <Container>
         <section className="w-full mx-auto px-4 py-16">
-          <div>
-            <p className=""></p>
-          <h1 className="text-4xl font-bold text-center mb-10">
-            Frequently Asked Questions
-          </h1>
-          </div> 
+          <div className="w-full flex flex-col gap-4 items-center">
+            <p className="text-xl font-light getintouch text-slate-700">Need Help?</p>
+            <h1 className="md:text-4xl text-3xl text-center font-bold text-slate-900">
+              Frequently Asked Questions
+            </h1>
+          </div>
           <div className="flex flex-col gap-6">
             {faqData.map((data, index) => (
               <FaqItem

@@ -57,19 +57,29 @@ export const Footer = () => {
             <h2 className="text-2xl lg:text-3xl font-bold text-primary group-hover:scale-105 transition-transform duration-300">
               Quick <span className="font-normal text-white">Links</span>
             </h2>
-            <ul className="space-y-3">
-              {['About Us', 'Contact', 'FAQ', 'Blog', 'Terms of Service', 'Privacy Policy'].map((link, index) => (
-                <li key={index} className="group/item">
-                  <a 
-                    href="#" 
-                    className="text-slate-300 hover:text-primary transition-all duration-300 flex items-center gap-2 group-hover/item:translate-x-2"
-                  >
-                    <ArrowRight size={14} className="opacity-0 group-hover/item:opacity-100 transition-all duration-300" />
-                    {link}
-                  </a>
-                </li>
-              ))}
-            </ul>
+             <ul className="space-y-3">
+      {[
+        { name: "About Us", path: "/about" },
+        { name: "Contact", path: "/contact" },
+        { name: "FAQ", path: "/faq" },
+        { name: "Blog", path: "/blog" },
+        { name: "Terms of Service", path: "/terms" },
+        { name: "Privacy Policy", path: "/privacy" },
+      ].map((link, index) => (
+        <li key={index} className="group/item">
+          <a
+            href={link.path}
+            className="text-slate-300 hover:text-primary transition-all duration-300 flex items-center gap-2 group-hover/item:translate-x-2"
+          >
+            <ArrowRight
+              size={14}
+              className="opacity-0 group-hover/item:opacity-100 transition-all duration-300"
+            />
+            {link.name}
+          </a>
+        </li>
+      ))}
+    </ul>
           </div>
 
           <div className="flex flex-col gap-6 group">
