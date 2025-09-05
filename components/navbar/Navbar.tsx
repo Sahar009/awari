@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MenuIcon, X, Search, Bell, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle, User, LogOut, Settings, UserCircle, ChevronDown } from "lucide-react";
+import { MenuIcon, X, Search, Bell, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle, User, LogOut, Settings, UserCircle, ChevronDown, PlusCircle } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Logo } from "./Logo";
 import { useRouter } from 'next/navigation';
@@ -15,7 +15,10 @@ export const Navbar = () => {
   
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { user, isAuthenticated, isLoading } = useAppSelector((state) => state.auth);
+  const { user, isAuthenticated, isLoading, token } = useAppSelector((state) => state.auth);
+  
+  // Check if user has access (either fully authenticated or has token)
+  const hasAccess = isAuthenticated || !!token;
 
   // Debug logging
   useEffect(() => {
@@ -69,9 +72,10 @@ export const Navbar = () => {
             </div>
 
             <div className="hidden lg:flex items-center space-x-8">
-              {(isAuthenticated ? [
+              {(hasAccess ? [
                 { name: "Dashboard", href: "/home", description: "Your dashboard" },
                 { name: "Properties", href: "#properties", description: "Browse listings" },
+                { name: "Sell/Rent", href: "/add-property", description: "List your property" },
                 { name: "My Listings", href: "/my-listings", description: "Manage properties" },
                 { name: "Favorites", href: "/favorites", description: "Saved properties" },
                 { name: "Messages", href: "/messages", description: "Your conversations" },
@@ -112,7 +116,7 @@ export const Navbar = () => {
               </div>
 
               {/* Conditional rendering based on authentication status */}
-              {isAuthenticated ? (
+              {hasAccess ? (
                 <>
                   {/* Notifications */}
                   <div className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110 relative">
@@ -145,8 +149,9 @@ export const Navbar = () => {
                       </div>
                       <div className="hidden lg:block">
                         <p className="text-sm font-medium text-slate-700">
-                          {user?.firstName || 'User'}
+                          {user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'User'}
                         </p>
+                        <p className="text-xs text-slate-500">{user?.email}</p>
                       </div>
                       <ChevronDown 
                         size={16} 
@@ -284,7 +289,7 @@ export const Navbar = () => {
 
         <div className="flex flex-col gap-2 px-6 py-6">
           {/* User Profile Section - Only show when authenticated */}
-          {isAuthenticated && (
+          {hasAccess && (
             <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl border border-primary/10">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
@@ -300,7 +305,7 @@ export const Navbar = () => {
                 </div>
                 <div>
                   <p className="font-semibold text-slate-800">
-                    {user?.firstName} {user?.lastName}
+                    {user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'User'}
                   </p>
                   <p className="text-sm text-slate-500">{user?.email}</p>
                 </div>
@@ -308,9 +313,35 @@ export const Navbar = () => {
             </div>
           )}
 
-          {(isAuthenticated ? [
+          {/* Authentication buttons for non-authenticated users - Top of menu */}
+          {!hasAccess && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl border border-primary/10 space-y-3">
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">Join AWARI Today</h3>
+              <Button 
+                variant="primary" 
+                label="Sign In" 
+                onClick={() => {
+                  router.push('/auth/login');
+                  setIsOpen(false);
+                }}
+                className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              />
+              <Button 
+                variant="secondary" 
+                label="Create Account" 
+                onClick={() => {
+                  router.push('/auth/register');
+                  setIsOpen(false);
+                }}
+                className="w-full bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              />
+            </div>
+          )}
+
+          {(hasAccess ? [
             { name: "Dashboard", href: "/home", description: "Your dashboard", icon: Home },
             { name: "Properties", href: "#properties", description: "Browse all listings", icon: Building2 },
+            { name: "Sell/Rent", href: "/add-property", description: "List your property", icon: PlusCircle },
             { name: "My Listings", href: "/my-listings", description: "Manage your properties", icon: HomeIcon },
             { name: "Favorites", href: "/favorites", description: "Saved properties", icon: DollarSign },
             { name: "Messages", href: "/messages", description: "Your conversations", icon: MessageCircle },
@@ -350,8 +381,8 @@ export const Navbar = () => {
             </a>
           ))}
           
-          {/* Conditional bottom section based on authentication status */}
-          {isAuthenticated ? (
+          {/* Bottom section for authenticated users only */}
+          {hasAccess && (
             <div className="mt-6 p-4 space-y-3">
               <Button 
                 variant="primary" 
@@ -372,27 +403,6 @@ export const Navbar = () => {
                 <LogOut size={20} />
                 <span className="font-medium">Sign Out</span>
               </button>
-            </div>
-          ) : (
-            <div className="mt-6 p-4 space-y-3">
-              <Button 
-                variant="primary" 
-                label="Sign In" 
-                onClick={() => {
-                  router.push('/auth/login');
-                  setIsOpen(false);
-                }}
-                className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-              />
-              <Button 
-                variant="secondary" 
-                label="Sign Up Now" 
-                onClick={() => {
-                  router.push('/auth/register');
-                  setIsOpen(false);
-                }}
-                className="w-full bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-              />
             </div>
           )}
         </div>

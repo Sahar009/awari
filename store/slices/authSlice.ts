@@ -13,7 +13,12 @@ export interface User {
   role: 'renter' | 'buyer' | 'landlord' | 'agent' | 'hotel_provider' | 'admin';
   status: 'pending' | 'active' | 'suspended' | 'banned' | 'deleted';
   emailVerified: boolean;
+  phoneVerified?: boolean;
   kycVerified: boolean;
+  profileCompleted?: boolean;
+  language?: string;
+  loginCount?: number;
+  emailVerificationExpires?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -67,12 +72,9 @@ export interface GoogleSignInRequest {
 }
 
 export interface AuthResponse {
-  success: boolean;
+  user: User;
+  token: string;
   message: string;
-  data: {
-    user: User;
-    token: string;
-  };
 }
 
 export interface VerificationResponse {
@@ -233,14 +235,25 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload.data.user;
-        state.token = action.payload.data.token;
-        state.isAuthenticated = false; // Don't set as authenticated until email is verified
-        state.error = null;
-        console.log('Registration successful - storing token:', action.payload.data.token);
-        localStorage.setItem('token', action.payload.data.token);
-        console.log('Token stored in localStorage');
-        console.log('Registration message:', action.payload.message);
+        console.log('DEBUG: Full registration payload:', action.payload);
+        console.log('DEBUG: Payload type:', typeof action.payload);
+        console.log('DEBUG: Payload keys:', Object.keys(action.payload || {}));
+        console.log('DEBUG: Payload.user:', action.payload?.user);
+        
+        // Handle the actual API response structure: { user, token, message }
+        if (action.payload && action.payload.user && action.payload.token) {
+          state.user = action.payload.user;
+          state.token = action.payload.token;
+          state.isAuthenticated = false; // Don't set as authenticated until email is verified
+          state.error = null;
+          console.log('Registration successful - storing token:', action.payload.token);
+          localStorage.setItem('token', action.payload.token);
+          console.log('Token stored in localStorage');
+          console.log('Registration message:', action.payload.message);
+        } else {
+          console.error('Invalid payload structure:', action.payload);
+          state.error = 'Invalid response from server';
+        }
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -255,13 +268,21 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload.data.user;
-        state.token = action.payload.data.token;
-        state.isAuthenticated = true;
-        state.error = null;
-        console.log('Login successful - storing token:', action.payload.data.token);
-        localStorage.setItem('token', action.payload.data.token);
-        console.log('Token stored in localStorage');
+        console.log('DEBUG: Login payload:', action.payload);
+        
+        // Handle the actual API response structure: { user, token, message }
+        if (action.payload && action.payload.user && action.payload.token) {
+          state.user = action.payload.user;
+          state.token = action.payload.token;
+          state.isAuthenticated = true;
+          state.error = null;
+          console.log('Login successful - storing token:', action.payload.token);
+          localStorage.setItem('token', action.payload.token);
+          console.log('Token stored in localStorage');
+        } else {
+          console.error('Invalid login payload structure:', action.payload);
+          state.error = 'Invalid response from server';
+        }
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -277,9 +298,7 @@ const authSlice = createSlice({
       })
       .addCase(forgotPassword.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload.data.user;
-        state.token = action.payload.data.token;
-        state.isAuthenticated = true;
+        // Forgot password usually just returns a message, not user data
         state.error = null;
         console.log('forgot password email sent succesfully');
       })
@@ -349,11 +368,16 @@ const authSlice = createSlice({
       })
       .addCase(googleSignIn.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload.data.user;
-        state.token = action.payload.data.token;
-        state.isAuthenticated = true;
-        state.error = null;
-        localStorage.setItem('token', action.payload.data.token);
+        if (action.payload && action.payload.user && action.payload.token) {
+          state.user = action.payload.user;
+          state.token = action.payload.token;
+          state.isAuthenticated = true;
+          state.error = null;
+          localStorage.setItem('token', action.payload.token);
+        } else {
+          console.error('Invalid Google sign-in payload structure:', action.payload);
+          state.error = 'Invalid response from server';
+        }
       })
       .addCase(googleSignIn.rejected, (state, action) => {
         state.isLoading = false;
