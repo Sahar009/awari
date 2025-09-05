@@ -321,7 +321,7 @@ const authSlice = createSlice({
           state.user.status = 'active';
         }
         state.isAuthenticated = true; // Set as authenticated after email verification
-        console.log('Email verification successful:', action.payload.message);
+        console.log('Email verification successful:', action.payload?.message || 'Email verified');
       })
       .addCase(verifyEmail.rejected, (state, action) => {
         state.isLoading = false;
@@ -337,7 +337,7 @@ const authSlice = createSlice({
       .addCase(resendVerificationEmail.fulfilled, (state, action) => {
         state.isLoading = false;
         state.error = null;
-        console.log('Verification email resent successfully:', action.payload.message);
+        console.log('Verification email resent successfully:', action.payload?.message || 'Email resent');
       })
       .addCase(resendVerificationEmail.rejected, (state, action) => {
         state.isLoading = false;

@@ -15,6 +15,8 @@ import {
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { createProperty, clearError } from '@/store/slices/propertySlice';
 import Container from '@/components/Container';
+import MainLayout from '../mainLayout';
+import { AuthLoader, Loader } from '@/components/ui/Loader';
 
 interface PropertyFormData {
   title: string;
@@ -60,7 +62,10 @@ export default function AddPropertyPage() {
   const { isLoading, error, isAuthenticated, token } = useAppSelector((state) => state.auth);
   
   // Check if user has access (either fully authenticated or has token)
-  const hasAccess = isAuthenticated || !!token;
+  // const hasAccess = isAuthenticated || !!token;
+  
+  // Check if auth state is still loading (before hydration completes)
+  const [authChecked, setAuthChecked] = useState(false);
   
   const [formData, setFormData] = useState<PropertyFormData>({
     title: '',
@@ -79,19 +84,34 @@ export default function AddPropertyPage() {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
-  const [previewVideos, setPreviewVideos] = useState<string[]>([]);
+  // const [previewVideos, setPreviewVideos] = useState<string[]>([]);
 
-
-  // Redirect if not authenticated (check both isAuthenticated and token)
+  // Wait for auth hydration before checking authentication
   useEffect(() => {
-    console.log('Add Property Auth Check:', { isAuthenticated, hasAccess, token: !!token });
+    const checkAuth = async () => {
+      // Give time for auth hydration to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const localToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const currentHasAccess = isAuthenticated || !!token || !!localToken;
+      
+      console.log('=== ADD PROPERTY AUTH DEBUG ===');
+      console.log('isAuthenticated:', isAuthenticated);
+      console.log('token:', token);
+      console.log('localToken:', !!localToken);
+      console.log('currentHasAccess:', currentHasAccess);
+      console.log('================================');
+      
+      if (!currentHasAccess) {
+        console.log('Redirecting to login - no access');
+        router.push('/auth/login');
+      }
+      
+      setAuthChecked(true);
+    };
     
-    // Allow access if user has a token (even if email not verified) or is fully authenticated
-    if (!hasAccess) {
-      console.log('Redirecting to login - no access');
-      router.push('/auth/login');
-    }
-  }, [hasAccess, router]);
+    checkAuth();
+  }, [isAuthenticated, token, router]);
 
   // Clear errors when component unmounts
   useEffect(() => {
@@ -147,9 +167,10 @@ export default function AddPropertyPage() {
           const result = e.target?.result as string;
           if (type === 'images') {
             setPreviewImages(prev => [...prev, result]);
-          } else {
-            setPreviewVideos(prev => [...prev, result]);
-          }
+                  } else {
+          // Video preview functionality can be added later
+          console.log('Video uploaded:', file.name);
+        }
         };
         reader.readAsDataURL(file);
       });
@@ -159,13 +180,14 @@ export default function AddPropertyPage() {
   const removeFile = (index: number, type: 'images' | 'videos' | 'documents') => {
     setFormData(prev => ({
       ...prev,
-      [type]: prev[type].filter((_, i) => i !== index)
+      [type]: prev[type].filter((_: File, i: number) => i !== index)
     }));
 
     if (type === 'images') {
-      setPreviewImages(prev => prev.filter((_, i) => i !== index));
+      setPreviewImages(prev => prev.filter((_: string, i: number) => i !== index));
     } else if (type === 'videos') {
-      setPreviewVideos(prev => prev.filter((_, i) => i !== index));
+      // Video preview functionality can be added later
+      console.log('Video removed at index:', index);
     }
   };
 
@@ -216,36 +238,42 @@ export default function AddPropertyPage() {
     { number: 3, title: 'Media & Documents', description: 'Images, videos & files' }
   ];
 
+  // Show loading while checking auth
+  if (!authChecked) {
+    return <AuthLoader />;
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <Container>
-          <div className="flex items-center justify-between py-6">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => router.back()}
-                className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors duration-200"
-              >
-                <ArrowLeft className="w-5 h-5 text-slate-600" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-800">Add New Property</h1>
-                <p className="text-slate-600">List your property and reach thousands of potential buyers/renters</p>
+    <MainLayout>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b">
+          <Container>
+            <div className="flex items-center justify-between py-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => router.back()}
+                  className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors duration-200"
+                >
+                  <ArrowLeft className="w-5 h-5 text-slate-600" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold text-slate-800">Add New Property</h1>
+                  <p className="text-slate-600">List your property and reach thousands of potential buyers/renters</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => router.push('/my-listings')}
+                  className="px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors duration-200"
+                >
+                  Save as Draft
+                </button>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <button
-                type="button"
-                onClick={() => router.push('/my-listings')}
-                className="px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors duration-200"
-              >
-                Save as Draft
-              </button>
-            </div>
-          </div>
-        </Container>
-      </div>
+          </Container>
+        </div>
 
       <Container>
         <div className="py-8">
@@ -667,7 +695,7 @@ export default function AddPropertyPage() {
                       >
                         {isLoading ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                            <Loader size="sm" variant="spinner" className="text-white" />
                             <span>Creating...</span>
                           </>
                         ) : (
@@ -686,5 +714,6 @@ export default function AddPropertyPage() {
         </div>
       </Container>
     </div>
+    </MainLayout>
   );
 }

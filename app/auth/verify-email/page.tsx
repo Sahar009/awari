@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, ArrowRight, Loader2, RotateCcw } from 'lucide-react';
 import { Logo } from '@/components/navbar/Logo';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { verifyEmail, resendVerificationEmail, clearError } from '@/store/slices/authSlice';
+import { AuthLoader, Loader } from '@/components/ui/Loader';
 
 function VerifyEmailForm() {
   const router = useRouter();
@@ -19,6 +21,8 @@ function VerifyEmailForm() {
   const [isResending, setIsResending] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
   const [countdown, setCountdown] = useState(0);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [verificationSuccess, setVerificationSuccess] = useState(false);
   
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -38,10 +42,19 @@ function VerifyEmailForm() {
     }
   }, [searchParams, router]);
 
-  // Redirect if already authenticated and verified
+  // Only redirect if already authenticated AND email is verified
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/home');
+      // Check if user came from registration (has pending verification)
+      const pendingEmail = localStorage.getItem('pendingVerificationEmail');
+      
+      // If no pending verification email, user is likely already verified
+      if (!pendingEmail) {
+        console.log('User authenticated with no pending verification - redirecting to home');
+        router.push('/home');
+      } else {
+        console.log('User authenticated but has pending email verification - staying on page');
+      }
     }
   }, [isAuthenticated, router]);
 
@@ -51,6 +64,16 @@ function VerifyEmailForm() {
       dispatch(clearError());
     };
   }, [dispatch]);
+
+  // Clear resend message after countdown
+  useEffect(() => {
+    if (resendMessage && countdown === 0) {
+      const timer = setTimeout(() => {
+        setResendMessage('');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendMessage, countdown]);
 
   // Countdown timer for resend button
   useEffect(() => {
@@ -62,6 +85,11 @@ function VerifyEmailForm() {
 
   const handleInputChange = (index: number, value: string) => {
     if (value.length > 1) return; // Only allow single digit
+    
+    // Clear any previous errors when user starts typing
+    if (error) {
+      dispatch(clearError());
+    }
     
     const newCode = [...verificationCode];
     newCode[index] = value;
@@ -98,6 +126,7 @@ function VerifyEmailForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     dispatch(clearError());
+    setSuccessMessage('');
     
     const code = verificationCode.join('');
     if (code.length !== 4) {
@@ -109,21 +138,31 @@ function VerifyEmailForm() {
       const result = await dispatch(verifyEmail({ email, verificationCode: code })).unwrap();
       console.log('Email verification successful:', result);
       
+      // Show success message from API response
+      const message = result?.message || 'Email verified successfully. Your account is now active.';
+      setSuccessMessage(message);
+      setVerificationSuccess(true);
+      
       // Clear pending verification email
       localStorage.removeItem('pendingVerificationEmail');
       
-      // Redirect to home page
-      router.push('/home');
-    } catch (error) {
+      setTimeout(() => {
+        router.push('/home');
+      }, 3000);
+      
+    } catch (error: unknown) {
       console.error('Email verification failed:', error);
-      // Clear the verification code on error
+      
       setVerificationCode(['', '', '', '']);
       inputRefs.current[0]?.focus();
+      
+      // The error will be displayed through the Redux error state
+      // which is already handled in the UI
     }
   };
 
   const handleResendCode = async () => {
-    if (countdown > 0 || !email) return;
+    if (countdown > 0 || !email || isResending) return;
     
     setIsResending(true);
     setResendMessage('');
@@ -132,10 +171,12 @@ function VerifyEmailForm() {
     try {
       const result = await dispatch(resendVerificationEmail({ email })).unwrap();
       console.log('Resend verification successful:', result);
-      setResendMessage('Verification code sent successfully!');
+      const message = result?.message || 'Verification code sent successfully!';
+      setResendMessage(message);
       setCountdown(60); 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Resend verification failed:', error);
+      // Error will be shown through Redux error state
     } finally {
       setIsResending(false);
     }
@@ -143,16 +184,45 @@ function VerifyEmailForm() {
 
   const isCodeComplete = verificationCode.every(digit => digit !== '');
 
+  // Show success screen when verification is successful
+  if (verificationSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-purple-50 to-purple-100">
+        <div className="max-w-md w-full mx-4">
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-8 border border-purple-200/30 shadow-2xl text-center">
+            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-800 mb-4">Email Verified!</h1>
+            <p className="text-slate-600 mb-6">
+              {successMessage}
+            </p>
+            <p className="text-sm text-slate-500 mb-4">
+              Redirecting to home page...
+            </p>
+            <div className="flex items-center justify-center">
+              <Loader size="md" variant="spinner" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Image with Verification Info */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0">
-          <img 
+          <Image 
             src="/assets/images/auth-bg.jpg" 
             alt="Luxury property background" 
-            className="w-full h-full object-cover opacity-80"
+            fill
+            className="object-cover opacity-80"
+            priority
           />
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 via-purple-900/40 to-slate-800/60"></div>
         </div>
@@ -245,15 +315,25 @@ function VerifyEmailForm() {
 
               {/* Error Display */}
               {error && (
-                <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-3 text-red-600 text-sm animate-shake">
-                  {error}
+                <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 text-red-600 text-sm animate-shake">
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{error}</span>
+                  </div>
                 </div>
               )}
 
-              {/* Success Message */}
+              {/* Resend Success Message */}
               {resendMessage && (
-                <div className="bg-green-500/20 border border-green-500/30 rounded-xl p-3 text-green-600 text-sm">
-                  {resendMessage}
+                <div className="bg-green-500/20 border border-green-500/30 rounded-xl p-4 text-green-600 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>{resendMessage}</span>
+                  </div>
                 </div>
               )}
 
@@ -265,6 +345,7 @@ function VerifyEmailForm() {
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center space-x-2">
+                    {/* <Loader size="sm" variant="spinner" className="text-white" /> */}
                     <Loader2 className="w-5 h-5 animate-spin" />
                     <span>Verifying...</span>
                   </div>
@@ -325,14 +406,7 @@ function VerifyEmailForm() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<AuthLoader />}>
       <VerifyEmailForm />
     </Suspense>
   );

@@ -7,6 +7,7 @@ import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react
 import { Logo } from '@/components/navbar/Logo';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { registerUser, googleSignIn, clearError } from '@/store/slices/authSlice';
+import { Loader } from '@/components/ui/Loader';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -134,7 +135,7 @@ export default function RegisterPage() {
               Please check your email for a verification code. We&apos;re redirecting you to the verification page...
             </p>
             <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <Loader size="md" variant="spinner" />
             </div>
           </div>
         </div>
