@@ -79,6 +79,8 @@ export default function AddPropertyPage() {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [previewVideos, setPreviewVideos] = useState<string[]>([]);
+
 
   // Redirect if not authenticated (check both isAuthenticated and token)
   useEffect(() => {
