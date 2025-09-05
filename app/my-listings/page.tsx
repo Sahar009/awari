@@ -8,15 +8,21 @@ import Container from '@/components/Container';
 
 export default function MyListingsPage() {
   const router = useRouter();
-  const { isAuthenticated, token } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, user, token } = useAppSelector((state) => state.auth);
+
+  // Check if user has access (either fully authenticated or has token)
+  const hasAccess = isAuthenticated || !!token;
 
   // Redirect if not authenticated (check both isAuthenticated and token)
   useEffect(() => {
+    console.log('My Listings Auth Check:', { isAuthenticated, hasAccess, token: !!token, user: !!user });
+    
     // Allow access if user has a token (even if email not verified) or is fully authenticated
-    if (!isAuthenticated && !token) {
+    if (!hasAccess) {
+      console.log('Redirecting to login - no access');
       router.push('/auth/login');
     }
-  }, [isAuthenticated, token, router]);
+  }, [hasAccess, router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50 pt-20">
