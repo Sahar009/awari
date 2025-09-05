@@ -353,7 +353,7 @@ export const Navbar = () => {
             { name: "Rentals", href: "/rentals", description: "Find your perfect home", icon: HomeIcon },
             { name: "Sales", href: "/sales", description: "Buy your dream property", icon: DollarSign },
             { name: "Shortlets & Hotels", href: "/shortlets", description: "Book amazing stays", icon: Hotel },
-            { name: "About", href: "#about", description: "Learn about AWARI", icon: Info },
+            { name: "About", href: "/about", description: "Learn about AWARI", icon: Info },
             { name: "Contact", href: "/contact", description: "Get in touch", icon: Phone },
             { name: "FAQ", href: "/faq", description: "Find answers", icon: HelpCircle },
           ]).map((item, index) => (
