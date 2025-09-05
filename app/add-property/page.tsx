@@ -59,6 +59,9 @@ export default function AddPropertyPage() {
   const dispatch = useAppDispatch();
   const { isLoading, error, isAuthenticated, token } = useAppSelector((state) => state.auth);
   
+  // Check if user has access (either fully authenticated or has token)
+  const hasAccess = isAuthenticated || !!token;
+  
   const [formData, setFormData] = useState<PropertyFormData>({
     title: '',
     description: '',
@@ -76,15 +79,17 @@ export default function AddPropertyPage() {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
-  const [previewVideos, setPreviewVideos] = useState<string[]>([]);
 
   // Redirect if not authenticated (check both isAuthenticated and token)
   useEffect(() => {
+    console.log('Add Property Auth Check:', { isAuthenticated, hasAccess, token: !!token });
+    
     // Allow access if user has a token (even if email not verified) or is fully authenticated
-    if (!isAuthenticated && !token) {
+    if (!hasAccess) {
+      console.log('Redirecting to login - no access');
       router.push('/auth/login');
     }
-  }, [isAuthenticated, token, router]);
+  }, [hasAccess, router]);
 
   // Clear errors when component unmounts
   useEffect(() => {
