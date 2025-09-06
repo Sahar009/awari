@@ -11,7 +11,6 @@ export interface CreatePropertyRequest {
   address: string;
   city: string;
   state: string;
-  country: string;
   images: File[];
   videos: File[];
   documents: File[];
@@ -154,7 +153,7 @@ export const createProperty = createAsyncThunk(
       formData.append('address', propertyData.address);
       formData.append('city', propertyData.city);
       formData.append('state', propertyData.state);
-      formData.append('country', propertyData.country);
+      formData.append('country', 'Nigeria'); // Default to Nigeria
       
       // Add files
       propertyData.images.forEach((file) => {

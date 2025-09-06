@@ -9,7 +9,6 @@ import {
   Video, 
   FileText, 
   MapPin, 
-  DollarSign, 
   X
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -17,6 +16,7 @@ import { createProperty, clearError } from '@/store/slices/propertySlice';
 import Container from '@/components/Container';
 import MainLayout from '../mainLayout';
 import { AuthLoader, Loader } from '@/components/ui/Loader';
+import { locationApiService, type NigerianState, type AddressSuggestion } from '@/services/locationApi';
 
 interface PropertyFormData {
   title: string;
@@ -27,7 +27,6 @@ interface PropertyFormData {
   address: string;
   city: string;
   state: string;
-  country: string;
   images: File[];
   videos: File[];
   documents: File[];
@@ -56,6 +55,8 @@ const listingTypes = [
   { value: 'shortlet', label: 'Short Let', color: 'bg-purple-500' }
 ];
 
+// Dynamic states and addresses will be loaded from API
+
 export default function AddPropertyPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -76,15 +77,39 @@ export default function AddPropertyPage() {
     address: '',
     city: '',
     state: '',
-    country: '',
     images: [],
     videos: [],
     documents: []
   });
 
+  const [nigerianStates, setNigerianStates] = useState<NigerianState[]>([]);
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
+  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
+  const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
+  const [isLoadingStates, setIsLoadingStates] = useState(true);
+  const [isLoadingCities, setIsLoadingCities] = useState(false);
+  const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
+
   const [currentStep, setCurrentStep] = useState(1);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   // const [previewVideos, setPreviewVideos] = useState<string[]>([]);
+
+  // Load Nigerian states on component mount
+  useEffect(() => {
+    const loadStates = async () => {
+      try {
+        setIsLoadingStates(true);
+        const states = await locationApiService.getAllStates();
+        setNigerianStates(states);
+      } catch (error) {
+        console.error('Failed to load states:', error);
+      } finally {
+        setIsLoadingStates(false);
+      }
+    };
+
+    loadStates();
+  }, []);
 
   // Wait for auth hydration before checking authentication
   useEffect(() => {
@@ -120,12 +145,74 @@ export default function AddPropertyPage() {
     };
   }, [dispatch]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: name === 'price' ? (value === '' ? '' : Number(value)) : value
     }));
+
+    // Update available cities when state changes
+    if (name === 'state') {
+      const selectedState = nigerianStates.find(state => state.name === value);
+      if (selectedState) {
+        try {
+          setIsLoadingCities(true);
+          const cities = await locationApiService.getCitiesByState(selectedState.name);
+          setAvailableCities(cities);
+        } catch (error) {
+          console.error('Failed to load cities:', error);
+          setAvailableCities([]);
+        } finally {
+          setIsLoadingCities(false);
+        }
+      } else {
+        setAvailableCities([]);
+      }
+      
+      // Reset city and address when state changes
+      setFormData(prev => ({ ...prev, city: '', address: '' }));
+      setAddressSuggestions([]);
+      setShowAddressSuggestions(false);
+    }
+
+    // Clear address suggestions when city changes
+    if (name === 'city') {
+      // Reset address when city changes
+      setFormData(prev => ({ ...prev, address: '' }));
+      setAddressSuggestions([]);
+      setShowAddressSuggestions(false);
+    }
+
+    // Handle address input for suggestions
+    if (name === 'address') {
+      if (value.length >= 2) {
+        try {
+          setIsLoadingAddresses(true);
+          const suggestions = await locationApiService.getAddressSuggestions(
+            value, 
+            formData.city, 
+            formData.state
+          );
+          setAddressSuggestions(suggestions);
+          setShowAddressSuggestions(suggestions.length > 0);
+        } catch (error) {
+          console.error('Failed to load address suggestions:', error);
+          setAddressSuggestions([]);
+          setShowAddressSuggestions(false);
+        } finally {
+          setIsLoadingAddresses(false);
+        }
+      } else {
+        setAddressSuggestions([]);
+        setShowAddressSuggestions(false);
+      }
+    }
+  };
+
+  const handleAddressSelect = (suggestion: AddressSuggestion) => {
+    setFormData(prev => ({ ...prev, address: suggestion.fullAddress }));
+    setShowAddressSuggestions(false);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'images' | 'videos' | 'documents') => {
@@ -195,7 +282,7 @@ export default function AddPropertyPage() {
     e.preventDefault();
     
     // Validate required fields
-    const requiredFields = ['title', 'description', 'propertyType', 'listingType', 'price', 'address', 'city', 'state', 'country'];
+    const requiredFields = ['title', 'description', 'propertyType', 'listingType', 'price', 'address', 'city', 'state'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof PropertyFormData]);
     
     if (missingFields.length > 0) {
@@ -410,75 +497,130 @@ export default function AddPropertyPage() {
                   </div>
 
                   <div className="space-y-6">
-                    {/* Address */}
+                    {/* State and City */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label htmlFor="state" className="block text-sm font-medium text-slate-700 mb-2">
+                          State *
+                        </label>
+                        <select
+                          id="state"
+                          name="state"
+                          value={formData.state}
+                          onChange={handleInputChange}
+                          required
+                          disabled={isLoadingStates}
+                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                        >
+                          <option value="">
+                            {isLoadingStates ? 'Loading states...' : 'Select state'}
+                          </option>
+                          {nigerianStates.map(state => (
+                            <option key={state.id} value={state.name}>{state.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label htmlFor="city" className="block text-sm font-medium text-slate-700 mb-2">
+                          City/Area *
+                        </label>
+                        <select
+                          id="city"
+                          name="city"
+                          value={formData.city}
+                          onChange={handleInputChange}
+                          required
+                          disabled={!formData.state || isLoadingCities || availableCities.length === 0}
+                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                        >
+                          <option value="">
+                            {!formData.state 
+                              ? 'Select state first' 
+                              : isLoadingCities 
+                                ? 'Loading cities...' 
+                                : availableCities.length === 0 
+                                  ? 'No cities available'
+                                  : 'Select city/area'
+                            }
+                          </option>
+                          {availableCities.map(city => (
+                            <option key={city} value={city}>{city}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Street Address */}
                     <div>
                       <label htmlFor="address" className="block text-sm font-medium text-slate-700 mb-2">
                         Street Address *
                       </label>
                       <div className="relative">
-                        <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                        <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5 z-10" />
                         <input
                           type="text"
                           id="address"
                           name="address"
                           value={formData.address}
                           onChange={handleInputChange}
+                          onFocus={() => {
+                            // Focus handler - suggestions will appear when user starts typing
+                          }}
+                          onBlur={() => {
+                            // Delay hiding suggestions to allow for clicks
+                            setTimeout(() => setShowAddressSuggestions(false), 200);
+                          }}
                           required
                           className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
-                          placeholder="e.g., 123 Admiralty Way"
+                          placeholder={
+                            !formData.city 
+                              ? "Select city first to see address suggestions" 
+                              : "Start typing for address suggestions..."
+                          }
+                          disabled={!formData.city}
                         />
+                        
+                        {/* Address Suggestions Dropdown */}
+                        {((showAddressSuggestions && addressSuggestions.length > 0) || isLoadingAddresses) && (
+                          <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white border border-slate-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                            {isLoadingAddresses ? (
+                              <div className="px-4 py-3 text-center text-slate-500">
+                                <div className="flex items-center justify-center space-x-2">
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                                  <span>Loading addresses...</span>
+                                </div>
+                              </div>
+                            ) : (
+                              addressSuggestions.map((suggestion, index) => (
+                                <button
+                                  key={suggestion.id || index}
+                                  type="button"
+                                  onClick={() => handleAddressSelect(suggestion)}
+                                  className="w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors duration-200 border-b border-slate-100 last:border-b-0"
+                                >
+                                  <div className="flex items-center space-x-3">
+                                    <MapPin className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                                    <div className="flex-1">
+                                      <span className="text-slate-700 block">{suggestion.fullAddress}</span>
+                                      {suggestion.street !== suggestion.fullAddress && (
+                                        <span className="text-xs text-slate-500">{suggestion.street}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        )}
+                        
                       </div>
-                    </div>
-
-                    {/* City, State, Country */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div>
-                        <label htmlFor="city" className="block text-sm font-medium text-slate-700 mb-2">
-                          City *
-                        </label>
-                        <input
-                          type="text"
-                          id="city"
-                          name="city"
-                          value={formData.city}
-                          onChange={handleInputChange}
-                          required
-                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
-                          placeholder="e.g., Lagos"
-                        />
-                      </div>
-
-                      <div>
-                        <label htmlFor="state" className="block text-sm font-medium text-slate-700 mb-2">
-                          State *
-                        </label>
-                        <input
-                          type="text"
-                          id="state"
-                          name="state"
-                          value={formData.state}
-                          onChange={handleInputChange}
-                          required
-                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
-                          placeholder="e.g., Lagos State"
-                        />
-                      </div>
-
-                      <div>
-                        <label htmlFor="country" className="block text-sm font-medium text-slate-700 mb-2">
-                          Country *
-                        </label>
-                        <input
-                          type="text"
-                          id="country"
-                          name="country"
-                          value={formData.country}
-                          onChange={handleInputChange}
-                          required
-                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
-                          placeholder="e.g., Nigeria"
-                        />
-                      </div>
+                      
+                      {formData.city && (
+                        <p className="mt-1 text-xs text-slate-500">
+                          💡 Start typing to get real-time address suggestions for {formData.city}
+                        </p>
+                      )}
                     </div>
 
                     {/* Price */}
@@ -488,7 +630,7 @@ export default function AddPropertyPage() {
                         {formData.listingType === 'shortlet' && '(per night)'}
                       </label>
                       <div className="relative">
-                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 font-semibold text-lg">₦</span>
                         <input
                           type="number"
                           id="price"
