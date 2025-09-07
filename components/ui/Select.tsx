@@ -1,96 +1,57 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
-import { ChevronDown, SearchIcon } from "lucide-react";
+import React, { forwardRef } from "react";
+import clsx from "clsx";
+import { ChevronDown } from "lucide-react";
 
-interface Option {
-  label: string;
-  value: string;
+interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  label?: string;
+  error?: string;
+  helperText?: string;
+  className?: string;
+  children: React.ReactNode;
 }
 
-interface SearchableSelectProps {
-  options: Option[];
-  placeholder?: string;
-  onChange: (value: string) => void;
-}
-
-const SearchableSelect: React.FC<SearchableSelectProps> = ({
-  options,
-  placeholder = "Select an option",
-  onChange,
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<Option | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
-
-  // Close dropdown if clicked outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const filteredOptions = options.filter((opt) =>
-    opt.label.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const handleSelect = (option: Option) => {
-    setSelected(option);
-    onChange(option.value);
-    setIsOpen(false);
-    setSearch(""); // reset search when closed
-  };
-
-  return (
-    <div className="relative w-full" ref={ref}>
-      {/* Trigger */}
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full border text-gray-500 border-gray-300 rounded-lg p-2 flex justify-between items-center bg-white "
-      >
-        {selected ? selected.label : placeholder}
-        <span className="ml-2"><ChevronDown size={20} /></span>
-      </button>
-
-      {/* Dropdown */}
-      {isOpen && (
-        <div className="absolute z-[100] mt-2 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
-        <div className="flex flex-row items-center gap-2 w-full h-full  p-2 border-b border-secondary-color outline-none">
-        <SearchIcon size={20} className="text-gray-500"/>
-        <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search..."
-            className="w-full placeholder:text-gray-500 outline-none border-none text-sm"
-          />
-        </div>
-          
-
-          <ul className="max-h-40 overflow-y-auto z-50">
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map((option) => (
-                <li
-                  key={option.value}
-                  onClick={() => handleSelect(option)}
-                  className="p-2 hover:bg-primary hover:text-white text-gray-500 font-light text-sm transition duration-300 ease-in-out cursor-pointer "
-                >
-                  {option.label}
-                </li>
-              ))
-            ) : (
-              <li className="p-2 text-gray-400 text-sm font-extralight">No results found</li>
+export const Select = forwardRef<HTMLSelectElement, SelectProps>(
+  ({ label, error, helperText, className, children, ...rest }, ref) => {
+    return (
+      <div className="flex flex-col gap-2">
+        {label && (
+          <label className="text-sm font-medium text-gray-700">
+            {label}
+            {rest.required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+        )}
+        <div className="relative">
+          <select
+            ref={ref}
+            className={clsx(
+              "w-full px-4 py-3 border rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none bg-white cursor-pointer",
+              error
+                ? "border-red-500 bg-red-50"
+                : "border-gray-300 hover:border-gray-400",
+              rest.disabled && "bg-gray-100 cursor-not-allowed",
+              className
             )}
-          </ul>
+            {...rest}
+          >
+            {children}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
         </div>
-      )}
-    </div>
-  );
-};
+        {error && (
+          <span className="text-sm text-red-500 flex items-center gap-1">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            {error}
+          </span>
+        )}
+        {helperText && !error && (
+          <span className="text-sm text-gray-500">{helperText}</span>
+        )}
+      </div>
+    );
+  }
+);
 
-export default SearchableSelect;
+Select.displayName = "Select";

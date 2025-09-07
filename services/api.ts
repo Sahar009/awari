@@ -104,6 +104,7 @@ export const apiService = {
   upload: async <T>(url: string, formData: FormData, config?: AxiosRequestConfig): Promise<ApiResponse<T>> => {
     const response = await api.post(url, formData, {
       ...config,
+      timeout: 60000, // 60 seconds for file uploads
       headers: {
         'Content-Type': 'multipart/form-data',
         ...config?.headers,
@@ -114,6 +115,8 @@ export const apiService = {
 };
 
 export default api;
+
+
 
 
 
