@@ -55,3 +55,55 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
 );
 
 Select.displayName = "Select";
+
+interface Option {
+  label: string;
+  value: string;
+}
+
+interface SearchableSelectProps {
+  options: Option[];
+  placeholder?: string;
+  onChange?: (value: string) => void;
+  value?: string;
+  className?: string;
+}
+
+export const SearchableSelect: React.FC<SearchableSelectProps> = ({
+  options,
+  placeholder = "Select an option",
+  onChange,
+  value,
+  className
+}) => {
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (onChange) {
+      onChange(e.target.value);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <select
+        value={value || ""}
+        onChange={handleChange}
+        className={clsx(
+          "w-full px-4 py-3 border border-gray-300 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none bg-white cursor-pointer hover:border-gray-400",
+          className
+        )}
+      >
+        <option value="" disabled>
+          {placeholder}
+        </option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+    </div>
+  );
+};
+
+export default SearchableSelect;

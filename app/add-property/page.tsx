@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { 
   ArrowLeft, 
   Save, 
@@ -12,21 +13,74 @@ import {
   X
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { createProperty, clearError } from '@/store/slices/propertySlice';
+import { createProperty, clearError, type CreatePropertyRequest } from '@/store/slices/propertySlice';
 import Container from '@/components/Container';
 import MainLayout from '../mainLayout';
 import { AuthLoader, Loader } from '@/components/ui/Loader';
 import { locationApiService, type NigerianState, type AddressSuggestion } from '@/services/locationApi';
 
 interface PropertyFormData {
+  // Basic Info
   title: string;
   description: string;
+  shortDescription: string;
   propertyType: string;
   listingType: string;
+  
+  // Pricing
   price: number | '';
+  originalPrice: number | '';
+  currency: string;
+  pricePeriod: string;
+  negotiable: boolean;
+  
+  // Location
   address: string;
   city: string;
   state: string;
+  country: string;
+  postalCode: string;
+  neighborhood: string;
+  landmark: string;
+  
+  // Property Details
+  bedrooms: number | '';
+  bathrooms: number | '';
+  toilets: number | '';
+  parkingSpaces: number | '';
+  floorArea: number | '';
+  landArea: number | '';
+  floorNumber: number | '';
+  totalFloors: number | '';
+  yearBuilt: number | '';
+  conditionStatus: string;
+  
+  // Features & Amenities
+  features: string[];
+  amenities: string[];
+  petFriendly: boolean;
+  smokingAllowed: boolean;
+  furnished: boolean;
+  
+  // Availability
+  availableFrom: string;
+  availableUntil: string;
+  minLeasePeriod: number | '';
+  maxLeasePeriod: number | '';
+  minStayNights: number | '';
+  maxStayNights: number | '';
+  instantBooking: boolean;
+  cancellationPolicy: string;
+  
+  // SEO & Marketing
+  featured: boolean;
+  featuredUntil: string;
+  tags: string[];
+  seoTitle: string;
+  seoDescription: string;
+  seoKeywords: string[];
+  
+  // Media
   images: File[];
   videos: File[];
   documents: File[];
@@ -69,14 +123,67 @@ export default function AddPropertyPage() {
   const [authChecked, setAuthChecked] = useState(false);
   
   const [formData, setFormData] = useState<PropertyFormData>({
+    // Basic Info
     title: '',
     description: '',
+    shortDescription: '',
     propertyType: '',
     listingType: '',
+    
+    // Pricing
     price: '',
+    originalPrice: '',
+    currency: 'NGN',
+    pricePeriod: '',
+    negotiable: false,
+    
+    // Location
     address: '',
     city: '',
     state: '',
+    country: 'Nigeria',
+    postalCode: '',
+    neighborhood: '',
+    landmark: '',
+    
+    // Property Details
+    bedrooms: '',
+    bathrooms: '',
+    toilets: '',
+    parkingSpaces: '',
+    floorArea: '',
+    landArea: '',
+    floorNumber: '',
+    totalFloors: '',
+    yearBuilt: '',
+    conditionStatus: '',
+    
+    // Features & Amenities
+    features: [],
+    amenities: [],
+    petFriendly: false,
+    smokingAllowed: false,
+    furnished: false,
+    
+    // Availability
+    availableFrom: '',
+    availableUntil: '',
+    minLeasePeriod: '',
+    maxLeasePeriod: '',
+    minStayNights: '',
+    maxStayNights: '',
+    instantBooking: false,
+    cancellationPolicy: 'moderate',
+    
+    // SEO & Marketing
+    featured: false,
+    featuredUntil: '',
+    tags: [],
+    seoTitle: '',
+    seoDescription: '',
+    seoKeywords: [],
+    
+    // Media
     images: [],
     videos: [],
     documents: []
@@ -146,10 +253,25 @@ export default function AddPropertyPage() {
   }, [dispatch]);
 
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    
+    // Handle different input types
+    let processedValue: string | number | boolean = value;
+    
+    if (type === 'number') {
+      // Handle number fields
+      processedValue = value === '' ? '' : Number(value);
+    } else if (type === 'checkbox') {
+      // Handle checkbox fields
+      processedValue = (e.target as HTMLInputElement).checked;
+    } else if (type === 'date') {
+      // Handle date fields
+      processedValue = value;
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'price' ? (value === '' ? '' : Number(value)) : value
+      [name]: processedValue
     }));
 
     // Update available cities when state changes
@@ -290,17 +412,73 @@ export default function AddPropertyPage() {
       return;
     }
 
-    // Ensure price is a number
-    // if (!formData.price || formData.price === '') {
-    //   alert('Please enter a valid price');
-    //   return;
-    // }
-
     try {
       // Convert form data to match CreatePropertyRequest interface
-      const propertyData = {
-        ...formData,
-        price: typeof formData.price === 'string' ? parseFloat(formData.price) : formData.price
+      const propertyData: CreatePropertyRequest = {
+        // Basic Info
+        title: formData.title,
+        description: formData.description,
+        shortDescription: formData.shortDescription || undefined,
+        propertyType: formData.propertyType,
+        listingType: formData.listingType,
+        
+        // Pricing
+        price: typeof formData.price === 'string' ? parseFloat(formData.price) : formData.price,
+        originalPrice: formData.originalPrice ? (typeof formData.originalPrice === 'string' ? parseFloat(formData.originalPrice) : formData.originalPrice) : undefined,
+        currency: formData.currency,
+        pricePeriod: formData.pricePeriod || undefined,
+        negotiable: formData.negotiable,
+        
+        // Location
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        country: formData.country,
+        postalCode: formData.postalCode || undefined,
+        neighborhood: formData.neighborhood || undefined,
+        landmark: formData.landmark || undefined,
+        
+        // Property Details
+        bedrooms: formData.bedrooms ? (typeof formData.bedrooms === 'string' ? parseInt(formData.bedrooms) : formData.bedrooms) : undefined,
+        bathrooms: formData.bathrooms ? (typeof formData.bathrooms === 'string' ? parseInt(formData.bathrooms) : formData.bathrooms) : undefined,
+        toilets: formData.toilets ? (typeof formData.toilets === 'string' ? parseInt(formData.toilets) : formData.toilets) : undefined,
+        parkingSpaces: formData.parkingSpaces ? (typeof formData.parkingSpaces === 'string' ? parseInt(formData.parkingSpaces) : formData.parkingSpaces) : undefined,
+        floorArea: formData.floorArea ? (typeof formData.floorArea === 'string' ? parseFloat(formData.floorArea) : formData.floorArea) : undefined,
+        landArea: formData.landArea ? (typeof formData.landArea === 'string' ? parseFloat(formData.landArea) : formData.landArea) : undefined,
+        floorNumber: formData.floorNumber ? (typeof formData.floorNumber === 'string' ? parseInt(formData.floorNumber) : formData.floorNumber) : undefined,
+        totalFloors: formData.totalFloors ? (typeof formData.totalFloors === 'string' ? parseInt(formData.totalFloors) : formData.totalFloors) : undefined,
+        yearBuilt: formData.yearBuilt ? (typeof formData.yearBuilt === 'string' ? parseInt(formData.yearBuilt) : formData.yearBuilt) : undefined,
+        conditionStatus: formData.conditionStatus || undefined,
+        
+        // Features & Amenities
+        features: formData.features.length > 0 ? formData.features : undefined,
+        amenities: formData.amenities.length > 0 ? formData.amenities : undefined,
+        petFriendly: formData.petFriendly,
+        smokingAllowed: formData.smokingAllowed,
+        furnished: formData.furnished,
+        
+        // Availability
+        availableFrom: formData.availableFrom || undefined,
+        availableUntil: formData.availableUntil || undefined,
+        minLeasePeriod: formData.minLeasePeriod ? (typeof formData.minLeasePeriod === 'string' ? parseInt(formData.minLeasePeriod) : formData.minLeasePeriod) : undefined,
+        maxLeasePeriod: formData.maxLeasePeriod ? (typeof formData.maxLeasePeriod === 'string' ? parseInt(formData.maxLeasePeriod) : formData.maxLeasePeriod) : undefined,
+        minStayNights: formData.minStayNights ? (typeof formData.minStayNights === 'string' ? parseInt(formData.minStayNights) : formData.minStayNights) : undefined,
+        maxStayNights: formData.maxStayNights ? (typeof formData.maxStayNights === 'string' ? parseInt(formData.maxStayNights) : formData.maxStayNights) : undefined,
+        instantBooking: formData.instantBooking,
+        cancellationPolicy: formData.cancellationPolicy,
+        
+        // SEO & Marketing
+        featured: formData.featured,
+        featuredUntil: formData.featuredUntil || undefined,
+        tags: formData.tags.length > 0 ? formData.tags : undefined,
+        seoTitle: formData.seoTitle || undefined,
+        seoDescription: formData.seoDescription || undefined,
+        seoKeywords: formData.seoKeywords.length > 0 ? formData.seoKeywords : undefined,
+        
+        // Media
+        images: formData.images,
+        videos: formData.videos,
+        documents: formData.documents
       };
       
       const result = await dispatch(createProperty(propertyData)).unwrap();
@@ -312,7 +490,7 @@ export default function AddPropertyPage() {
   };
 
   const nextStep = () => {
-    if (currentStep < 3) setCurrentStep(currentStep + 1);
+    if (currentStep < 4) setCurrentStep(currentStep + 1);
   };
 
   const prevStep = () => {
@@ -322,7 +500,8 @@ export default function AddPropertyPage() {
   const steps = [
     { number: 1, title: 'Basic Details', description: 'Property information' },
     { number: 2, title: 'Location & Price', description: 'Address and pricing' },
-    { number: 3, title: 'Media & Documents', description: 'Images, videos & files' }
+    { number: 3, title: 'Property Features', description: 'Details & amenities' },
+    { number: 4, title: 'Media & Documents', description: 'Images, videos & files' }
   ];
 
   // Show loading while checking auth
@@ -466,6 +645,24 @@ export default function AddPropertyPage() {
                           ))}
                         </div>
                       </div>
+                    </div>
+
+                    {/* Short Description */}
+                    <div>
+                      <label htmlFor="shortDescription" className="block text-sm font-medium text-slate-700 mb-2">
+                        Short Description
+                      </label>
+                      <input
+                        type="text"
+                        id="shortDescription"
+                        name="shortDescription"
+                        value={formData.shortDescription}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                        placeholder="Brief one-line description for search results"
+                        maxLength={150}
+                      />
+                      <p className="mt-1 text-sm text-slate-500">{formData.shortDescription.length}/150 characters</p>
                     </div>
 
                     {/* Description */}
@@ -623,38 +820,326 @@ export default function AddPropertyPage() {
                       )}
                     </div>
 
-                    {/* Price */}
-                    <div>
-                      <label htmlFor="price" className="block text-sm font-medium text-slate-700 mb-2">
-                        Price * {formData.listingType === 'rent' && '(per year)'}
-                        {formData.listingType === 'shortlet' && '(per night)'}
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 font-semibold text-lg">₦</span>
-                        <input
-                          type="number"
-                          id="price"
-                          name="price"
-                          value={formData.price}
-                          onChange={handleInputChange}
-                          required
-                          min="0"
-                          className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
-                          placeholder="Enter price amount"
-                        />
+                    {/* Price and Original Price */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label htmlFor="price" className="block text-sm font-medium text-slate-700 mb-2">
+                          Price * {formData.listingType === 'rent' && '(per year)'}
+                          {formData.listingType === 'shortlet' && '(per night)'}
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 font-semibold text-lg">₦</span>
+                          <input
+                            type="number"
+                            id="price"
+                            name="price"
+                            value={formData.price}
+                            onChange={handleInputChange}
+                            required
+                            min="0"
+                            className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                            placeholder="Enter price amount"
+                          />
+                        </div>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {formData.listingType === 'rent' && 'Annual rent amount'}
+                          {formData.listingType === 'sale' && 'Total sale price'}
+                          {formData.listingType === 'shortlet' && 'Price per night'}
+                        </p>
                       </div>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {formData.listingType === 'rent' && 'Annual rent amount'}
-                        {formData.listingType === 'sale' && 'Total sale price'}
-                        {formData.listingType === 'shortlet' && 'Price per night'}
-                      </p>
+
+                      <div>
+                        <label htmlFor="originalPrice" className="block text-sm font-medium text-slate-700 mb-2">
+                          Original Price (Optional)
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 font-semibold text-lg">₦</span>
+                          <input
+                            type="number"
+                            id="originalPrice"
+                            name="originalPrice"
+                            value={formData.originalPrice}
+                            onChange={handleInputChange}
+                            min="0"
+                            className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                            placeholder="Original price (for discounts)"
+                          />
+                        </div>
+                        <p className="mt-1 text-sm text-slate-500">Show discount from original price</p>
+                      </div>
+                    </div>
+
+                    {/* Pricing Options */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            name="negotiable"
+                            checked={formData.negotiable}
+                            onChange={handleInputChange}
+                            className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                          />
+                          <span className="text-sm font-medium text-slate-700">Price is Negotiable</span>
+                        </label>
+                      </div>
+
+                      {formData.listingType === 'shortlet' && (
+                        <div>
+                          <label htmlFor="minStayNights" className="block text-sm font-medium text-slate-700 mb-2">
+                            Minimum Stay (nights)
+                          </label>
+                          <input
+                            type="number"
+                            id="minStayNights"
+                            name="minStayNights"
+                            value={formData.minStayNights}
+                            onChange={handleInputChange}
+                            min="1"
+                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                            placeholder="1"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Step 3: Media & Documents */}
+              {/* Step 3: Property Features */}
               {currentStep === 3 && (
+                <div className="p-8">
+                  <div className="mb-8">
+                    <h2 className="text-xl font-bold text-slate-800 mb-2">Property Features & Details</h2>
+                    <p className="text-slate-600">Provide detailed information about your property</p>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Property Specifications */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-800 mb-4">Property Specifications</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <label htmlFor="bedrooms" className="block text-sm font-medium text-slate-700 mb-2">
+                            Bedrooms
+                          </label>
+                          <input
+                            type="number"
+                            id="bedrooms"
+                            name="bedrooms"
+                            value={formData.bedrooms}
+                            onChange={handleInputChange}
+                            min="0"
+                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="bathrooms" className="block text-sm font-medium text-slate-700 mb-2">
+                            Bathrooms
+                          </label>
+                          <input
+                            type="number"
+                            id="bathrooms"
+                            name="bathrooms"
+                            value={formData.bathrooms}
+                            onChange={handleInputChange}
+                            min="0"
+                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="toilets" className="block text-sm font-medium text-slate-700 mb-2">
+                            Toilets
+                          </label>
+                          <input
+                            type="number"
+                            id="toilets"
+                            name="toilets"
+                            value={formData.toilets}
+                            onChange={handleInputChange}
+                            min="0"
+                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="parkingSpaces" className="block text-sm font-medium text-slate-700 mb-2">
+                            Parking Spaces
+                          </label>
+                          <input
+                            type="number"
+                            id="parkingSpaces"
+                            name="parkingSpaces"
+                            value={formData.parkingSpaces}
+                            onChange={handleInputChange}
+                            min="0"
+                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Areas */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-800 mb-4">Property Size</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label htmlFor="floorArea" className="block text-sm font-medium text-slate-700 mb-2">
+                            Floor Area (sqm)
+                          </label>
+                          <input
+                            type="number"
+                            id="floorArea"
+                            name="floorArea"
+                            value={formData.floorArea}
+                            onChange={handleInputChange}
+                            min="0"
+                            step="0.1"
+                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="landArea" className="block text-sm font-medium text-slate-700 mb-2">
+                            Land Area (sqm)
+                          </label>
+                          <input
+                            type="number"
+                            id="landArea"
+                            name="landArea"
+                            value={formData.landArea}
+                            onChange={handleInputChange}
+                            min="0"
+                            step="0.1"
+                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Property Condition & Features */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-800 mb-4">Property Condition & Features</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label htmlFor="conditionStatus" className="block text-sm font-medium text-slate-700 mb-2">
+                            Condition Status
+                          </label>
+                          <select
+                            id="conditionStatus"
+                            name="conditionStatus"
+                            value={formData.conditionStatus}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                          >
+                            <option value="">Select condition</option>
+                            <option value="new">New</option>
+                            <option value="excellent">Excellent</option>
+                            <option value="good">Good</option>
+                            <option value="fair">Fair</option>
+                            <option value="needs_renovation">Needs Renovation</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="yearBuilt" className="block text-sm font-medium text-slate-700 mb-2">
+                            Year Built
+                          </label>
+                          <input
+                            type="number"
+                            id="yearBuilt"
+                            name="yearBuilt"
+                            value={formData.yearBuilt}
+                            onChange={handleInputChange}
+                            min="1900"
+                            max={new Date().getFullYear()}
+                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                            placeholder={new Date().getFullYear().toString()}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Property Features */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-800 mb-4">Property Features</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <label className="flex items-center space-x-3 p-3 border border-slate-300 rounded-xl hover:border-primary transition-colors">
+                          <input
+                            type="checkbox"
+                            name="furnished"
+                            checked={formData.furnished}
+                            onChange={handleInputChange}
+                            className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                          />
+                          <span className="text-sm font-medium text-slate-700">Furnished</span>
+                        </label>
+                        <label className="flex items-center space-x-3 p-3 border border-slate-300 rounded-xl hover:border-primary transition-colors">
+                          <input
+                            type="checkbox"
+                            name="petFriendly"
+                            checked={formData.petFriendly}
+                            onChange={handleInputChange}
+                            className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                          />
+                          <span className="text-sm font-medium text-slate-700">Pet Friendly</span>
+                        </label>
+                        <label className="flex items-center space-x-3 p-3 border border-slate-300 rounded-xl hover:border-primary transition-colors">
+                          <input
+                            type="checkbox"
+                            name="smokingAllowed"
+                            checked={formData.smokingAllowed}
+                            onChange={handleInputChange}
+                            className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                          />
+                          <span className="text-sm font-medium text-slate-700">Smoking Allowed</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Availability */}
+                    {(formData.listingType === 'rent' || formData.listingType === 'shortlet') && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-800 mb-4">Availability</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <label htmlFor="availableFrom" className="block text-sm font-medium text-slate-700 mb-2">
+                              Available From
+                            </label>
+                            <input
+                              type="date"
+                              id="availableFrom"
+                              name="availableFrom"
+                              value={formData.availableFrom}
+                              onChange={handleInputChange}
+                              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                            />
+                          </div>
+                          <div>
+                            <label htmlFor="availableUntil" className="block text-sm font-medium text-slate-700 mb-2">
+                              Available Until
+                            </label>
+                            <input
+                              type="date"
+                              id="availableUntil"
+                              name="availableUntil"
+                              value={formData.availableUntil}
+                              onChange={handleInputChange}
+                              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Media & Documents */}
+              {currentStep === 4 && (
                 <div className="p-8">
                   <div className="mb-8">
                     <h2 className="text-xl font-bold text-slate-800 mb-2">Media & Documents</h2>
@@ -674,9 +1159,11 @@ export default function AddPropertyPage() {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                         {previewImages.map((preview, index) => (
                           <div key={index} className="relative group">
-                            <img
+                            <Image
                               src={preview}
                               alt={`Preview ${index + 1}`}
+                              width={200}
+                              height={128}
                               className="w-full h-32 object-cover rounded-xl border-2 border-slate-200"
                             />
                             <button
@@ -820,7 +1307,7 @@ export default function AddPropertyPage() {
                   </div>
 
                   <div className="flex items-center space-x-4">
-                    {currentStep < 3 ? (
+                    {currentStep < 4 ? (
                       <button
                         type="button"
                         onClick={nextStep}

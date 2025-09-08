@@ -1,11 +1,7 @@
-// API Configuration for Live Location Services
-// Add your actual API keys here or use environment variables
 
 export interface ApiConfig {
   googlePlacesApiKey?: string;
   mapboxAccessToken?: string;
-  addressDataPublicKey?: string;
-  addressDataPrivateKey?: string;
   geoapifyApiKey?: string;
 }
 
@@ -16,10 +12,6 @@ export const defaultApiConfig: ApiConfig = {
   
   // Mapbox Access Token - Get from: https://account.mapbox.com/access-tokens/
   mapboxAccessToken: process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || 'your_mapbox_access_token_here',
-  
-  // AddressData.ng API Keys - Get from: https://addressdata.seapane.com/
-  addressDataPublicKey: process.env.NEXT_PUBLIC_ADDRESS_DATA_PUBLIC_KEY || 'your_address_data_public_key_here',
-  addressDataPrivateKey: process.env.NEXT_PUBLIC_ADDRESS_DATA_PRIVATE_KEY || 'your_address_data_private_key_here',
   
   // Geoapify API Key - Get from: https://www.geoapify.com/
   geoapifyApiKey: process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY || 'your_geoapify_api_key_here'
@@ -49,16 +41,6 @@ export const API_SETUP_INSTRUCTIONS = {
       '4. Copy the access token'
     ],
     pricing: 'Free tier: 50,000 requests/month'
-  },
-  addressData: {
-    name: 'AddressData.ng',
-    url: 'https://addressdata.seapane.com/',
-    steps: [
-      '1. Sign up for AddressData.ng account',
-      '2. Get your Public and Private keys',
-      '3. Add keys to configuration'
-    ],
-    pricing: 'Free tier: 500 lookups/day, then ₦20 per lookup'
   },
   geoapify: {
     name: 'Geoapify',

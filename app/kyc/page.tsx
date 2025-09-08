@@ -12,13 +12,14 @@ import { hydrate } from "../../store/slices/authSlice";
 
 const KycPage: React.FC = () => {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [retryCount, setRetryCount] = useState(0);
-  const [previewFile, setPreviewFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { token, isAuthenticated } = useAuth();
   const dispatch = useAppDispatch();
+  
+  // All hooks must be called unconditionally
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(hydrate());
@@ -35,10 +36,19 @@ const KycPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, [isAuthenticated, router]);
 
+  // Cleanup effect for preview URLs
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
   // Check if we have any token available (Redux or localStorage)
   const hasToken = token || (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
   
-  // Show loading if no token at all
+  // Show loading if no token at all - CONDITIONAL RENDER AFTER ALL HOOKS
   if (!hasToken) {
     return (
       <MainLayout>
@@ -93,7 +103,7 @@ const KycPage: React.FC = () => {
         }, 2000);
       }
             
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('KYC upload error:', error);
       clearInterval(progressInterval);
       setUploadProgress(0);
@@ -101,15 +111,17 @@ const KycPage: React.FC = () => {
       // Handle specific error types
       let errorMessage = 'An error occurred while uploading your document.';
       
-      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'ECONNABORTED') {
         errorMessage = 'Upload timeout. Please check your connection and try again with a smaller file.';
-      } else if (error.response?.status === 413) {
+      } else if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' && error.message.includes('timeout')) {
+        errorMessage = 'Upload timeout. Please check your connection and try again with a smaller file.';
+      } else if (error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'status' in error.response && error.response.status === 413) {
         errorMessage = 'File is too large. Please reduce the file size and try again.';
-      } else if (error.response?.status === 400) {
-        errorMessage = error.response.data?.message || 'Invalid file format. Please check your document and try again.';
-      } else if (error.response?.status === 401) {
+      } else if (error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'status' in error.response && error.response.status === 400) {
+        errorMessage = 'Invalid file format. Please check your document and try again.';
+      } else if (error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'status' in error.response && error.response.status === 401) {
         errorMessage = 'Authentication failed. Please log in again.';
-      } else if (error.message) {
+      } else if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
         errorMessage = error.message;
       }
       
@@ -135,15 +147,6 @@ const KycPage: React.FC = () => {
     setPreviewUrl(url);
   };
 
-  // Cleanup effect
-  useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
-
   return (
     <MainLayout>
       {/* Processing Overlay */}
@@ -162,11 +165,6 @@ const KycPage: React.FC = () => {
                 : "Processing and validating your document..."
               }
             </p>
-            {retryCount > 0 && (
-              <p className="text-sm text-amber-600 mb-2">
-                Retry attempt {retryCount}/3 - Large files may take longer to upload
-              </p>
-            )}
             
             {/* Progress Bar */}
             <div className="mb-4">

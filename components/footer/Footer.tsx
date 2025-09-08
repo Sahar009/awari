@@ -1,10 +1,49 @@
 "use client";
-import { MailIcon, Phone, MapPin, Clock, Facebook, Twitter, Instagram, Linkedin, ArrowRight } from "lucide-react";
+import { MailIcon, Phone, MapPin, Clock, Facebook, Twitter, Instagram, Linkedin, ArrowRight, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { useState } from "react";
 import Container from "../Container";
 import { Logo } from "../navbar/Logo";
 import { Button } from "../ui/Button";
 
 export const Footer = () => {
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      setMessage({ type: 'error', text: 'Please enter your email address' });
+      return;
+    }
+
+    setIsLoading(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/subscribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: 'Successfully subscribed to our newsletter!' });
+        setEmail('');
+      } else {
+        setMessage({ type: 'error', text: data.message || 'Failed to subscribe. Please try again.' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Network error. Please check your connection and try again.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-black text-white">
       <Container>
@@ -86,7 +125,7 @@ export const Footer = () => {
             <h2 className="text-2xl lg:text-3xl font-bold text-primary group-hover:scale-105 transition-transform duration-300">
               News<span className="font-normal text-white">letter</span>
             </h2>
-            <div className="flex flex-col gap-4">
+            <form onSubmit={handleSubscribe} className="flex flex-col gap-4">
               <p className="text-slate-300 leading-relaxed max-w-xs">
                 Subscribe to our newsletter for weekly updates, tips, and exclusive property offers.
               </p>
@@ -97,16 +136,46 @@ export const Footer = () => {
                 </div>
                 <input
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
-                  className="w-full pl-12 pr-4 py-3 bg-slate-800/50 border-2 border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 text-white placeholder-slate-400"
+                  disabled={isLoading}
+                  className="w-full pl-12 pr-4 py-3 bg-slate-800/50 border-2 border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 text-white placeholder-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
               
+              {/* Message Display */}
+              {message && (
+                <div className={`flex items-center gap-2 p-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  message.type === 'success' 
+                    ? 'bg-green-500/10 border border-green-500/20 text-green-400' 
+                    : 'bg-red-500/10 border border-red-500/20 text-red-400'
+                }`}>
+                  {message.type === 'success' ? (
+                    <CheckCircle size={16} className="flex-shrink-0" />
+                  ) : (
+                    <AlertCircle size={16} className="flex-shrink-0" />
+                  )}
+                  <span>{message.text}</span>
+                </div>
+              )}
+              
               <Button 
-                label="Subscribe Now" 
-                className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 w-full"
-              />
-            </div>
+                type="submit"
+                label="Subscribe Now"
+                disabled={isLoading}
+                className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 w-full disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:scale-100 flex items-center justify-center gap-2"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    <span>Subscribing...</span>
+                  </>
+                ) : (
+                  "Subscribe Now"
+                )}
+              </Button>
+            </form>
           </div>
         </div>
 

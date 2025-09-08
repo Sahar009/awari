@@ -1,5 +1,3 @@
-// Nigerian Location API Service - Now with LIVE APIs!
-// Real-time addresses using Google Places, Mapbox, and AddressData.ng APIs
 
 import { liveLocationApiService, configureLocationApis } from './liveLocationApi';
 import { defaultApiConfig } from '../config/apiConfig';
@@ -54,7 +52,6 @@ class LocationApiService {
       console.log('Using real-time data from:');
       console.log('   • Google Places API');
       console.log('   • Mapbox Geocoding API');
-      console.log('   • AddressData.ng API');
       console.log('   • Geoapify API');
     } catch (error) {
       console.warn(' Failed to initialize live APIs, using fallback mode:', error);

@@ -8,39 +8,74 @@ import Image from "next/image";
 // Reviews data (can also be fetched via API later)
 const reviews = [
   {
-    imageSrc: "/assets/images/profile.png",
-    customerName: "James Carter",
+    imageSrc: "https://randomuser.me/api/portraits/men/32.jpg",
+    customerName: "Adebayo Ogundimu",
     customerType: "Home Owner",
     content:
       "Working with this team was an absolute pleasure! They delivered exactly what I needed on time and with great quality.",
   },
   {
-    imageSrc: "/https://randomuser.me/api/portraits/women/44.jpg",
-    customerName: "Sophia Johnson",
+    imageSrc: "https://randomuser.me/api/portraits/women/44.jpg",
+    customerName: "Chioma Nwosu",
     customerType: "Interior Designer",
     content:
       "Their service exceeded my expectations. The attention to detail and communication were excellent.",
   },
   {
-    imageSrc: "/https://randomuser.me/api/portraits/men/12.jpg",
-    customerName: "Michael Smith",
+    imageSrc: "https://randomuser.me/api/portraits/men/12.jpg",
+    customerName: "Kemi Adeleke",
     customerType: "Real Estate Agent",
     content:
-      "A very professional and reliable team. I’ll definitely recommend them to others.",
+      "A very professional and reliable team. I'll definitely recommend them to others.",
   },
   {
-    imageSrc: "/https://randomuser.me/api/portraits/women/68.jpg",
-    customerName: "Emily Davis",
+    imageSrc: "https://randomuser.me/api/portraits/women/68.jpg",
+    customerName: "Folake Adebisi",
     customerType: "Architect",
     content:
       "The creativity and commitment from this team are outstanding. My clients loved the results.",
   },
   {
-    imageSrc: "/https://randomuser.me/api/portraits/men/25.jpg",
-    customerName: "Daniel Brown",
+    imageSrc: "https://randomuser.me/api/portraits/men/25.jpg",
+    customerName: "Emeka Okafor",
     customerType: "Business Owner",
     content:
       "They understood my vision perfectly and executed it with excellence.",
+  },
+  {
+    imageSrc: "https://randomuser.me/api/portraits/women/33.jpg",
+    customerName: "Aisha Bello",
+    customerType: "Property Developer",
+    content:
+      "Their innovative approach and timely delivery made my project a huge success. Highly recommended!",
+  },
+  {
+    imageSrc: "https://randomuser.me/api/portraits/men/67.jpg",
+    customerName: "Obinna Okwu",
+    customerType: "Construction Manager",
+    content:
+      "Professional, reliable, and detail-oriented. They transformed my vision into reality beyond my expectations.",
+  },
+  {
+    imageSrc: "https://randomuser.me/api/portraits/women/29.jpg",
+    customerName: "Fatima Ibrahim",
+    customerType: "Investment Banker",
+    content:
+      "The quality of work and customer service is exceptional. They truly understand the Nigerian market.",
+  },
+  {
+    imageSrc: "https://randomuser.me/api/portraits/men/55.jpg",
+    customerName: "Tunde Ajayi",
+    customerType: "Civil Engineer",
+    content:
+      "Outstanding professionalism and technical expertise. They delivered exactly what was promised, on time.",
+  },
+  {
+    imageSrc: "https://randomuser.me/api/portraits/women/77.jpg",
+    customerName: "Ngozi Okechukwu",
+    customerType: "Urban Planner",
+    content:
+      "Their attention to detail and commitment to excellence sets them apart. A pleasure to work with!",
   },
 ];
 
