@@ -41,14 +41,14 @@ const BlogData = [
 ];
 
 type BlogDetailProps = {
-  params: Promise<{ slug: string }>; // ✅ params is a Promise now
+  params: Promise<{ slug: string }>;
 };
 
-// ✅ SEO metadata
+
 export async function generateMetadata(
   { params }: BlogDetailProps
 ): Promise<Metadata> {
-  const { slug } = await params; // ✅ must await
+  const { slug } = await params; 
   const blog = BlogData.find((b) => b.slug === slug);
 
   return {
@@ -59,9 +59,8 @@ export async function generateMetadata(
   };
 }
 
-// ✅ Page must be async
 export default async function BlogDetailPage({ params }: BlogDetailProps) {
-  const { slug } = await params; // ✅ must await
+  const { slug } = await params; 
 
   const blog = BlogData.find((b) => b.slug === slug);
 
@@ -120,13 +119,13 @@ export default async function BlogDetailPage({ params }: BlogDetailProps) {
               </div>
             </article>
 
-            {/* Sidebar */}
+            
             <aside className="lg:col-span-1 w-full space-y-6">
               <h2 className="text-2xl font-semibold text-slate-900 mb-4">
                 Recent Posts
               </h2>
               <div className="space-y-4">
-                {BlogData.filter((p) => p.slug !== slug) // ✅ use slug directly
+                {BlogData.filter((p) => p.slug !== slug) 
                   .slice(0, 5)
                   .map((post, index) => (
                     <Link

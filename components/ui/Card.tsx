@@ -29,8 +29,7 @@ export const Card: React.FC<CardProps> = ({
   const router = useRouter();
   return (
     <div className=" bg-white shadow-lg rounded-2xl overflow-hidden hover:shadow-2xl transition-shadow duration-300">
-      {/* Image Section */}
-      <div onClick={() => router.push("/product-details")} className="relative w-full h-56">
+      <div onClick={() => router.push("/product-details")} className="relative w-full md:h-56 h-36">
         <Image
           src={ImageSrc}
           fill
@@ -38,14 +37,12 @@ export const Card: React.FC<CardProps> = ({
           alt="card image"
         />
 
-        {/* Like Button */}
         {liked && (
           <div className="absolute top-3 right-3 ">
             <Favourite/>
           </div>
         )}
 
-        {/* Property Type Badge */}
         {type && (
           <span className="absolute bottom-3 left-3 bg-primary text-white text-xs font-semibold px-3 py-1 rounded-full">
             {type}
@@ -56,9 +53,9 @@ export const Card: React.FC<CardProps> = ({
       {/* Content Section */}
       <div className="p-4 flex flex-col gap-3">
         {/* Title + Price */}
-        <div className="flex justify-between items-start">
-          <h3 className="text-lg font-semibold text-gray-800">{Title}</h3>
-          <span className="text-primary font-bold text-lg">{price}</span>
+        <div className="flex flex-col md:flex-row justify-between items-start">
+          <h3 className="text-lg font-semibold text-gray-800 truncate ">{Title}</h3>
+          <span className="text-primary font-bold md:text-lg text-sm">{price}</span>
         </div>
 
         {/* Description */}
@@ -68,7 +65,7 @@ export const Card: React.FC<CardProps> = ({
         {location && (
           <div className="flex items-center text-gray-500 text-sm gap-1">
             <MapPin size={16} />
-            <span>{location}</span>
+            <span className="truncate">{location}</span>
           </div>
         )}
       </div>
