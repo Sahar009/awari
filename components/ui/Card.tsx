@@ -13,6 +13,7 @@ interface CardProps {
   liked?: React.ReactNode;
   location?: string;
   type?: string;
+  propertyId?: string;
 }
 
 
@@ -25,12 +26,21 @@ export const Card: React.FC<CardProps> = ({
   liked,
   location,
   type,
+  propertyId,
 }) => {
   const router = useRouter();
+  
+  // Debug logging
+  console.log('🔍 Card - Property ID:', propertyId);
+  console.log('🔍 Card - Title:', Title);
+  
   return (
     <div className=" bg-white shadow-lg rounded-2xl overflow-hidden hover:shadow-2xl transition-shadow duration-300">
       {/* Image Section */}
-      <div onClick={() => router.push("/product-details")} className="relative w-full h-56">
+      <div onClick={() => {
+        console.log('🔍 Card - Clicked, navigating to:', `/product-details?id=${propertyId}`);
+        router.push(`/product-details?id=${propertyId}`);
+      }} className="relative w-full h-56 cursor-pointer">
         <Image
           src={ImageSrc}
           fill

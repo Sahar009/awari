@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MenuIcon, X, Search, Bell, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle, User, LogOut, Settings, UserCircle, ChevronDown, PlusCircle } from "lucide-react";
+import { MenuIcon, X, Bell, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle, User, LogOut, Settings, UserCircle, ChevronDown, PlusCircle } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Logo } from "./Logo";
 import { useRouter } from 'next/navigation';
@@ -71,16 +71,17 @@ export const Navbar = () => {
         <Logo />
             </div>
 
-            <div className="hidden lg:flex items-center space-x-8">
+            <div className="hidden lg:flex items-center space-x-4">
               {(hasAccess ? [
                 { name: "Dashboard", href: "/home", description: "Your dashboard" },
-                { name: "Properties", href: "#properties", description: "Browse listings" },
-                { name: "Sell/Rent", href: "/add-property", description: "List your property" },
+                { name: "Properties", href: "/browse-listing", description: "Browse all listings" },
+                { name: "Rentals", href: "/rentals", description: "Find your home" },
+                { name: "Sales", href: "/sales", description: "Buy property" },
+                { name: "Shortlets", href: "/shortlets", description: "Book stays" },
                 { name: "My Listings", href: "/my-listings", description: "Manage properties" },
                 { name: "Favorites", href: "/favorites", description: "Saved properties" },
-                { name: "Messages", href: "/messages", description: "Your conversations" },
               ] : [
-                { name: "Properties", href: "/browse-listing", description: "Browse listings" },
+                { name: "Properties", href: "/browse-listing", description: "Browse all listings" },
                 { name: "Rentals", href: "/rentals", description: "Find your home" },
                 { name: "Sales", href: "/sales", description: "Buy property" },
                 { name: "Shortlets", href: "/shortlets", description: "Book stays" },
@@ -92,10 +93,13 @@ export const Navbar = () => {
                     className="flex flex-col items-center text-slate-700 hover:text-primary transition-all duration-300 ease-out transform hover:-translate-y-1"
                     style={{
                       animationDelay: `${index * 0.1}s`,
-                      animation: 'fadeInDown 0.6s ease-out forwards'
+                      animationName: 'fadeInDown',
+                      animationDuration: '0.6s',
+                      animationTimingFunction: 'ease-out',
+                      animationFillMode: 'forwards'
                     }}
                   >
-                    <span className="font-medium text-base relative">
+                    <span className="font-medium text-sm relative">
                       {item.name}
                       <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
                     </span>
@@ -111,9 +115,9 @@ export const Navbar = () => {
 
         <div className="flex flex-row items-center gap-4">
               {/* Search Icon - Always visible */}
-              <div className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110">
+              {/* <div className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110">
                 <Search size={20} className="text-slate-600" />
-              </div>
+              </div> */}
 
               {/* Conditional rendering based on authentication status */}
               {hasAccess ? (
@@ -287,7 +291,7 @@ export const Navbar = () => {
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 px-6 py-6">
+        <div className="flex flex-col gap-1 px-6 py-6">
           {/* User Profile Section - Only show when authenticated */}
           {hasAccess && (
             <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl border border-primary/10">
@@ -340,7 +344,10 @@ export const Navbar = () => {
 
           {(hasAccess ? [
             { name: "Dashboard", href: "/home", description: "Your dashboard", icon: Home },
-            { name: "Properties", href: "#properties", description: "Browse all listings", icon: Building2 },
+            { name: "Properties", href: "/browse-listing", description: "Browse all listings", icon: Building2 },
+            { name: "Rentals", href: "/rentals", description: "Find your perfect home", icon: HomeIcon },
+            { name: "Sales", href: "/sales", description: "Buy your dream property", icon: DollarSign },
+            { name: "Shortlets", href: "/shortlets", description: "Book amazing stays", icon: Hotel },
             { name: "Sell/Rent", href: "/add-property", description: "List your property", icon: PlusCircle },
             { name: "My Listings", href: "/my-listings", description: "Manage your properties", icon: HomeIcon },
             { name: "Favorites", href: "/favorites", description: "Saved properties", icon: DollarSign },
@@ -360,21 +367,24 @@ export const Navbar = () => {
             <a
               key={item.name}
               href={item.href}
-              className="group flex items-center gap-3 p-4 rounded-xl hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary-color/5 transition-all duration-300 ease-out transform hover:-translate-y-1 hover:shadow-md"
+              className="group flex items-center gap-3 p-3 rounded-xl hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary-color/5 transition-all duration-300 ease-out transform hover:-translate-y-1 hover:shadow-md"
               onClick={() => setIsOpen(false)}
               style={{
                 animationDelay: `${index * 0.05}s`,
-                animation: 'slideInLeft 0.6s ease-out forwards'
+                animationName: 'slideInLeft',
+                animationDuration: '0.6s',
+                animationTimingFunction: 'ease-out',
+                animationFillMode: 'forwards'
               }}
             >
               <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-primary/10 transition-all duration-300">
                 <item.icon size={18} className="text-slate-600 group-hover:text-primary transition-colors duration-300" />
               </div>
               <div className="flex flex-col">
-                <span className="font-semibold text-slate-800 group-hover:text-primary transition-colors duration-300">
+                <span className="font-semibold text-sm text-slate-800 group-hover:text-primary transition-colors duration-300">
                   {item.name}
                 </span>
-                <span className="text-sm text-slate-500 group-hover:text-slate-600 transition-colors duration-300">
+                <span className="text-xs text-slate-500 group-hover:text-slate-600 transition-colors duration-300">
                   {item.description}
                 </span>
               </div>

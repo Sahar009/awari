@@ -351,7 +351,7 @@ export default function MyListingsPage() {
 
                       <div className="flex items-center justify-between mb-4">
                         <span className="text-2xl font-bold text-primary">
-                          ₦{property.price.toLocaleString()}
+                          ₦{parseFloat(property.price).toLocaleString('en-NG')}
                         </span>
                         <span className="text-sm text-slate-500 capitalize">
                           {property.status}

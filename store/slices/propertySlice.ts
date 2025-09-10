@@ -77,37 +77,169 @@ export interface CreatePropertyRequest {
 // Types
 export interface Property {
   id: string;
+  ownerId: string;
+  agentId?: string;
   title: string;
+  slug: string;
   description: string;
-  price: number;
-  location: string;
-  type: 'apartment' | 'duplex' | 'office' | 'villa' | 'bungalow';
-  status: 'for-rent' | 'for-sale' | 'shortlet';
-  bedrooms: number;
-  bathrooms: number;
-  area: number;
-  images: string[];
-  amenities: string[];
-  agent: {
+  shortDescription?: string;
+  price: string; // API returns as string
+  originalPrice?: string;
+  currency?: string;
+  pricePeriod?: string;
+  negotiable?: boolean;
+  
+  // Location
+  address: string;
+  city: string;
+  state: string;
+  country?: string;
+  postalCode?: string;
+  latitude?: number;
+  longitude?: number;
+  neighborhood?: string;
+  landmark?: string;
+  
+  // Property Details
+  propertyType: string;
+  listingType: 'rent' | 'sale' | 'shortlet';
+  status: 'draft' | 'pending' | 'active' | 'inactive' | 'sold' | 'rented' | 'rejected' | 'archived';
+  bedrooms?: number;
+  bathrooms?: number;
+  toilets?: number;
+  parkingSpaces?: number;
+  floorArea?: number;
+  landArea?: number;
+  floorNumber?: number;
+  totalFloors?: number;
+  yearBuilt?: number;
+  conditionStatus?: string;
+  
+  // Features & Amenities
+  features?: string[];
+  amenities?: string[];
+  petFriendly?: boolean;
+  smokingAllowed?: boolean;
+  furnished?: boolean;
+  
+  // Availability
+  availableFrom?: string;
+  availableUntil?: string;
+  minLeasePeriod?: string;
+  maxLeasePeriod?: string;
+  minStayNights?: number;
+  maxStayNights?: number;
+  instantBooking?: boolean;
+  cancellationPolicy?: string;
+  
+  // Marketing
+  featured?: boolean;
+  featuredUntil?: string;
+  viewCount?: number;
+  favoriteCount?: number;
+  contactCount?: number;
+  
+  // Moderation
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
+  moderationNotes?: string;
+  
+  // SEO
+  tags?: string[];
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string;
+  
+  // Media
+  media?: Array<{
     id: string;
-    name: string;
-    phone: string;
+    propertyId: string;
+    mediaType: 'image' | 'video' | 'document';
+    url: string;
+    thumbnailUrl?: string;
+    filename?: string;
+    originalName?: string;
+    mimeType?: string;
+    size?: number;
+    width?: number;
+    height?: number;
+    duration?: number;
+    order: number;
+    isPrimary?: boolean;
+    isActive?: boolean;
+    altText?: string;
+    caption?: string;
+    metadata?: any;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  
+  // Owner
+  owner?: {
+    id: string;
+    firstName: string;
+    lastName: string;
     email: string;
+    phone?: string;
+  };
+  
+  // Agent
+  agent?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
     avatar?: string;
   };
+  
+  // Legacy support
+  location?: string;
+  type?: string;
+  images?: string[];
+  area?: number;
+  
   createdAt: string;
   updatedAt: string;
 }
 
 export interface PropertyFilters {
-  location?: string;
-  type?: string;
+  // Pagination
+  page?: number;
+  limit?: number;
+  
+  // Property filters
+  propertyType?: string;
+  listingType?: string;
   status?: string;
+  
+  // Location filters
+  city?: string;
+  state?: string;
+  country?: string;
+  
+  // Price filters
   minPrice?: number;
   maxPrice?: number;
+  
+  // Property details
   bedrooms?: number;
   bathrooms?: number;
+  furnished?: boolean;
+  petFriendly?: boolean;
+  featured?: boolean;
+  
+  // Sorting
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  
+  // Search
   search?: string;
+  
+  // Legacy support
+  location?: string;
+  type?: string;
 }
 
 export interface PropertyState {
@@ -122,6 +254,8 @@ export interface PropertyState {
   totalPages: number;
   currentPage: number;
   total: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
 }
 
 // Initial state
@@ -137,39 +271,108 @@ const initialState: PropertyState = {
   totalPages: 1,
   currentPage: 1,
   total: 0,
+  hasNextPage: false,
+  hasPrevPage: false,
 };
 
 // Async thunks
 export const fetchProperties = createAsyncThunk(
   'property/fetchProperties',
-  async (params: { page?: number; limit?: number; filters?: PropertyFilters }, { rejectWithValue }) => {
+  async (filters: PropertyFilters = {}, { rejectWithValue }) => {
     try {
       const queryParams = new URLSearchParams();
-      if (params.page) queryParams.append('page', params.page.toString());
-      if (params.limit) queryParams.append('limit', params.limit.toString());
+      
+      // Pagination
+      if (filters.page) queryParams.append('page', filters.page.toString());
+      if (filters.limit) queryParams.append('limit', filters.limit.toString());
+      
+      // Property filters
+      if (filters.propertyType) queryParams.append('propertyType', filters.propertyType);
+      if (filters.listingType) queryParams.append('listingType', filters.listingType);
+      if (filters.status) queryParams.append('status', filters.status);
+      
+      // Location filters
+      if (filters.city) queryParams.append('city', filters.city);
+      if (filters.state) queryParams.append('state', filters.state);
+      if (filters.country) queryParams.append('country', filters.country);
+      
+      // Price filters
+      if (filters.minPrice !== undefined) queryParams.append('minPrice', filters.minPrice.toString());
+      if (filters.maxPrice !== undefined) queryParams.append('maxPrice', filters.maxPrice.toString());
+      
+      // Property details
+      if (filters.bedrooms !== undefined) queryParams.append('bedrooms', filters.bedrooms.toString());
+      if (filters.bathrooms !== undefined) queryParams.append('bathrooms', filters.bathrooms.toString());
+      if (filters.furnished !== undefined) queryParams.append('furnished', filters.furnished.toString());
+      if (filters.petFriendly !== undefined) queryParams.append('petFriendly', filters.petFriendly.toString());
+      if (filters.featured !== undefined) queryParams.append('featured', filters.featured.toString());
+      
+      // Sorting
+      if (filters.sortBy) queryParams.append('sortBy', filters.sortBy);
+      if (filters.sortOrder) queryParams.append('sortOrder', filters.sortOrder);
+      
+      // Search
+      if (filters.search) queryParams.append('search', filters.search);
+      
+      // Legacy support - map old filters to new ones
+      if (filters.location) queryParams.append('city', filters.location);
+      if (filters.type) queryParams.append('propertyType', filters.type);
       
       const url = `/properties${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      console.log('🚀 Fetching properties from URL:', url);
+      
       const response = await apiService.get<{
         properties: Property[];
-        totalPages: number;
-        currentPage: number;
+        pagination: {
+          total: number;
+          page: number;
+          limit: number;
+          pages: number;
+        };
       }>(url);
       
+      console.log('📡 API Response received:', response.data);
+      console.log('📊 Properties data:', response.data);
+      
+      // The API response structure is { properties: [...], pagination: {...} }
+      // So we need to return response.data directly
       return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch properties');
+    } catch (error: unknown) {
+      console.error('❌ Error fetching properties:', error);
+      const errorMessage = error && typeof error === 'object' && 'message' in error 
+        ? (error as { message: string }).message 
+        : 'Failed to fetch properties';
+      return rejectWithValue(errorMessage);
     }
   }
 );
 
 export const fetchPropertyById = createAsyncThunk(
   'property/fetchPropertyById',
-  async (id: string, { rejectWithValue }) => {
+  async (params: { id: string; incrementView?: boolean }, { rejectWithValue }) => {
     try {
-      const response = await apiService.get<Property>(`/properties/${id}`);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch property');
+      const queryParams = new URLSearchParams();
+      if (params.incrementView !== undefined) {
+        queryParams.append('incrementView', params.incrementView.toString());
+      }
+      
+      const url = `/properties/${params.id}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      console.log('🔍 fetchPropertyById - Making API call to:', url);
+      const response = await apiService.get<{
+        success: boolean;
+        data: Property;
+      }>(url);
+      
+      console.log('🔍 fetchPropertyById - API response:', response);
+      console.log('🔍 fetchPropertyById - response.data:', response.data);
+      console.log('🔍 fetchPropertyById - response.data.data:', response.data.data);
+      
+      return response.data.data;
+    } catch (error: unknown) {
+      const errorMessage = error && typeof error === 'object' && 'message' in error 
+        ? (error as { message: string }).message 
+        : 'Failed to fetch property';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -177,24 +380,34 @@ export const fetchPropertyById = createAsyncThunk(
 export const searchProperties = createAsyncThunk(
   'property/searchProperties',
   async (filters: PropertyFilters, { rejectWithValue }) => {
+    // Use the main fetchProperties function since the main API endpoint handles all filtering
     try {
       const queryParams = new URLSearchParams();
+      
+      // Add all filter parameters
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== '') {
+        if (value !== undefined && value !== '' && value !== null) {
           queryParams.append(key, value.toString());
         }
       });
       
-      const url = `/properties/search${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const url = `/properties${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response = await apiService.get<{
         properties: Property[];
-        totalPages: number;
-        currentPage: number;
+        pagination: {
+          total: number;
+          page: number;
+          limit: number;
+          pages: number;
+        };
       }>(url);
       
       return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Search failed');
+    } catch (error: unknown) {
+      const errorMessage = error && typeof error === 'object' && 'message' in error 
+        ? (error as { message: string }).message 
+        : 'Search failed';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -433,17 +646,32 @@ const propertySlice = createSlice({
     // Fetch Properties
     builder
       .addCase(fetchProperties.pending, (state) => {
+        console.log('⏳ fetchProperties.pending - Setting isLoading to true');
         state.isLoading = true;
         state.error = null;
       })
       .addCase(fetchProperties.fulfilled, (state, action) => {
+        console.log('✅ fetchProperties.fulfilled reducer called');
+        console.log('📦 Action payload:', action.payload);
+        console.log('🏠 Properties in payload:', action.payload?.properties);
+        
         state.isLoading = false;
-        state.properties = action.payload.properties;
-        state.filteredProperties = action.payload.properties;
-        state.totalPages = action.payload.totalPages;
-        state.currentPage = action.payload.currentPage;
+        state.properties = action.payload?.properties || [];
+        state.filteredProperties = action.payload?.properties || [];
+        state.totalPages = action.payload?.pagination?.pages || 0;
+        state.currentPage = action.payload?.pagination?.page || 1;
+        state.total = action.payload?.pagination?.total || 0;
+        state.hasNextPage = (action.payload?.pagination?.page || 1) < (action.payload?.pagination?.pages || 0);
+        state.hasPrevPage = (action.payload?.pagination?.page || 1) > 1;
+        
+        console.log('🔄 State updated:', {
+          propertiesCount: state.properties.length,
+          isLoading: state.isLoading,
+          total: state.total
+        });
       })
       .addCase(fetchProperties.rejected, (state, action) => {
+        console.log('❌ fetchProperties.rejected - Error:', action.payload);
         state.isLoading = false;
         state.error = action.payload as string;
       });
@@ -455,8 +683,11 @@ const propertySlice = createSlice({
         state.error = null;
       })
       .addCase(fetchPropertyById.fulfilled, (state, action) => {
+        console.log('✅ fetchPropertyById.fulfilled - Action payload:', action.payload);
+        console.log('✅ fetchPropertyById.fulfilled - Setting currentProperty:', action.payload);
         state.isLoading = false;
         state.currentProperty = action.payload;
+        console.log('✅ fetchPropertyById.fulfilled - State updated, currentProperty:', state.currentProperty);
       })
       .addCase(fetchPropertyById.rejected, (state, action) => {
         state.isLoading = false;
@@ -471,9 +702,12 @@ const propertySlice = createSlice({
       })
       .addCase(searchProperties.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.filteredProperties = action.payload.properties;
-        state.totalPages = action.payload.totalPages;
-        state.currentPage = 1;
+        state.filteredProperties = action.payload?.properties || [];
+        state.totalPages = action.payload?.pagination?.pages || 0;
+        state.currentPage = action.payload?.pagination?.page || 1;
+        state.total = action.payload?.pagination?.total || 0;
+        state.hasNextPage = (action.payload?.pagination?.page || 1) < (action.payload?.pagination?.pages || 0);
+        state.hasPrevPage = (action.payload?.pagination?.page || 1) > 1;
       })
       .addCase(searchProperties.rejected, (state, action) => {
         state.isLoading = false;
@@ -614,5 +848,26 @@ export const {
   clearError, 
   setCurrentProperty 
 } = propertySlice.actions;
+
+// Helper action creators for common operations
+export const fetchPropertiesWithFilters = (filters: PropertyFilters) => 
+  fetchProperties({ 
+    page: 1, 
+    limit: 12, 
+    sortBy: 'createdAt', 
+    sortOrder: 'desc', 
+    ...filters 
+  });
+
+export const fetchFeaturedProperties = () => 
+  fetchProperties({ 
+    featured: true, 
+    limit: 8, 
+    sortBy: 'createdAt', 
+    sortOrder: 'desc' 
+  });
+
+export const fetchPropertyWithView = (id: string) =>
+  fetchPropertyById({ id, incrementView: true });
 
 export default propertySlice.reducer;
