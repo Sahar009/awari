@@ -4,6 +4,7 @@ import Image from "next/image";
 import { MapPin } from "lucide-react";
 import { Favourite } from "./Favourite";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 interface CardProps {
   ImageSrc?: string;
@@ -30,9 +31,17 @@ export const Card: React.FC<CardProps> = ({
 }) => {
   const router = useRouter();
   
-  // Debug logging
-  console.log('🔍 Card - Property ID:', propertyId);
-  console.log('🔍 Card - Title:', Title);
+  // Debug logging on mount and when key props change
+  useEffect(() => {
+    console.log('[Card] mounted', { propertyId, Title, liked: Boolean(liked) });
+    return () => {
+      console.log('[Card] unmounted', { propertyId });
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log('[Card] props changed', { propertyId, Title, liked: Boolean(liked) });
+  }, [propertyId, Title, liked]);
   
   return (
     <div className=" bg-white shadow-lg rounded-2xl overflow-hidden hover:shadow-2xl transition-shadow duration-300">
@@ -49,10 +58,15 @@ export const Card: React.FC<CardProps> = ({
         />
 
         {/* Like Button */}
-        {liked && (
+        {liked && propertyId && (
           <div className="absolute top-3 right-3 ">
-            <Favourite/>
+            <Favourite propertyId={propertyId} />
           </div>
+        )}
+        {(!liked || !propertyId) && (
+          <>
+            {console.log('[Card] Favourite hidden', { reason: !liked ? 'liked is falsy' : 'propertyId missing', propertyId, liked: Boolean(liked) })}
+          </>
         )}
 
         {/* Property Type Badge */}

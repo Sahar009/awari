@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MenuIcon, X, Bell, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle, User, LogOut, Settings, UserCircle, ChevronDown, PlusCircle } from "lucide-react";
+import { MenuIcon, X, Bell, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle, User, LogOut, Settings, UserCircle, ChevronDown, PlusCircle, Heart } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Logo } from "./Logo";
 import { useRouter } from 'next/navigation';
@@ -350,7 +350,7 @@ export const Navbar = () => {
             { name: "Shortlets", href: "/shortlets", description: "Book amazing stays", icon: Hotel },
             { name: "Sell/Rent", href: "/add-property", description: "List your property", icon: PlusCircle },
             { name: "My Listings", href: "/my-listings", description: "Manage your properties", icon: HomeIcon },
-            { name: "Favorites", href: "/favorites", description: "Saved properties", icon: DollarSign },
+            { name: "Favorites", href: "/favorites", description: "Saved properties", icon: Heart },
             { name: "Messages", href: "/messages", description: "Your conversations", icon: MessageCircle },
             { name: "Profile", href: "/profile", description: "Edit your profile", icon: UserCircle },
             { name: "Settings", href: "/settings", description: "Account settings", icon: Settings },

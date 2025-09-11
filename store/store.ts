@@ -1,13 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/authSlice';
 import propertyReducer from './slices/propertySlice';
-import uiReducer from './slices/uiSlice';
+import favoriteReducer from './slices/favoriteSlice';
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     property: propertyReducer,
-    ui: uiReducer,
+    favorite: favoriteReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -19,6 +19,3 @@ export const store = configureStore({
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
-
-// Default export for the store
-export default store;
