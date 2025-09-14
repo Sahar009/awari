@@ -37,7 +37,7 @@ export const Card: React.FC<CardProps> = ({
     return () => {
       console.log('[Card] unmounted', { propertyId });
     };
-  }, []);
+  }, [propertyId, Title, liked]);
 
   useEffect(() => {
     console.log('[Card] props changed', { propertyId, Title, liked: Boolean(liked) });

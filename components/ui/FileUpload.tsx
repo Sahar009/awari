@@ -80,7 +80,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     
     setPreviewUrls(newPreviewUrls);
     onFileSelect(newFiles);
-  }, [accept, maxSize, multiple, selectedFiles, onFileSelect]);
+  }, [accept, maxSize, multiple, selectedFiles, onFileSelect, previewUrls]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();

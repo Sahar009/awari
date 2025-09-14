@@ -202,6 +202,9 @@ export interface Property {
   
   createdAt: string;
   updatedAt: string;
+  
+  // Index signature for additional properties - allows extra fields
+  [key: string]: unknown;
 }
 
 export interface PropertyFilters {

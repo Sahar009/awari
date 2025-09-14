@@ -4,7 +4,7 @@ import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchPropertyById } from "@/store/slices/propertySlice";
+import { fetchPropertyById, type Property } from "@/store/slices/propertySlice";
 import { Loader } from "@/components/ui/Loader";
 import { MapPin, Heart, Loader2 } from "lucide-react";
 import { 
@@ -13,6 +13,7 @@ import {
   selectIsPropertyFavorited
 } from '@/store/slices/favoriteSlice';
 import { useToast } from '@/components/ui/useToast';
+import BookingModal from '@/components/booking/BookingModal';
 
 export type Listing = {
   id: string;
@@ -45,6 +46,9 @@ export const CardDetails = () => {
   // Favorite functionality
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
   const isFavorited = useAppSelector(selectIsPropertyFavorited(propertyId || ''));
+  
+  // Booking modal state
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   // Debug logging
   console.log('🔍 CardDetails - URL search params:', searchParams?.toString());
@@ -397,9 +401,33 @@ export const CardDetails = () => {
               </div>
 
               <div className="space-y-4">
-                <button className="w-full bg-primary text-white font-medium py-3 rounded-lg hover:bg-primary/90 transition-colors">
-                  {property.listingType === 'rent' ? 'Contact Owner' : 'Make Offer'}
-                </button>
+                {/* Dynamic booking button based on property type */}
+                {property.listingType === 'shortlet' && (
+                  <button 
+                    onClick={() => setShowBookingModal(true)}
+                    className="w-full bg-primary text-white font-medium py-3 rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    Book Now
+                  </button>
+                )}
+                
+                {property.listingType === 'rent' && (
+                  <button 
+                    onClick={() => setShowBookingModal(true)}
+                    className="w-full bg-primary text-white font-medium py-3 rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    Apply for Rental
+                  </button>
+                )}
+                
+                {property.listingType === 'sale' && (
+                  <button 
+                    onClick={() => setShowBookingModal(true)}
+                    className="w-full bg-primary text-white font-medium py-3 rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    Schedule Inspection
+                  </button>
+                )}
                 
                 <button 
                   onClick={handleToggleFavorite}
@@ -545,6 +573,13 @@ export const CardDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* Booking Modal */}
+      <BookingModal
+        isOpen={showBookingModal}
+        onClose={() => setShowBookingModal(false)}
+        property={property as Property}
+      />
     </div>
   );
 };
