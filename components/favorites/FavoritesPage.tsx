@@ -23,11 +23,13 @@ import {
 import { Loader } from '../ui/Loader';
 import { AlertCircle, RefreshCw, Heart, Filter, X } from 'lucide-react';
 import { useToast } from '@/components/ui/useToast';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 const FavoritesPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const toast = useToast();
   const [showFilters, setShowFilters] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   
   const favorites = useAppSelector(selectFavorites);
   const isLoading = useAppSelector(selectIsLoading);
@@ -54,7 +56,8 @@ const FavoritesPage: React.FC = () => {
       currentPage,
       totalPages,
       hasNextPage,
-      hasPrevPage
+      hasPrevPage,
+      favorites: favorites // Log the actual favorites array
     });
   }, [favorites, isLoading, error, total, currentPage, totalPages, hasNextPage, hasPrevPage]);
 
@@ -74,7 +77,7 @@ const FavoritesPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, [isLoading]);
 
-  const handleFilterChange = (newFilters: any) => {
+  const handleFilterChange = (newFilters: Record<string, unknown>) => {
     dispatch(setFilters({ ...filters, ...newFilters, page: 1 }));
   };
 
@@ -83,15 +86,24 @@ const FavoritesPage: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleClearAll = async () => {
-    if (window.confirm('Are you sure you want to clear all favorites? This action cannot be undone.')) {
-      try {
-        await dispatch(clearAllFavorites()).unwrap();
-        toast.success('Favorites cleared', 'All your favorites have been removed.');
-      } catch (error: any) {
-        toast.error('Error', error || 'Failed to clear favorites.');
-      }
+  const handleClearAll = () => {
+    setShowConfirmDialog(true);
+  };
+
+  const confirmClearAll = async () => {
+    try {
+      await dispatch(clearAllFavorites()).unwrap();
+      toast.success('Favorites cleared', 'All your favorites have been removed.');
+      setShowConfirmDialog(false);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to clear favorites.';
+      toast.error('Error', errorMessage);
+      setShowConfirmDialog(false);
     }
+  };
+
+  const cancelClearAll = () => {
+    setShowConfirmDialog(false);
   };
 
   const handleRetry = () => {
@@ -110,6 +122,17 @@ const FavoritesPage: React.FC = () => {
       </Container>
     );
   }
+
+  // Debug: Log when we should be showing favorites
+  console.log('🔍 FavoritesPage Render Debug:', {
+    shouldShowLoader: isLoading && favorites.length === 0 && !error,
+    shouldShowError: error && favorites.length === 0,
+    shouldShowFavorites: favorites.length > 0,
+    shouldShowEmpty: favorites.length === 0 && !isLoading && !error,
+    favoritesLength: favorites.length,
+    isLoading,
+    error
+  });
 
   if (error && favorites.length === 0) {
     return (
@@ -332,6 +355,17 @@ const FavoritesPage: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={showConfirmDialog}
+        title="Clear All Favorites"
+        message="Are you sure you want to clear all favorites? This action cannot be undone."
+        confirmText="Clear All"
+        cancelText="Cancel"
+        onConfirm={confirmClearAll}
+        onCancel={cancelClearAll}
+      />
     </Container>
   );
 };

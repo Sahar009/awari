@@ -31,24 +31,39 @@ const ToastExample: React.FC = () => {
     <div className="p-6 space-y-4">
       <h3 className="text-lg font-semibold mb-4">Toast Examples</h3>
       <div className="flex flex-wrap gap-3">
-        <Button onClick={showSuccessToast} variant="success">
-          Success Toast
-        </Button>
-        <Button onClick={showErrorToast} variant="destructive">
-          Error Toast
-        </Button>
-        <Button onClick={showWarningToast} variant="warning">
-          Warning Toast
-        </Button>
-        <Button onClick={showInfoToast} variant="outline">
-          Info Toast
-        </Button>
-        <Button onClick={showPersistentToast} variant="secondary">
-          Persistent Toast
-        </Button>
-        <Button onClick={toast.clear} variant="outline">
-          Clear All
-        </Button>
+        <Button 
+          onClick={showSuccessToast} 
+          variant="primary" 
+          className="bg-green-600 hover:bg-green-700"
+          label="Success Toast"
+        />
+        <Button 
+          onClick={showErrorToast} 
+          variant="primary" 
+          className="bg-red-600 hover:bg-red-700"
+          label="Error Toast"
+        />
+        <Button 
+          onClick={showWarningToast} 
+          variant="primary" 
+          className="bg-yellow-600 hover:bg-yellow-700"
+          label="Warning Toast"
+        />
+        <Button 
+          onClick={showInfoToast} 
+          variant="outline"
+          label="Info Toast"
+        />
+        <Button 
+          onClick={showPersistentToast} 
+          variant="secondary"
+          label="Persistent Toast"
+        />
+        <Button 
+          onClick={toast.clear} 
+          variant="outline"
+          label="Clear All"
+        />
       </div>
     </div>
   );

@@ -6,13 +6,14 @@ import MainLayout from "../mainLayout";
 import { ArrowLeft, Shield, CheckCircle2, Upload, FileCheck, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { KycService } from "../../services/kycService";
-import { useAuth, useAppDispatch } from "../../store/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { useEffect } from "react";
 import { hydrate } from "../../store/slices/authSlice";
 
 const KycPage: React.FC = () => {
   const router = useRouter();
-  const { token, isAuthenticated } = useAuth();
+  const token = useAppSelector((state) => state.auth.token);
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const dispatch = useAppDispatch();
   
   // All hooks must be called unconditionally

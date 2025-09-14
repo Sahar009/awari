@@ -62,8 +62,8 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     const id = Math.random().toString(36).substr(2, 9);
     const normalizedMessage = typeof toast.message === 'string'
       ? toast.message
-      : toast.message instanceof Error
-        ? toast.message.message
+      : toast.message && typeof toast.message === 'object' && 'message' in toast.message
+        ? (toast.message as Error).message
         : toast.message != null
           ? String(toast.message)
           : undefined;
@@ -75,12 +75,6 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     };
     
     setToasts(prev => [...prev, newToast]);
-
-    if (newToast.duration && newToast.duration > 0) {
-      setTimeout(() => {
-        removeToast(id);
-      }, newToast.duration);
-    }
   }, []);
 
   const removeToast = useCallback((id: string) => {
@@ -130,6 +124,18 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
     const timer = setTimeout(() => setIsVisible(true), 10);
     return () => clearTimeout(timer);
   }, []);
+
+  // Auto-remove after duration with exit animation
+  useEffect(() => {
+    if (toast.duration && toast.duration > 0) {
+      const timer = setTimeout(() => {
+        setIsLeaving(true);
+        setTimeout(() => onRemove(toast.id), 300); // Wait for exit animation
+      }, toast.duration);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [toast.duration, toast.id, onRemove]);
 
   const handleRemove = () => {
     setIsLeaving(true);
@@ -262,24 +268,6 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
 
 // Keyframes are injected in a client-only effect inside ToastProvider
 
-// Export individual toast functions for convenience
-export const toast = {
-  success: (title: string, message?: string, options?: Partial<Toast>) => {
-    const { addToast } = useToast();
-    addToast({ type: 'success', title, message, ...options });
-  },
-  error: (title: string, message?: string, options?: Partial<Toast>) => {
-    const { addToast } = useToast();
-    addToast({ type: 'error', title, message, ...options });
-  },
-  warning: (title: string, message?: string, options?: Partial<Toast>) => {
-    const { addToast } = useToast();
-    addToast({ type: 'warning', title, message, ...options });
-  },
-  info: (title: string, message?: string, options?: Partial<Toast>) => {
-    const { addToast } = useToast();
-    addToast({ type: 'info', title, message, ...options });
-  },
-};
+// Note: Use useToast hook directly in components instead of these convenience functions
 
 export default ToastItem;

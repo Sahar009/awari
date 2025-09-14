@@ -3,4 +3,4 @@ export { store } from './store';
 export type { RootState, AppDispatch } from './store';
 
 // Default export
-export { default } from './store';
+export { store as default } from './store';

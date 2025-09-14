@@ -6,7 +6,13 @@ import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchPropertyById } from "@/store/slices/propertySlice";
 import { Loader } from "@/components/ui/Loader";
-import { MapPin } from "lucide-react";
+import { MapPin, Heart, Loader2 } from "lucide-react";
+import { 
+  toggleFavorite,
+  checkFavoriteStatus,
+  selectIsPropertyFavorited
+} from '@/store/slices/favoriteSlice';
+import { useToast } from '@/components/ui/useToast';
 
 export type Listing = {
   id: string;
@@ -29,11 +35,16 @@ export const CardDetails = () => {
   const searchParams = useSearchParams();
   const propertyId = searchParams?.get('id');
   const dispatch = useAppDispatch();
+  const toast = useToast();
   const { currentProperty, isLoading, error } = useAppSelector((state) => state.property);
   
   // Fallback state for direct API call
   const [fallbackProperty, setFallbackProperty] = useState(null);
   const [fallbackLoading, setFallbackLoading] = useState(false);
+  
+  // Favorite functionality
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
+  const isFavorited = useAppSelector(selectIsPropertyFavorited(propertyId || ''));
 
   // Debug logging
   console.log('🔍 CardDetails - URL search params:', searchParams?.toString());
@@ -45,6 +56,9 @@ export const CardDetails = () => {
     if (propertyId) {
       console.log('🚀 CardDetails - Dispatching fetchPropertyById with ID:', propertyId);
       dispatch(fetchPropertyById({ id: propertyId, incrementView: true }));
+      
+      // Check favorite status
+      dispatch(checkFavoriteStatus(propertyId));
       
       // Fallback direct API call
       setFallbackLoading(true);
@@ -63,6 +77,28 @@ export const CardDetails = () => {
       console.log('❌ CardDetails - No property ID found in URL');
     }
   }, [propertyId, dispatch]);
+
+  const handleToggleFavorite = async () => {
+    if (!propertyId || isFavoriteLoading) return;
+    
+    setIsFavoriteLoading(true);
+    
+    try {
+      const result = await dispatch(toggleFavorite({ propertyId })).unwrap();
+      
+      if (result.action === 'added') {
+        toast.success('Success', result.apiMessage || 'Property has been added to your favorites.');
+      } else if (result.action === 'removed') {
+        toast.success('Success', result.apiMessage || 'Property has been removed from your favorites.');
+      }
+    } catch (error: unknown) {
+      console.error('CardDetails favorite error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update favorites.';
+      toast.error('Error', errorMessage);
+    } finally {
+      setIsFavoriteLoading(false);
+    }
+  };
 
   if (isLoading || fallbackLoading) {
     return (
@@ -365,8 +401,26 @@ export const CardDetails = () => {
                   {property.listingType === 'rent' ? 'Contact Owner' : 'Make Offer'}
                 </button>
                 
-                <button className="w-full border border-gray-300 text-gray-700 font-medium py-3 rounded-lg hover:bg-gray-50 transition-colors">
-                  Save to Favorites
+                <button 
+                  onClick={handleToggleFavorite}
+                  disabled={isFavoriteLoading || !propertyId}
+                  className={`
+                    w-full font-medium py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2
+                    ${isFavorited 
+                      ? 'bg-red-500 text-white hover:bg-red-600 border border-red-500' 
+                      : 'border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-red-500 hover:text-red-500'
+                    }
+                    ${isFavoriteLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                  `}
+                >
+                  {isFavoriteLoading ? (
+                    <Loader2 className="animate-spin w-5 h-5" />
+                  ) : (
+                    <Heart 
+                      className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`}
+                    />
+                  )}
+                  {isFavorited ? 'Remove from Favorites' : 'Save to Favorites'}
                 </button>
               </div>
 

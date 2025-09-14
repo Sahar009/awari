@@ -4,11 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { Heart, Loader2 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { 
-  addToFavorites, 
-  removeFromFavorites, 
+  toggleFavorite,
   checkFavoriteStatus,
-  selectIsPropertyFavorited,
-  selectFavoriteNotes
+  selectIsPropertyFavorited
 } from '@/store/slices/favoriteSlice';
 import { useToast } from '@/components/ui/useToast';
 
@@ -30,7 +28,6 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   
   const isFavorited = useAppSelector(selectIsPropertyFavorited(propertyId));
-  const notes = useAppSelector(selectFavoriteNotes(propertyId));
 
   // Check favorite status on mount
   useEffect(() => {
@@ -45,15 +42,17 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
     setIsLoading(true);
     
     try {
-      if (isFavorited) {
-        await dispatch(removeFromFavorites(propertyId)).unwrap();
-        toast.success('Removed from favorites', 'Property has been removed from your favorites.');
-      } else {
-        await dispatch(addToFavorites({ propertyId })).unwrap();
-        toast.success('Added to favorites', 'Property has been added to your favorites.');
+      const result = await dispatch(toggleFavorite({ propertyId })).unwrap();
+      
+      if (result.action === 'added') {
+        toast.success('Success', result.apiMessage || 'Property has been added to your favorites.');
+      } else if (result.action === 'removed') {
+        toast.success('Success', result.apiMessage || 'Property has been removed from your favorites.');
       }
-    } catch (error: any) {
-      toast.error('Error', error || 'Failed to update favorites.');
+    } catch (error: unknown) {
+      console.error('FavoriteButton error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update favorites.';
+      toast.error('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }

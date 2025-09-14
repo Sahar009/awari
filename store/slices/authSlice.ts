@@ -397,4 +397,11 @@ const authSlice = createSlice({
 });
 
 export const { clearError, updateUser, hydrate } = authSlice.actions;
+
+// Selectors
+export const selectUser = (state: { auth: AuthState }) => state.auth.user;
+export const selectIsAuthenticated = (state: { auth: AuthState }) => state.auth.isAuthenticated;
+export const selectAuthLoading = (state: { auth: AuthState }) => state.auth.isLoading;
+export const selectAuthError = (state: { auth: AuthState }) => state.auth.error;
+
 export default authSlice.reducer;

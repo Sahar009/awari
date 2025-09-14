@@ -248,6 +248,7 @@ const PropertyListing: React.FC<PropertyListingProps> = ({
               {(properties.length > 0 ? properties : debugProperties).map((property, index) => {
                 console.log('🔍 PropertyListing - Property data:', property);
                 console.log('🔍 PropertyListing - Property ID:', property.id);
+                console.log('🔍 PropertyListing - Property index:', index, 'Property ID:', property.id);
                 return (
                   <div key={property.id || index}>
                     <Card

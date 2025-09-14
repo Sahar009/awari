@@ -19,10 +19,15 @@ api.interceptors.request.use(
     if (token) {
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('🔐 Request interceptor - Token attached:', token.substring(0, 20) + '...');
+    } else {
+      console.warn('⚠️ Request interceptor - No token found');
     }
+    console.log('🌐 Making request to:', (config.baseURL || '') + (config.url || ''), 'Method:', config.method?.toUpperCase());
     return config;
   },
   (error) => {
+    console.error('❌ Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -30,19 +35,38 @@ api.interceptors.request.use(
 // Response interceptor for handling errors
 api.interceptors.response.use(
   (response: AxiosResponse) => {
+    console.log('✅ Response received:', response.status, response.config.url);
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
 
+    console.error('❌ API Error:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: error.config?.url,
+      method: error.config?.method?.toUpperCase(),
+      data: error.response?.data,
+      message: error.message
+    });
+
     // Handle 401 Unauthorized errors
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
+      console.warn('🔒 Unauthorized access - clearing token and redirecting to login');
       
       // Clear token and redirect to login
       localStorage.removeItem('token');
-      window.location.href = '/auth/login';
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
+      }
       return Promise.reject(error);
+    }
+
+    // Handle 500 Internal Server Error
+    if (error.response?.status === 500) {
+      console.error('🚨 Internal Server Error - Backend issue:', error.response?.data);
+      error.message = error.response?.data?.message || 'Internal server error. Please try again later.';
     }
 
     // Handle other errors
