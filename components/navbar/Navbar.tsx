@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MenuIcon, X, Bell, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle, User, LogOut, Settings, UserCircle, ChevronDown, PlusCircle, Heart } from "lucide-react";
+import { MenuIcon, X, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle, User, LogOut, Settings, UserCircle, ChevronDown, PlusCircle, Heart } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Logo } from "./Logo";
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logoutUser } from '@/store/slices/authSlice';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -123,10 +124,7 @@ export const Navbar = () => {
               {hasAccess ? (
                 <>
                   {/* Notifications */}
-                  <div className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110 relative">
-                    <Bell size={20} className="text-slate-600" />
-                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse"></span>
-                  </div>
+                  <NotificationBell className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110" />
 
                   {/* Messages */}
                   <div className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110 relative">

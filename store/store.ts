@@ -3,6 +3,8 @@ import authReducer from './slices/authSlice';
 import propertyReducer from './slices/propertySlice';
 import favoriteReducer from './slices/favoriteSlice';
 import bookingReducer from './slices/bookingSlice';
+import availabilityReducer from './slices/availabilitySlice';
+import notificationReducer from './slices/notificationSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +12,8 @@ export const store = configureStore({
     property: propertyReducer,
     favorite: favoriteReducer,
     bookings: bookingReducer,
+    availability: availabilityReducer,
+    notifications: notificationReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

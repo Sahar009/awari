@@ -184,6 +184,20 @@ export const googleSignIn = createAsyncThunk(
   }
 );
 
+export const getProfile = createAsyncThunk(
+  'auth/getProfile',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiService.get<User>('/auth/profile');
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Get profile error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to get profile';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 export const logoutUser = createAsyncThunk(
   'auth/logout',
   async () => {
@@ -222,6 +236,7 @@ const authSlice = createSlice({
           state.token = token;
           state.isAuthenticated = true;
           console.log('Auth state hydrated with token');
+          // Note: User data will be fetched by getProfile thunk
         }
       }
     },
@@ -392,6 +407,27 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.error = null;
         localStorage.removeItem('token');
+      });
+
+    // Get Profile
+    builder
+      .addCase(getProfile.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(getProfile.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload;
+        state.error = null;
+        console.log('Profile loaded successfully:', action.payload);
+      })
+      .addCase(getProfile.rejected, (state, action) => {
+        state.isLoading = false;
+        state.user = null;
+        state.isAuthenticated = false;
+        state.error = action.payload as string;
+        localStorage.removeItem('token');
+        console.error('Failed to load profile:', action.payload);
       });
   },
 });

@@ -2,12 +2,25 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Users, CreditCard, Clock, CheckCircle, AlertCircle, MapPin } from 'lucide-react';
+import AvailabilityCalendar from '@/components/ui/AvailabilityCalendar';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { createBooking } from '@/store/slices/bookingSlice';
+import { 
+  checkDateRangeAvailability,
+  getUnavailableDates,
+  selectAvailabilityCheck,
+  // selectAvailabilityCheckLoading, // Unused
+  // selectAvailabilityCheckError, // Unused
+  selectUnavailableDates,
+  // selectUnavailableDatesLoading, // Unused
+  clearAvailabilityCheck,
+  clearUnavailableDates,
+  type AvailabilityCheckResponse
+} from '@/store/slices/availabilitySlice';
 import { useToast } from '@/components/ui/useToast';
 import { useRouter } from 'next/navigation';
 import { selectUser, selectIsAuthenticated } from '@/store/slices/authSlice';
-import { type Property } from '@/store/slices/propertySlice'; // Updated Property interface
+import { type Property } from '@/store/slices/propertySlice';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -37,6 +50,22 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
   // Auth state
   const user = useAppSelector(selectUser);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  
+  // Debug authentication state
+  console.log('🔐 Auth state in BookingModal:', {
+    isAuthenticated,
+    hasUser: !!user,
+    userId: user?.id,
+    userEmail: user?.email,
+    userObject: user
+  });
+  
+  // Availability state
+  const availabilityCheck = useAppSelector(selectAvailabilityCheck);
+  // const availabilityCheckLoading = useAppSelector(selectAvailabilityCheckLoading); // Unused
+  // const availabilityCheckError = useAppSelector(selectAvailabilityCheckError); // Unused
+  const unavailableDates = useAppSelector(selectUnavailableDates);
+  // const unavailableDatesLoading = useAppSelector(selectUnavailableDatesLoading); // Unused
   
   // Booking state
   const [currentStep, setCurrentStep] = useState(1);
@@ -73,6 +102,11 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
 
+  // Availability validation state
+  const [dateValidationError, setDateValidationError] = useState('');
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [dateSelectionMode, setDateSelectionMode] = useState<'checkin' | 'checkout' | null>(null);
+
   // Check authentication on open
   useEffect(() => {
     if (isOpen && !isAuthenticated) {
@@ -82,6 +116,28 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
       return;
     }
   }, [isOpen, isAuthenticated, onClose, router, toast]);
+
+  // Clear availability data when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      dispatch(clearAvailabilityCheck());
+      dispatch(clearUnavailableDates());
+      setDateValidationError('');
+      
+      // Load unavailable dates for the next 3 months
+      if (property?.id) {
+        const today = new Date();
+        const endDate = new Date();
+        endDate.setMonth(today.getMonth() + 3);
+        
+        dispatch(getUnavailableDates({
+          propertyId: property.id,
+          startDate: today.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0]
+        }));
+      }
+    }
+  }, [isOpen, dispatch, property?.id]);
 
   // Initialize booking type based on property
   useEffect(() => {
@@ -128,6 +184,61 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
 
   const handleInputChange = (field: keyof BookingFormData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Check availability when check-out date changes
+    if (field === 'checkOutDate' && formData.checkInDate && value) {
+      checkAvailability(formData.checkInDate, value as string);
+    }
+  };
+
+  const handleCalendarDateSelect = (date: string) => {
+    if (dateSelectionMode === 'checkin') {
+      setFormData(prev => ({ ...prev, checkInDate: date }));
+      setDateSelectionMode('checkout');
+      setDateValidationError('');
+    } else if (dateSelectionMode === 'checkout') {
+      if (formData.checkInDate && date <= formData.checkInDate) {
+        setDateValidationError('Check-out date must be after check-in date');
+        return;
+      }
+      setFormData(prev => ({ ...prev, checkOutDate: date }));
+      setDateSelectionMode(null);
+      
+      // Check availability when both dates are selected
+      if (formData.checkInDate) {
+        checkAvailability(formData.checkInDate, date);
+      }
+    } else {
+      // Start with check-in date selection
+      setFormData(prev => ({ ...prev, checkInDate: date }));
+      setDateSelectionMode('checkout');
+      setDateValidationError('');
+    }
+  };
+
+  const checkAvailability = async (checkInDate: string, checkOutDate: string) => {
+    if (!property?.id || !checkInDate || !checkOutDate) return;
+
+    setIsCheckingAvailability(true);
+    setDateValidationError('');
+
+    try {
+      await dispatch(checkDateRangeAvailability({
+        propertyId: property.id,
+        checkInDate,
+        checkOutDate
+      })).unwrap();
+
+      // Check the result
+      if (availabilityCheck && !availabilityCheck.isAvailable) {
+        setDateValidationError(`Selected dates are not available. Conflicting dates: ${availabilityCheck.conflicts.map(c => c.date).join(', ')}`);
+      }
+    } catch (error: unknown) {
+      console.error('Availability check failed:', error);
+      setDateValidationError('Failed to check availability. Please try again.');
+    } finally {
+      setIsCheckingAvailability(false);
+    }
   };
 
   const handleCouponApply = async () => {
@@ -216,11 +327,52 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
   };
 
   const handleBookingSubmit = async () => {
-    if (!property || !user) return;
+    console.log('🎯 handleBookingSubmit called!', {
+      bookingType,
+      currentStep,
+      isLastStep: currentStep === getTotalSteps(),
+      property: property?.id,
+      user: user?.id,
+      formData
+    });
+    
+    if (!property || !user) {
+      console.error('❌ Missing property or user:', { 
+        property: !!property, 
+        user: !!user, 
+        isAuthenticated,
+        userData: user,
+        authState: { isAuthenticated, hasUser: !!user }
+      });
+      
+      if (!user && isAuthenticated) {
+        toast.error('Authentication Error', 'User data is missing. Please log in again.');
+        router.push('/auth/login');
+      } else if (!isAuthenticated) {
+        toast.error('Authentication Required', 'Please log in to make a booking.');
+        router.push('/auth/login');
+      }
+      return;
+    }
 
     setIsLoading(true);
     
     try {
+      // For shortlet bookings, validate availability one more time before submission
+      if (bookingType === 'shortlet' && formData.checkInDate && formData.checkOutDate) {
+        const availabilityResult = await dispatch(checkDateRangeAvailability({
+          propertyId: property.id,
+          checkInDate: formData.checkInDate,
+          checkOutDate: formData.checkOutDate
+        })).unwrap() as AvailabilityCheckResponse;
+
+        if (availabilityResult && !availabilityResult.isAvailable) {
+          toast.error('Booking Failed', 'The selected dates are no longer available. Please choose different dates.');
+          setIsLoading(false);
+          return;
+        }
+      }
+
       const bookingData = {
         propertyId: property.id,
         bookingType,
@@ -246,7 +398,12 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
         specialRequests: formData.specialRequests,
       };
 
-      await dispatch(createBooking(bookingData)).unwrap();
+      console.log('🚀 About to create booking with data:', bookingData);
+      console.log('🎯 Booking type:', bookingType);
+      console.log('🏠 Property ID:', property.id);
+      
+      const result = await dispatch(createBooking(bookingData)).unwrap();
+      console.log('✅ Booking created successfully:', result);
       
       toast.success('Booking Created!', 
         bookingType === 'shortlet' ? 'Your booking has been confirmed!' :
@@ -259,7 +416,26 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
       
     } catch (error: unknown) {
       console.error('Booking error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create booking';
+      
+      // Handle different types of errors
+      let errorMessage = 'Failed to create booking';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = (error as Error).message;
+      }
+      
+      console.error('Detailed booking error:', {
+        error,
+        errorMessage,
+        bookingType,
+        propertyId: property?.id,
+        formData
+      });
+      
       toast.error('Booking Failed', errorMessage);
     } finally {
       setIsLoading(false);
@@ -290,32 +466,102 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
               <p className="text-gray-600">Choose your check-in and check-out dates</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Check-in Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.checkInDate}
-                  onChange={(e) => handleInputChange('checkInDate', e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+            {/* Date Selection Instructions */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="w-5 h-5 text-blue-600" />
+                <span className="font-medium text-blue-800">Select Your Dates</span>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Check-out Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.checkOutDate}
-                  onChange={(e) => handleInputChange('checkOutDate', e.target.value)}
-                  min={formData.checkInDate || new Date().toISOString().split('T')[0]}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+              <p className="text-sm text-blue-700">
+                {!dateSelectionMode && !formData.checkInDate && "Click on your desired check-in date to start"}
+                {dateSelectionMode === 'checkout' && formData.checkInDate && `Now select your check-out date (after ${formData.checkInDate})`}
+                {formData.checkInDate && formData.checkOutDate && "Dates selected! Review your selection below."}
+              </p>
             </div>
+
+            {/* Custom Calendar */}
+            <AvailabilityCalendar
+              unavailableDates={unavailableDates?.unavailableDates || []}
+              unavailableDateDetails={unavailableDates?.unavailableDateDetails || []}
+              selectedStartDate={formData.checkInDate}
+              selectedEndDate={formData.checkOutDate}
+              onDateSelect={handleCalendarDateSelect}
+              className="mb-4"
+            />
+
+            {/* Selected Dates Summary */}
+            {(formData.checkInDate || formData.checkOutDate) && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                <h4 className="font-medium mb-2">Selected Dates</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                      Check-in Date
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="date"
+                        value={formData.checkInDate}
+                        onChange={(e) => handleInputChange('checkInDate', e.target.value)}
+                        className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
+                      />
+                      <button
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, checkInDate: '', checkOutDate: '' }));
+                          setDateSelectionMode(null);
+                          setDateValidationError('');
+                        }}
+                        className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded transition-colors"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                      Check-out Date
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="date"
+                        value={formData.checkOutDate}
+                        onChange={(e) => handleInputChange('checkOutDate', e.target.value)}
+                        min={formData.checkInDate || new Date().toISOString().split('T')[0]}
+                        className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
+                      />
+                      {isCheckingAvailability && (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Date Validation Error */}
+            {dateValidationError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                  <span className="text-red-800 text-sm font-medium">Date Not Available</span>
+                </div>
+                <p className="text-red-700 text-sm mt-1">{dateValidationError}</p>
+              </div>
+            )}
+
+            {/* Unavailable Dates Display */}
+            {unavailableDates && unavailableDates.unavailableDates.length > 0 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="w-5 h-5 text-yellow-600" />
+                  <span className="text-yellow-800 text-sm font-medium">Unavailable Dates</span>
+                </div>
+                <p className="text-yellow-700 text-sm">
+                  The following dates are currently unavailable: {unavailableDates.unavailableDates.slice(0, 5).join(', ')}
+                  {unavailableDates.unavailableDates.length > 5 && ` and ${unavailableDates.unavailableDates.length - 5} more...`}
+                </p>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -910,11 +1156,33 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
 
   if (!isOpen) return null;
 
+  // Check authentication before showing modal
+  if (!isAuthenticated) {
+    console.warn('🚫 User not authenticated, closing modal');
+    onClose();
+    router.push('/auth/login');
+    return null;
+  }
+
+  // If authenticated but user data is still loading, show loading state
+  if (isAuthenticated && !user) {
+    return (
+      <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl border border-gray-200">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Loading user data...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const isLastStep = currentStep === getTotalSteps();
   const canProceed = () => {
     switch (bookingType) {
       case 'shortlet':
-        return currentStep === 1 ? (formData.checkInDate && formData.checkOutDate) :
+        return currentStep === 1 ? (formData.checkInDate && formData.checkOutDate && !dateValidationError && !isCheckingAvailability) :
                currentStep === 2 ? (formData.guestName && formData.guestEmail && formData.guestPhone) :
                true;
       case 'rental':
@@ -991,24 +1259,38 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
           </button>
 
           <div className="flex gap-3">
-            {isLastStep ? (
+            <button
+              onClick={() => {
+                console.log('🖱️ Button clicked!', {
+                  isLastStep,
+                  currentStep,
+                  totalSteps: getTotalSteps(),
+                  canProceed: canProceed(),
+                  isLoading,
+                  bookingType
+                });
+                if (isLastStep) {
+                  handleBookingSubmit();
+                } else {
+                  handleNextStep();
+                }
+              }}
+              disabled={!canProceed() || isLoading}
+              className={`px-6 py-2 rounded-lg transition-colors ${
+                canProceed() && !isLoading
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {isLoading ? 'Processing...' : isLastStep ? 'Complete Booking' : 'Next'}
+            </button>
+            
+            {isLastStep && (
               <button
                 onClick={onClose}
                 className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
               >
-                Close
-              </button>
-            ) : (
-              <button
-                onClick={isLastStep ? handleBookingSubmit : handleNextStep}
-                disabled={!canProceed() || isLoading}
-                className={`px-6 py-2 rounded-lg transition-colors ${
-                  canProceed() && !isLoading
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                {isLoading ? 'Processing...' : isLastStep ? 'Complete Booking' : 'Next'}
+                Cancel
               </button>
             )}
           </div>

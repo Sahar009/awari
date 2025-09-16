@@ -619,3 +619,6 @@ test('createBooking should handle success', async () => {
 ```
 
 This comprehensive booking slice provides all the functionality needed to manage property bookings effectively in your application!
+
+
+

@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { apiService } from '../../services/api';
 
-// Types and Interfaces
 export interface Booking {
   id: string;
   propertyId: string;
@@ -755,3 +754,6 @@ export const selectOverdueBookings = (state: { bookings: BookingState }) =>
   });
 
 export default bookingSlice.reducer;
+
+
+
