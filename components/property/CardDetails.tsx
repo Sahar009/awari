@@ -1,7 +1,7 @@
 "use client";
 import { Rating } from "@/components/ui/Rating";
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchPropertyById, type Property } from "@/store/slices/propertySlice";
@@ -14,6 +14,16 @@ import {
 } from '@/store/slices/favoriteSlice';
 import { useToast } from '@/components/ui/useToast';
 import BookingModal from '@/components/booking/BookingModal';
+import { 
+  getReviews,
+  getPropertyRatingSummary,
+  selectReviews,
+  selectPropertySummary,
+  selectReviewsLoading,
+  selectSummaryLoading,
+  type Review
+} from '@/store/slices/reviewsSlice';
+import { Star, ThumbsUp, Flag, MessageCircle } from 'lucide-react';
 
 export type Listing = {
   id: string;
@@ -49,40 +59,114 @@ export const CardDetails = () => {
   
   // Booking modal state
   const [showBookingModal, setShowBookingModal] = useState(false);
+  
+  // Reviews state
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [reviewsLoaded, setReviewsLoaded] = useState(false);
+  const [summaryLoaded, setSummaryLoaded] = useState(false);
+  
+  // Refs to prevent duplicate API calls
+  const reviewsApiCalled = useRef(false);
+  const summaryApiCalled = useRef(false);
+  const favoriteApiCalled = useRef(false);
+  
+  // Track which property we've loaded data for
+  const loadedPropertyId = useRef<string | null>(null);
+  
+  // Reviews selectors
+  const reviews = useAppSelector(selectReviews);
+  const propertySummary = useAppSelector(selectPropertySummary);
+  const reviewsLoading = useAppSelector(selectReviewsLoading);
+  const summaryLoading = useAppSelector(selectSummaryLoading);
 
   // Debug logging
   console.log('🔍 CardDetails - URL search params:', searchParams?.toString());
   console.log('🔍 CardDetails - Property ID:', propertyId);
   console.log('🔍 CardDetails - Redux state:', { currentProperty, isLoading, error });
+  console.log('🔍 CardDetails - Reviews state:', { reviewsLoaded, summaryLoaded, reviewsLoading, summaryLoading });
+  console.log('🔍 CardDetails - API call refs:', { 
+    reviewsApiCalled: reviewsApiCalled.current, 
+    summaryApiCalled: summaryApiCalled.current,
+    favoriteApiCalled: favoriteApiCalled.current,
+    loadedPropertyId: loadedPropertyId.current
+  });
 
+
+  // Single effect to load all data for a property
   useEffect(() => {
-    console.log('🔍 CardDetails - useEffect triggered with propertyId:', propertyId);
-    if (propertyId) {
-      console.log('🚀 CardDetails - Dispatching fetchPropertyById with ID:', propertyId);
-      dispatch(fetchPropertyById({ id: propertyId, incrementView: true }));
-      
-      // Check favorite status
-      dispatch(checkFavoriteStatus(propertyId));
-      
-      // Fallback direct API call
-      setFallbackLoading(true);
-      fetch(`https://awari-backend.onrender.com/api/properties/${propertyId}?incrementView=true`)
-        .then(res => res.json())
-        .then(data => {
-          console.log('🔍 CardDetails - Fallback API response:', data);
-          setFallbackProperty(data.data);
-          setFallbackLoading(false);
-        })
-        .catch(err => {
-          console.error('🔍 CardDetails - Fallback API error:', err);
-          setFallbackLoading(false);
-        });
-    } else {
-      console.log('❌ CardDetails - No property ID found in URL');
+    if (!propertyId) return;
+    
+    // Check if we've already loaded data for this property
+    if (loadedPropertyId.current === propertyId) {
+      console.log('🔍 CardDetails - Data already loaded for property:', propertyId);
+      return;
     }
-  }, [propertyId, dispatch]);
+    
+    console.log('🔍 CardDetails - Loading data for new property:', propertyId);
+    
+    // Mark this property as being loaded
+    loadedPropertyId.current = propertyId;
+    
+    // Reset states for new property
+    setReviewsLoaded(false);
+    setSummaryLoaded(false);
+    reviewsApiCalled.current = false;
+    summaryApiCalled.current = false;
+    favoriteApiCalled.current = false;
+    
+    // Load property data
+    console.log('🚀 CardDetails - Loading property data for:', propertyId);
+    dispatch(fetchPropertyById({ id: propertyId, incrementView: true }));
+    
+    // Check favorite status
+    console.log('🚀 CardDetails - Checking favorite status for:', propertyId);
+    dispatch(checkFavoriteStatus(propertyId));
+    
+    // Load reviews data
+    console.log('🚀 CardDetails - Loading reviews for:', propertyId);
+    dispatch(getReviews({ 
+      propertyId: propertyId,
+      status: 'approved',
+      limit: 5,
+      sortBy: 'createdAt',
+      sortOrder: 'DESC'
+    }));
+    
+    // Load rating summary
+    console.log('🚀 CardDetails - Loading rating summary for:', propertyId);
+    dispatch(getPropertyRatingSummary(propertyId));
+    
+    // Fallback direct API call
+    setFallbackLoading(true);
+    fetch(`https://awari-backend.onrender.com/api/properties/${propertyId}?incrementView=true`)
+      .then(res => res.json())
+      .then(data => {
+        console.log('🔍 CardDetails - Fallback API response:', data);
+        setFallbackProperty(data.data);
+        setFallbackLoading(false);
+      })
+      .catch(err => {
+        console.error('🔍 CardDetails - Fallback API error:', err);
+        setFallbackLoading(false);
+      });
+  }, [propertyId]); // Only depend on propertyId
 
-  const handleToggleFavorite = async () => {
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      console.log('🔍 CardDetails - Component unmounting, cleaning up...');
+      setReviewsLoaded(false);
+      setSummaryLoaded(false);
+      setFallbackProperty(null);
+      setFallbackLoading(false);
+      reviewsApiCalled.current = false;
+      summaryApiCalled.current = false;
+      favoriteApiCalled.current = false;
+      loadedPropertyId.current = null;
+    };
+  }, []);
+
+  const handleToggleFavorite = useCallback(async () => {
     if (!propertyId || isFavoriteLoading) return;
     
     setIsFavoriteLoading(true);
@@ -102,7 +186,64 @@ export const CardDetails = () => {
     } finally {
       setIsFavoriteLoading(false);
     }
-  };
+  }, [propertyId, isFavoriteLoading, dispatch, toast]);
+
+  // Function to refresh reviews data
+  const refreshReviewsData = useCallback(() => {
+    if (propertyId) {
+      setReviewsLoaded(false);
+      setSummaryLoaded(false);
+      reviewsApiCalled.current = false;
+      summaryApiCalled.current = false;
+      loadedPropertyId.current = null; // Reset to allow reloading
+      dispatch(getReviews({ 
+        propertyId: propertyId,
+        status: 'approved',
+        limit: 5,
+        sortBy: 'createdAt',
+        sortOrder: 'DESC'
+      }));
+      dispatch(getPropertyRatingSummary(propertyId));
+    }
+  }, [propertyId, dispatch]);
+
+  // Helper functions
+  const renderStars = useCallback((rating: number, size: 'sm' | 'md' | 'lg' = 'md') => {
+    const sizeClasses = {
+      sm: 'h-3 w-3',
+      md: 'h-4 w-4',
+      lg: 'h-5 w-5'
+    };
+    
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star
+        key={i}
+        className={`${sizeClasses[size]} ${i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+      />
+    ));
+  }, []);
+
+  const formatDate = useCallback((dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }, []);
+
+  const getDisplayRating = useCallback(() => {
+    if (propertySummary) {
+      return propertySummary.averageRating;
+    }
+    return 4.8; // fallback rating
+  }, [propertySummary]);
+
+  const getDisplayReviewsCount = useCallback(() => {
+    if (propertySummary) {
+      return propertySummary.totalReviews;
+    }
+    return 24; // fallback count
+  }, [propertySummary]);
 
   if (isLoading || fallbackLoading) {
     return (
@@ -163,8 +304,18 @@ export const CardDetails = () => {
                 <span>{property.address}, {property.city}, {property.state}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Rating rating={4.8} />
-                <span className="text-sm text-gray-700">4.8 · 24 reviews</span>
+                <div className="flex items-center gap-1">
+                  {renderStars(Math.floor(getDisplayRating()), 'sm')}
+                  <span className="text-sm font-medium text-gray-700">
+                    {getDisplayRating().toFixed(1)}
+                  </span>
+                </div>
+                <span className="text-sm text-gray-700">
+                  {getDisplayReviewsCount()} reviews
+                </span>
+                {summaryLoading && (
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                )}
               </div>
               <div className="flex items-center gap-1">
                 <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
@@ -233,11 +384,11 @@ export const CardDetails = () => {
               </div>
               <div>
                 <h3 className="font-semibold text-lg">{property.owner?.firstName} {property.owner?.lastName}</h3>
-                <p className="text-gray-600">{property.owner?.email}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <Rating rating={4.9} />
-                  <span className="text-sm text-gray-500">4.9 · Super Host</span>
-                </div>
+                {/* <p className="text-gray-600">{property.owner?.email}</p> */}
+                {/* <div className="flex items-center gap-2 mt-1">
+                  <div className="flex">{renderStars(5, 'sm')}</div>
+                  <span className="text-sm text-gray-500">5.0 · Super Host</span>
+                </div> */}
               </div>
             </div>
           </div>
@@ -377,6 +528,184 @@ export const CardDetails = () => {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Reviews Section */}
+          <div className="bg-white rounded-xl p-6 shadow-lg border">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold">Reviews & Ratings</h2>
+              {reviews.length > 0 && (
+                <button
+                  onClick={() => setShowAllReviews(!showAllReviews)}
+                  className="text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  {showAllReviews ? 'Show Less' : 'View All Reviews'}
+                </button>
+              )}
+            </div>
+
+            {/* Overall Rating Summary */}
+            {propertySummary && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-gray-900">
+                      {propertySummary.averageRating?.toFixed(1) || '0.0'}
+                    </div>
+                    <div className="flex justify-center mt-1">
+                      {renderStars(Math.floor(propertySummary.averageRating || 0), 'sm')}
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      {propertySummary.totalReviews || 0} reviews
+                    </div>
+                  </div>
+                  
+                  {/* Rating Breakdown */}
+                  <div className="flex-1">
+                    <div className="space-y-2">
+                      {propertySummary.categoryRatings?.cleanliness && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Cleanliness</span>
+                          <div className="flex items-center gap-2">
+                            <div className="flex">{renderStars(Math.floor(propertySummary.categoryRatings.cleanliness), 'sm')}</div>
+                            <span className="font-medium">{propertySummary.categoryRatings.cleanliness.toFixed(1)}</span>
+                          </div>
+                        </div>
+                      )}
+                      {propertySummary.categoryRatings?.communication && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Communication</span>
+                          <div className="flex items-center gap-2">
+                            <div className="flex">{renderStars(Math.floor(propertySummary.categoryRatings.communication), 'sm')}</div>
+                            <span className="font-medium">{propertySummary.categoryRatings.communication.toFixed(1)}</span>
+                          </div>
+                        </div>
+                      )}
+                      {propertySummary.categoryRatings?.location && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Location</span>
+                          <div className="flex items-center gap-2">
+                            <div className="flex">{renderStars(Math.floor(propertySummary.categoryRatings.location), 'sm')}</div>
+                            <span className="font-medium">{propertySummary.categoryRatings.location.toFixed(1)}</span>
+                          </div>
+                        </div>
+                      )}
+                      {propertySummary.categoryRatings?.value && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Value</span>
+                          <div className="flex items-center gap-2">
+                            <div className="flex">{renderStars(Math.floor(propertySummary.categoryRatings.value), 'sm')}</div>
+                            <span className="font-medium">{propertySummary.categoryRatings.value.toFixed(1)}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Individual Reviews */}
+            {reviewsLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="text-gray-600 mt-2">Loading reviews...</p>
+              </div>
+            ) : reviews.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-gray-400 mb-2">
+                  <Star className="h-12 w-12 mx-auto" />
+                </div>
+                <p className="text-gray-600">No reviews yet</p>
+                <p className="text-sm text-gray-500">Be the first to review this property!</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {reviews.slice(0, showAllReviews ? reviews.length : 3).map((review) => (
+                  <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+                          <span className="text-white font-semibold text-sm">
+                            {review.reviewer?.firstName?.[0] || 'U'}
+                          </span>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900">
+                            {review.reviewer?.firstName} {review.reviewer?.lastName}
+                          </h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className="flex">{renderStars(review.rating, 'sm')}</div>
+                            <span className="text-sm text-gray-600">
+                              {formatDate(review.createdAt)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 transition-colors">
+                          <ThumbsUp className="h-3 w-3" />
+                          {review.helpfulCount}
+                        </button>
+                        <button className="p-1 text-gray-400 hover:text-red-600 transition-colors">
+                          <Flag className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {review.title && (
+                      <h5 className="font-medium text-gray-900 mb-2">{review.title}</h5>
+                    )}
+                    
+                    <p className="text-gray-700 leading-relaxed mb-3">{review.content}</p>
+                    
+                    {/* Category Ratings */}
+                    {(review.cleanliness || review.communication || review.location || review.value) && (
+                      <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 mb-3">
+                        {review.cleanliness && (
+                          <div className="flex items-center justify-between">
+                            <span>Cleanliness</span>
+                            <div className="flex">{renderStars(review.cleanliness, 'sm')}</div>
+                          </div>
+                        )}
+                        {review.communication && (
+                          <div className="flex items-center justify-between">
+                            <span>Communication</span>
+                            <div className="flex">{renderStars(review.communication, 'sm')}</div>
+                          </div>
+                        )}
+                        {review.location && (
+                          <div className="flex items-center justify-between">
+                            <span>Location</span>
+                            <div className="flex">{renderStars(review.location, 'sm')}</div>
+                          </div>
+                        )}
+                        {review.value && (
+                          <div className="flex items-center justify-between">
+                            <span>Value</span>
+                            <div className="flex">{renderStars(review.value, 'sm')}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Owner Response */}
+                    {review.ownerResponse && (
+                      <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <MessageCircle className="h-4 w-4 text-blue-600" />
+                          <span className="font-medium text-blue-800">Owner Response</span>
+                          <span className="text-xs text-blue-600">
+                            {formatDate(review.ownerResponseAt || '')}
+                          </span>
+                        </div>
+                        <p className="text-blue-700">{review.ownerResponse}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
         </div>

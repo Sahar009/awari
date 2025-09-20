@@ -19,7 +19,7 @@ import {
 } from '@/store/slices/availabilitySlice';
 import { useToast } from '@/components/ui/useToast';
 import { useRouter } from 'next/navigation';
-import { selectUser, selectIsAuthenticated } from '@/store/slices/authSlice';
+import { selectUser, selectIsAuthenticated, getProfile } from '@/store/slices/authSlice';
 import { type Property } from '@/store/slices/propertySlice';
 
 interface BookingModalProps {
@@ -107,15 +107,23 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [dateSelectionMode, setDateSelectionMode] = useState<'checkin' | 'checkout' | null>(null);
 
-  // Check authentication on open
+  // Check authentication and load user data on open
   useEffect(() => {
-    if (isOpen && !isAuthenticated) {
-      toast.error('Authentication Required', 'Please log in to make a booking');
-      onClose();
-      router.push('/login');
-      return;
+    if (isOpen) {
+      if (!isAuthenticated) {
+        toast.error('Authentication Required', 'Please log in to make a booking');
+        onClose();
+        router.push('/auth/login');
+        return;
+      }
+      
+      // If authenticated but no user data, fetch profile
+      if (isAuthenticated && !user) {
+        console.log('🔐 User authenticated but no user data, fetching profile...');
+        dispatch(getProfile());
+      }
     }
-  }, [isOpen, isAuthenticated, onClose, router, toast]);
+  }, [isOpen, isAuthenticated, user, onClose, router, toast, dispatch]);
 
   // Clear availability data when modal opens/closes
   useEffect(() => {
@@ -333,26 +341,39 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
       isLastStep: currentStep === getTotalSteps(),
       property: property?.id,
       user: user?.id,
+      isAuthenticated,
       formData
     });
     
-    if (!property || !user) {
-      console.error('❌ Missing property or user:', { 
-        property: !!property, 
-        user: !!user, 
-        isAuthenticated,
-        userData: user,
-        authState: { isAuthenticated, hasUser: !!user }
-      });
-      
-      if (!user && isAuthenticated) {
-        toast.error('Authentication Error', 'User data is missing. Please log in again.');
-        router.push('/auth/login');
-      } else if (!isAuthenticated) {
-        toast.error('Authentication Required', 'Please log in to make a booking.');
-        router.push('/auth/login');
-      }
+    if (!property) {
+      console.error('❌ Missing property:', property);
+      toast.error('Error', 'Property information is missing.');
       return;
+    }
+    
+    if (!isAuthenticated) {
+      console.error('❌ User not authenticated');
+      toast.error('Authentication Required', 'Please log in to make a booking.');
+      router.push('/auth/login');
+      return;
+    }
+    
+    if (!user) {
+      console.error('❌ User data missing, attempting to fetch...');
+      try {
+        await dispatch(getProfile()).unwrap();
+        // User data should now be available, but let's check again
+        if (!user) {
+          toast.error('Authentication Error', 'Unable to load user data. Please log in again.');
+          router.push('/auth/login');
+          return;
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch user profile:', error);
+        toast.error('Authentication Error', 'Unable to load user data. Please log in again.');
+        router.push('/auth/login');
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -401,6 +422,9 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
       console.log('🚀 About to create booking with data:', bookingData);
       console.log('🎯 Booking type:', bookingType);
       console.log('🏠 Property ID:', property.id);
+      console.log('👤 User ID:', user.id);
+      console.log('🔐 Auth token present:', !!localStorage.getItem('token'));
+      console.log('📡 API Base URL:', process.env.NEXT_PUBLIC_API_URL);
       
       const result = await dispatch(createBooking(bookingData)).unwrap();
       console.log('✅ Booking created successfully:', result);

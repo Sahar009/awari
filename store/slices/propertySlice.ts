@@ -370,7 +370,14 @@ export const fetchPropertyById = createAsyncThunk(
       console.log('🔍 fetchPropertyById - response.data:', response.data);
       console.log('🔍 fetchPropertyById - response.data.data:', response.data.data);
       
-      return response.data.data;
+      // Check if the data is nested or direct
+      if (response.data.data) {
+        console.log('🔍 fetchPropertyById - Using nested data:', response.data.data);
+        return response.data.data;
+      } else {
+        console.log('🔍 fetchPropertyById - Using direct data:', response.data);
+        return response.data;
+      }
     } catch (error: unknown) {
       const errorMessage = error && typeof error === 'object' && 'message' in error 
         ? (error as { message: string }).message 
@@ -687,9 +694,10 @@ const propertySlice = createSlice({
       })
       .addCase(fetchPropertyById.fulfilled, (state, action) => {
         console.log('✅ fetchPropertyById.fulfilled - Action payload:', action.payload);
-        console.log('✅ fetchPropertyById.fulfilled - Setting currentProperty:', action.payload);
         state.isLoading = false;
-        state.currentProperty = action.payload;
+        // Handle both nested and direct response structures
+        const propertyData = (action.payload as any)?.data || action.payload;
+        state.currentProperty = propertyData as Property;
         console.log('✅ fetchPropertyById.fulfilled - State updated, currentProperty:', state.currentProperty);
       })
       .addCase(fetchPropertyById.rejected, (state, action) => {

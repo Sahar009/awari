@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Bell, X } from 'lucide-react';
+import { Bell, X, Home, CreditCard, Building2, MessageCircle, Settings, Clock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { 
   fetchUserNotifications,
@@ -20,6 +21,7 @@ interface NotificationBellProps {
 
 const NotificationBell: React.FC<NotificationBellProps> = ({ className = '' }) => {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const user = useAppSelector(selectUser);
   const notifications = useAppSelector(selectNotifications);
   const unreadCount = useAppSelector(selectUnreadCount);
@@ -34,7 +36,6 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className = '' }) =
   // Load notifications when component mounts or user changes
   useEffect(() => {
     if (user?.id) {
-      console.log('🔔 Loading notifications for user:', user.id);
       dispatch(fetchUserNotifications({ 
         userId: user.id, 
         filters: { 
@@ -45,35 +46,12 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className = '' }) =
     }
   }, [dispatch, user?.id]);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('🔔 NotificationBell state:', {
-      user: user?.id,
-      notificationsCount: notifications.length,
-      unreadCount,
-      unreadNotificationsCount: unreadNotifications.length,
-      isLoading,
-      error,
-      isDropdownOpen,
-      notifications: notifications.map(n => ({ id: n.id, title: n.title, status: n.status, category: n.category }))
-    });
-  }, [user?.id, notifications.length, unreadCount, unreadNotifications.length, isLoading, error, isDropdownOpen, notifications]);
-
-  // Log errors
-  useEffect(() => {
-    if (error) {
-      console.error('🔔 NotificationBell error:', error);
-    }
-  }, [error]);
-
   const handleBellClick = () => {
     const newIsOpen = !isDropdownOpen;
     setIsDropdownOpen(newIsOpen);
     
     // Refresh notifications when opening the dropdown
     if (newIsOpen && user?.id) {
-      console.log('🔔 Refreshing notifications for dropdown');
-      // First try to load all notifications to see if there are any
       dispatch(fetchUserNotifications({ 
         userId: user.id, 
         filters: { 
@@ -87,6 +65,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className = '' }) =
   const handleNotificationClick = (notification: Notification) => {
     dispatch(markNotificationAsRead(notification.id));
     setIsDropdownOpen(false);
+    router.push('/notifications');
   };
 
   const handleMarkAllRead = () => {
@@ -96,19 +75,6 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className = '' }) =
     setIsDropdownOpen(false);
   };
 
-  const handleTestAPI = () => {
-    if (user?.id) {
-      console.log('🧪 Testing API call with user ID:', user.id);
-      dispatch(fetchUserNotifications({ 
-        userId: user.id, 
-        filters: { 
-          limit: 20,
-          page: 1,
-          includeArchived: false
-        } 
-      }));
-    }
-  };
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -123,13 +89,13 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className = '' }) =
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'booking': return '🏠';
-      case 'payment': return '💳';
-      case 'property': return '🏘️';
-      case 'message': return '💬';
-      case 'system': return '⚙️';
-      case 'reminder': return '⏰';
-      default: return '🔔';
+      case 'booking': return <Home className="h-4 w-4 text-blue-600" />;
+      case 'payment': return <CreditCard className="h-4 w-4 text-green-600" />;
+      case 'property': return <Building2 className="h-4 w-4 text-purple-600" />;
+      case 'message': return <MessageCircle className="h-4 w-4 text-orange-600" />;
+      case 'system': return <Settings className="h-4 w-4 text-gray-600" />;
+      case 'reminder': return <Clock className="h-4 w-4 text-yellow-600" />;
+      default: return <Bell className="h-4 w-4 text-gray-600" />;
     }
   };
 
@@ -167,12 +133,6 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className = '' }) =
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
             <div className="flex items-center gap-2">
-              <button
-                onClick={handleTestAPI}
-                className="text-xs text-green-600 hover:text-green-800 transition-colors"
-              >
-                Test API
-              </button>
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
@@ -201,13 +161,6 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className = '' }) =
               <div className="text-center py-8">
                 <Bell className="h-12 w-12 text-gray-300 mx-auto mb-2" />
                 <p className="text-gray-600">No new notifications</p>
-                <div className="text-xs text-gray-400 mt-2">
-                  <div>Total notifications: {notifications.length}</div>
-                  <div>Unread count: {unreadCount}</div>
-                  <div>User ID: {user?.id}</div>
-                  <div>Loading: {isLoading ? 'Yes' : 'No'}</div>
-                  {error && <div className="text-red-400">Error: {error}</div>}
-                </div>
               </div>
             ) : (
               unreadNotifications.slice(0, 5).map((notification) => (
@@ -217,7 +170,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className = '' }) =
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="text-lg">{getCategoryIcon(notification.category)}</div>
+                    <div className="flex items-center justify-center w-6 h-6">{getCategoryIcon(notification.category)}</div>
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-medium text-gray-900 truncate">
                         {notification.title}

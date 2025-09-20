@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { apiService } from '../../services/api';
 
-// Types based on backend schema
+// Types based on backend schema - Updated with all User fields
 export interface User {
   id: string;
   email: string;
@@ -19,6 +19,15 @@ export interface User {
   language?: string;
   loginCount?: number;
   emailVerificationExpires?: string;
+  dateOfBirth?: string;
+  gender?: 'male' | 'female' | 'other';
+  address?: string;
+  city?: string;
+  state?: string;
+  bio?: string;
+  socialLinks?: Record<string, string>;
+  preferences?: Record<string, any>;
+  lastLogin?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -194,6 +203,37 @@ export const getProfile = createAsyncThunk(
       console.error('Get profile error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to get profile';
       return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const updateProfile = createAsyncThunk(
+  'auth/updateProfile',
+  async (profileData: Partial<User>, { rejectWithValue }) => {
+    try {
+      const response = await apiService.put<User>('/auth/profile', profileData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Update profile error:', error);
+      
+      // Handle validation errors from API
+      if (error.response?.data?.success === false && error.response?.data?.errors) {
+        const validationErrors = error.response.data.errors;
+        const errorMessages = validationErrors.map((err: any) => `${err.path}: ${err.msg}`).join(', ');
+        return rejectWithValue({
+          type: 'validation',
+          message: error.response.data.message || 'Validation failed',
+          errors: validationErrors,
+          formattedMessage: errorMessages
+        });
+      }
+      
+      // Handle other API errors
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update profile';
+      return rejectWithValue({
+        type: 'general',
+        message: errorMessage
+      });
     }
   }
 );
@@ -428,6 +468,24 @@ const authSlice = createSlice({
         state.error = action.payload as string;
         localStorage.removeItem('token');
         console.error('Failed to load profile:', action.payload);
+      });
+
+    // Update Profile
+    builder
+      .addCase(updateProfile.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload;
+        state.error = null;
+        console.log('Profile updated successfully:', action.payload);
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+        console.error('Failed to update profile:', action.payload);
       });
   },
 });

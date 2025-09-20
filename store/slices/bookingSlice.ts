@@ -182,16 +182,26 @@ export const createBooking = createAsyncThunk<
   async (bookingData: CreateBookingRequest, { rejectWithValue }) => {
     try {
       console.log('🔄 Creating booking:', bookingData);
-      const response = await apiService.post<{
-        success: boolean;
-        message: string;
-        data: Booking;
-      }>('/bookings', bookingData);
+      console.log('🔐 Token check:', !!localStorage.getItem('token'));
+      console.log('📡 API Base URL:', process.env.NEXT_PUBLIC_API_URL);
+      
+      const response = await apiService.post<Booking>('/bookings', bookingData);
 
-      console.log('✅ Booking created successfully:', response.data);
-      return response.data.data;
+      console.log('✅ Booking created successfully:', response);
+      console.log('📊 Response structure:', {
+        hasData: !!response.data,
+        dataKeys: response.data ? Object.keys(response.data) : []
+      });
+      
+      return response.data;
     } catch (error: unknown) {
       console.error('❌ Create booking error:', error);
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        response: (error as any)?.response?.data,
+        status: (error as any)?.response?.status
+      });
       const errorMessage = error instanceof Error ? error.message : 'Failed to create booking';
       return rejectWithValue(errorMessage);
     }
@@ -502,7 +512,7 @@ const bookingSlice = createSlice({
       })
       .addCase(createBooking.rejected, (state, action) => {
         state.isCreating = false;
-        state.error = action.payload || 'Failed to create booking';
+        state.error = (action.payload as string) || 'Failed to create booking';
       });
 
     // Fetch User Bookings
@@ -754,6 +764,7 @@ export const selectOverdueBookings = (state: { bookings: BookingState }) =>
   });
 
 export default bookingSlice.reducer;
+
 
 
 

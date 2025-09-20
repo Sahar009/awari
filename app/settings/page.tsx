@@ -2,27 +2,16 @@
 
 import React, { useState } from 'react';
 import Container from "@/components/Container";
-import { ArrowLeft, User, Bell, Shield, Palette, Trash2 } from 'lucide-react';
+import { ArrowLeft, Bell, Shield, Palette, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/useToast';
-import { useAppSelector } from '@/store/hooks';
-import { selectUser } from '@/store/slices/authSlice';
 import MainLayout from "../mainLayout";
 
 const SettingsPageContent = () => {
   const router = useRouter();
   const toast = useToast();
-  const user = useAppSelector(selectUser);
   
   // Settings state
-  const [profileSettings, setProfileSettings] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    bio: '',
-    location: '',
-  });
 
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
@@ -56,14 +45,6 @@ const SettingsPageContent = () => {
     dataSharing: false,
   });
 
-  const handleProfileUpdate = async () => {
-    try {
-      // TODO: Implement profile update API call
-      toast.success('Profile Updated', 'Your profile has been updated successfully.');
-    } catch {
-      toast.error('Error', 'Failed to update profile. Please try again.');
-    }
-  };
 
   const handleNotificationUpdate = async () => {
     try {
@@ -183,10 +164,6 @@ const SettingsPageContent = () => {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-4">
               <nav className="space-y-2">
-                <a href="#profile" className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                  <User className="w-5 h-5" />
-                  Profile
-                </a>
                 <a href="#notifications" className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                   <Bell className="w-5 h-5" />
                   Notifications
@@ -209,81 +186,6 @@ const SettingsPageContent = () => {
 
           {/* Settings Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Profile Settings */}
-            <section id="profile" className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <User className="w-6 h-6 text-primary" />
-                <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                  <input
-                    type="text"
-                    value={profileSettings.firstName}
-                    onChange={(e) => setProfileSettings(prev => ({ ...prev, firstName: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                  <input
-                    type="text"
-                    value={profileSettings.lastName}
-                    onChange={(e) => setProfileSettings(prev => ({ ...prev, lastName: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={profileSettings.email}
-                    onChange={(e) => setProfileSettings(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                  <input
-                    type="tel"
-                    value={profileSettings.phone}
-                    onChange={(e) => setProfileSettings(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
-                  <textarea
-                    value={profileSettings.bio}
-                    onChange={(e) => setProfileSettings(prev => ({ ...prev, bio: e.target.value }))}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder="Tell us about yourself..."
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                  <input
-                    type="text"
-                    value={profileSettings.location}
-                    onChange={(e) => setProfileSettings(prev => ({ ...prev, location: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder="City, State"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <button
-                  onClick={handleProfileUpdate}
-                  className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                >
-                  Update Profile
-                </button>
-              </div>
-            </section>
 
             {/* Notification Settings */}
             <section id="notifications" className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

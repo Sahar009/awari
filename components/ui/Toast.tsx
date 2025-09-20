@@ -67,13 +67,18 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         : toast.message != null
           ? String(toast.message)
           : undefined;
+    
+    // Ensure duration is always set for auto-removal
+    const duration = toast.duration !== undefined ? toast.duration : 5000;
+    
     const newToast: Toast = {
       id,
-      duration: 5000,
+      duration,
       ...toast,
       message: normalizedMessage,
     };
     
+    console.log('🍞 Adding new toast:', { id, duration, type: toast.type, title: toast.title });
     setToasts(prev => [...prev, newToast]);
   }, []);
 
@@ -128,12 +133,23 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
   // Auto-remove after duration with exit animation
   useEffect(() => {
     if (toast.duration && toast.duration > 0) {
+      console.log('🍞 Setting auto-remove timer for toast:', toast.id, 'duration:', toast.duration);
       const timer = setTimeout(() => {
+        console.log('🍞 Auto-removing toast:', toast.id, 'after', toast.duration, 'ms');
         setIsLeaving(true);
-        setTimeout(() => onRemove(toast.id), 300); // Wait for exit animation
+        // Remove after exit animation completes
+        setTimeout(() => {
+          console.log('🍞 Actually removing toast:', toast.id);
+          onRemove(toast.id);
+        }, 300);
       }, toast.duration);
       
-      return () => clearTimeout(timer);
+      return () => {
+        console.log('🍞 Clearing auto-remove timer for toast:', toast.id);
+        clearTimeout(timer);
+      };
+    } else {
+      console.log('🍞 Toast has no auto-removal:', toast.id, 'duration:', toast.duration);
     }
   }, [toast.duration, toast.id, onRemove]);
 
@@ -256,7 +272,8 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
             <div 
               className={`h-full ${styles.progress} transition-all ease-linear`}
               style={{
-                animation: `toast-progress ${toast.duration}ms linear forwards`
+                animation: `toast-progress ${toast.duration}ms linear forwards`,
+                width: '100%'
               }}
             />
           </div>

@@ -101,7 +101,7 @@ export const Footer = () => {
         { name: "About Us", path: "/about" },
         { name: "Contact", path: "/contact" },
         { name: "FAQ", path: "/faq" },
-        { name: "Blog", path: "/blog" },
+        // { name: "Blog", path: "/blog" },
         { name: "Terms of Service", path: "/terms" },
         { name: "Privacy Policy", path: "/privacy" },
       ].map((link, index) => (

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Bell, Filter, Archive, Trash2, CheckCircle, Search } from 'lucide-react';
+import { Bell, Filter, Archive, Trash2, CheckCircle, Search, Home, CreditCard, Building2, MessageCircle, Settings, Clock, RefreshCw } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { 
   fetchUserNotifications,
@@ -55,7 +55,15 @@ const NotificationsPage: React.FC = () => {
   // Load notifications and stats on component mount
   useEffect(() => {
     if (user?.id) {
-      dispatch(fetchUserNotifications({ userId: user.id, filters }));
+      console.log('🔔 Loading initial notifications for user:', user.id);
+      dispatch(fetchUserNotifications({ 
+        userId: user.id, 
+        filters: { 
+          page: 1,
+          limit: 20,
+          includeArchived: false
+        } 
+      }));
       dispatch(fetchNotificationStats(user.id));
     }
   }, [dispatch, user?.id]);
@@ -68,6 +76,7 @@ const NotificationsPage: React.FC = () => {
         category: selectedCategory === 'all' ? undefined : selectedCategory as 'booking' | 'payment' | 'property' | 'message' | 'system' | 'reminder',
         status: selectedStatus === 'all' ? undefined : selectedStatus as 'unread' | 'read' | 'archived',
       };
+      console.log('🔔 Reloading notifications with filters:', updatedFilters);
       dispatch(fetchUserNotifications({ userId: user.id, filters: updatedFilters }));
     }
   }, [dispatch, user?.id, filters.page, filters.limit, selectedCategory, selectedStatus, filters.unreadOnly, filters.includeArchived]);
@@ -79,6 +88,18 @@ const NotificationsPage: React.FC = () => {
       dispatch(clearError());
     }
   }, [error, toast, dispatch]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('🔔 NotificationsPage state:', {
+      user: user?.id,
+      notificationsCount: notifications.length,
+      unreadCount,
+      isLoading,
+      error,
+      notifications: notifications.map(n => ({ id: n.id, title: n.title, status: n.status, category: n.category }))
+    });
+  }, [user?.id, notifications.length, unreadCount, isLoading, error, notifications]);
 
   const handleNotificationClick = (notification: Notification) => {
     setSelectedNotification(notification);
@@ -117,6 +138,22 @@ const NotificationsPage: React.FC = () => {
     }
   };
 
+  const handleRefresh = () => {
+    if (user?.id) {
+      console.log('🔄 Refreshing notifications...');
+      const updatedFilters = {
+        page: 1,
+        limit: 20,
+        includeArchived: filters.includeArchived,
+        unreadOnly: filters.unreadOnly,
+        category: selectedCategory === 'all' ? undefined : selectedCategory as 'booking' | 'payment' | 'property' | 'message' | 'system' | 'reminder',
+        status: selectedStatus === 'all' ? undefined : selectedStatus as 'unread' | 'read' | 'archived',
+      };
+      dispatch(fetchUserNotifications({ userId: user.id, filters: updatedFilters }));
+      toast.success('Success', 'Notifications refreshed');
+    }
+  };
+
   const filteredNotifications = notifications.filter(notification => {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
@@ -138,13 +175,13 @@ const NotificationsPage: React.FC = () => {
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'booking': return '🏠';
-      case 'payment': return '💳';
-      case 'property': return '🏘️';
-      case 'message': return '💬';
-      case 'system': return '⚙️';
-      case 'reminder': return '⏰';
-      default: return '🔔';
+      case 'booking': return <Home className="h-5 w-5 text-blue-600" />;
+      case 'payment': return <CreditCard className="h-5 w-5 text-green-600" />;
+      case 'property': return <Building2 className="h-5 w-5 text-purple-600" />;
+      case 'message': return <MessageCircle className="h-5 w-5 text-orange-600" />;
+      case 'system': return <Settings className="h-5 w-5 text-gray-600" />;
+      case 'reminder': return <Clock className="h-5 w-5 text-yellow-600" />;
+      default: return <Bell className="h-5 w-5 text-gray-600" />;
     }
   };
 
@@ -176,6 +213,15 @@ const NotificationsPage: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-3">
+            <button
+              onClick={handleRefresh}
+              disabled={isLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
@@ -278,7 +324,15 @@ const NotificationsPage: React.FC = () => {
             <div className="text-center py-12">
               <Bell className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications found</h3>
-              <p className="text-gray-600">You&apos;re all caught up! Check back later for new updates.</p>
+              <p className="text-gray-600 mb-4">You&apos;re all caught up! Check back later for new updates.</p>
+              <button
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mx-auto"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                Refresh Notifications
+              </button>
             </div>
           ) : (
             filteredNotifications.map((notification) => (
@@ -295,7 +349,7 @@ const NotificationsPage: React.FC = () => {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3 flex-1">
-                    <div className="text-2xl">{getCategoryIcon(notification.category)}</div>
+                    <div className="flex items-center justify-center w-8 h-8">{getCategoryIcon(notification.category)}</div>
                     
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -313,8 +367,9 @@ const NotificationsPage: React.FC = () => {
                         )}
                         
                         {notification.isArchived && (
-                          <span className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-full">
-                            📁 Archived
+                          <span className="flex items-center gap-1 px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-full">
+                            <Archive className="h-3 w-3" />
+                            Archived
                           </span>
                         )}
                         
