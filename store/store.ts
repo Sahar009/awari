@@ -7,6 +7,7 @@ import availabilityReducer from './slices/availabilitySlice';
 import notificationReducer from './slices/notificationSlice';
 import reviewsReducer from './slices/reviewsSlice';
 import kycReducer from './slices/kycSlice';
+import messageReducer from './slices/messageSlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     notifications: notificationReducer,
     reviews: reviewsReducer,
     kyc: kycReducer,
+    messages: messageReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

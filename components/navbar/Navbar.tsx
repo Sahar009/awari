@@ -7,6 +7,8 @@ import { Logo } from "./Logo";
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logoutUser } from '@/store/slices/authSlice';
+import { fetchUnreadCount } from '@/store/slices/messageSlice';
+import { useMessaging } from '@/lib/useMessaging';
 import NotificationBell from '@/components/notifications/NotificationBell';
 
 export const Navbar = () => {
@@ -17,6 +19,10 @@ export const Navbar = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { user, isAuthenticated, isLoading, token } = useAppSelector((state) => state.auth);
+  const { unreadCount } = useAppSelector((state) => state.messages);
+  
+  // Initialize WebSocket for real-time unread count updates
+  useMessaging();
   
   // Check if user has access (either fully authenticated or has token)
   const hasAccess = isAuthenticated || !!token;
@@ -25,6 +31,18 @@ export const Navbar = () => {
   useEffect(() => {
     console.log('Navbar Auth State:', { user, isAuthenticated, isLoading });
   }, [user, isAuthenticated, isLoading]);
+
+  // Fetch unread message count when authenticated
+  useEffect(() => {
+    if (hasAccess) {
+      dispatch(fetchUnreadCount());
+      // Refresh unread count every 30 seconds
+      const interval = setInterval(() => {
+        dispatch(fetchUnreadCount());
+      }, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [hasAccess, dispatch]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -127,10 +145,18 @@ export const Navbar = () => {
                   <NotificationBell className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110" />
 
                   {/* Messages */}
-                  <div className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110 relative">
+                  <a
+                    href="/messages"
+                    className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110 relative"
+                    title="Messages"
+                  >
                     <MessageCircle size={20} className="text-slate-600" />
-                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-secondary-color rounded-full animate-pulse"></span>
-                  </div>
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold animate-pulse">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </a>
 
                   {/* User Menu */}
                   <div className="relative user-menu-container">
