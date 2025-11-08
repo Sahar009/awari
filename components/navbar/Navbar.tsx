@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MenuIcon, X, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle, User, LogOut, Settings, UserCircle, ChevronDown, PlusCircle, Heart } from "lucide-react";
+import { MenuIcon, X, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle, User, LogOut, Settings, UserCircle, ChevronDown, PlusCircle, Heart, BarChart3, BedDouble } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Logo } from "./Logo";
 import { useRouter } from 'next/navigation';
@@ -164,7 +164,7 @@ export const Navbar = () => {
                       className="flex items-center gap-2 p-2 rounded-xl hover:bg-slate-100 transition-all duration-300 cursor-pointer transform hover:scale-105"
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     >
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-linear-to-r from-primary to-secondary flex items-center justify-center">
                         {user?.avatarUrl ? (
                           <img 
                             src={user.avatarUrl} 
@@ -194,7 +194,7 @@ export const Navbar = () => {
                       <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-slate-200/50 backdrop-blur-lg z-50">
                         <div className="p-4 border-b border-slate-200">
                           <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-linear-to-r from-primary to-secondary flex items-center justify-center">
                               {user?.avatarUrl ? (
                                 <img 
                                   src={user.avatarUrl} 
@@ -234,6 +234,36 @@ export const Navbar = () => {
                           </a>
                           
                           <a
+                            href="/dashboard"
+                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <Home size={20} className="text-slate-600" />
+                            <span className="text-slate-700">My Dashboard</span>
+                          </a>
+                          
+                          {['landlord', 'agent'].includes(user?.role ?? '') && (
+                            <a
+                              href="/landlord/dashboard"
+                              className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200"
+                              onClick={() => setIsUserMenuOpen(false)}
+                            >
+                              <BarChart3 size={20} className="text-slate-600" />
+                              <span className="text-slate-700">Landlord Dashboard</span>
+                            </a>
+                          )}
+                          {user?.role === 'hotel_provider' && (
+                            <a
+                              href="/hotel/dashboard"
+                              className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200"
+                              onClick={() => setIsUserMenuOpen(false)}
+                            >
+                              <BedDouble size={20} className="text-slate-600" />
+                              <span className="text-slate-700">Hotel Dashboard</span>
+                            </a>
+                          )}
+
+                          <a
                             href="/my-listings"
                             className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200"
                             onClick={() => setIsUserMenuOpen(false)}
@@ -241,13 +271,13 @@ export const Navbar = () => {
                             <Building2 size={20} className="text-slate-600" />
                             <span className="text-slate-700">My Listings</span>
                           </a>
-                          
+
                           <a
                             href="/favorites"
                             className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200"
                             onClick={() => setIsUserMenuOpen(false)}
                           >
-                            <Home size={20} className="text-slate-600" />
+                            <Heart size={20} className="text-slate-600" />
                             <span className="text-slate-700">Favorites</span>
                           </a>
                           
@@ -272,7 +302,7 @@ export const Navbar = () => {
                     <Button 
                       variant="primary" 
                       label="Sign In" 
-                      className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300"
+                      className="bg-linear-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300"
                       onClick={() => router.push('/auth/login')}
                     />
                   </div>
@@ -303,7 +333,7 @@ export const Navbar = () => {
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between px-6 py-6 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white">
+        <div className="flex items-center justify-between px-6 py-6 border-b border-slate-200 bg-linear-to-r from-slate-50 to-white">
           <div className="transform hover:scale-105 transition-transform duration-300">
           <Logo />
           </div>
@@ -318,9 +348,9 @@ export const Navbar = () => {
         <div className="flex flex-col gap-1 px-6 py-6">
           {/* User Profile Section - Only show when authenticated */}
           {hasAccess && (
-            <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl border border-primary/10">
+            <div className="mb-4 p-4 bg-linear-to-r from-primary/5 to-secondary/5 rounded-xl border border-primary/10">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-linear-to-r from-primary to-secondary flex items-center justify-center">
                   {user?.avatarUrl ? (
                     <img 
                       src={user.avatarUrl} 
@@ -343,7 +373,7 @@ export const Navbar = () => {
 
           {/* Authentication buttons for non-authenticated users - Top of menu */}
           {!hasAccess && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl border border-primary/10 space-y-3">
+            <div className="mb-6 p-4 bg-linear-to-r from-primary/5 to-secondary/5 rounded-xl border border-primary/10 space-y-3">
               <h3 className="text-sm font-semibold text-slate-700 mb-3">Join AWARI Today</h3>
               <Button 
                 variant="primary" 
@@ -352,7 +382,7 @@ export const Navbar = () => {
                   router.push('/auth/login');
                   setIsOpen(false);
                 }}
-                className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                className="w-full bg-linear-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
               />
               <Button 
                 variant="secondary" 
@@ -373,6 +403,12 @@ export const Navbar = () => {
             { name: "Sales", href: "/sales", description: "Buy your dream property", icon: DollarSign },
             { name: "Shortlets", href: "/shortlets", description: "Book amazing stays", icon: Hotel },
             { name: "Sell/Rent", href: "/add-property", description: "List your property", icon: PlusCircle },
+            ...(user?.role && ['landlord', 'agent'].includes(user.role)
+              ? [{ name: "Landlord Dashboard", href: "/landlord/dashboard", description: "Track bookings & earnings", icon: BarChart3 }]
+              : []),
+            ...(user?.role === 'hotel_provider'
+              ? [{ name: "Hotel Dashboard", href: "/hotel/dashboard", description: "Manage rooms & stays", icon: BedDouble }]
+              : []),
             { name: "My Listings", href: "/my-listings", description: "Manage your properties", icon: HomeIcon },
             { name: "Favorites", href: "/favorites", description: "Saved properties", icon: Heart },
             { name: "Messages", href: "/messages", description: "Your conversations", icon: MessageCircle },
@@ -391,7 +427,7 @@ export const Navbar = () => {
             <a
               key={item.name}
               href={item.href}
-              className="group flex items-center gap-3 p-3 rounded-xl hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary-color/5 transition-all duration-300 ease-out transform hover:-translate-y-1 hover:shadow-md"
+              className="group flex items-center gap-3 p-3 rounded-xl hover:bg-linear-to-r hover:from-primary/5 hover:to-secondary-color/5 transition-all duration-300 ease-out transform hover:-translate-y-1 hover:shadow-md"
               onClick={() => setIsOpen(false)}
               style={{
                 animationDelay: `${index * 0.05}s`,
@@ -425,7 +461,7 @@ export const Navbar = () => {
                   router.push('/add-property');
                   setIsOpen(false);
                 }}
-                className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                className="w-full bg-linear-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
               />
               <button
                 onClick={() => {

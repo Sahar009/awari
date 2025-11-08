@@ -8,6 +8,9 @@ import notificationReducer from './slices/notificationSlice';
 import reviewsReducer from './slices/reviewsSlice';
 import kycReducer from './slices/kycSlice';
 import messageReducer from './slices/messageSlice';
+import userDashboardReducer from './slices/userDashboardSlice';
+import landlordDashboardReducer from './slices/landlordDashboardSlice';
+import hotelDashboardReducer from './slices/hotelDashboardSlice';
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +23,9 @@ export const store = configureStore({
     reviews: reviewsReducer,
     kyc: kycReducer,
     messages: messageReducer,
+    userDashboard: userDashboardReducer,
+    landlordDashboard: landlordDashboardReducer,
+    hotelDashboard: hotelDashboardReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
