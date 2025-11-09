@@ -9,7 +9,7 @@ interface BreadCrumbProps {
 export const BreadCrumbs: React.FC<BreadCrumbProps> = ({
   header,
   location,
-  image = "/assets/images/breadcrumb.jpg",
+  image = "/assets/images/breadcrumb.png",
 }) => {
   return (
     <div className="relative">

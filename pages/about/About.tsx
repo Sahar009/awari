@@ -7,6 +7,7 @@ import { HouseIcon, Building2Icon, UsersIcon } from "lucide-react";
 import "swiper/css";
 import "swiper/css/pagination";
 import Container from "@/components/Container";
+import FaqSection from "@/components/about/FaqSection";
 
 const About = () => {
 
@@ -16,21 +17,21 @@ const whyUsData = [
     title: "Smart Investments",
     content:
       "Access exclusive real estate deals with high ROI potential, tailored for both short and long-term goals.",
-    imgSrc: "/assets/images/slider1.jpg",
+    imgSrc: "/assets/images/Gemini_Generated_Image_mzreg1mzreg1mzre.png",
   },
   {
     icon: <Building2Icon size={28} className="text-orange-500" />,
     title: "Luxury Properties",
     content:
       "From modern apartments to luxury villas, we provide properties designed for comfort and prestige.",
-    imgSrc: "/assets/images/slider2.jpg",
+    imgSrc: "/assets/images/slider1.png",
   },
  {
   icon: <UsersIcon size={28} className="text-orange-500" />,
   title: "Trusted Expertise",
   content:
     "With 20+ years of experience, our experts carefully guide you through every step of your property journey with confidence.",
-  imgSrc: "/assets/images/houseimg (1).jpg",
+  imgSrc: "/assets/images/slider6.png",
 },
 ];
 
@@ -52,7 +53,7 @@ const whyUsData = [
     </div>
     <div className="w-full flex justify-center lg:w-[45%]">
       <Image
-        src={"/assets/images/slider2.jpg"}
+        src={"/assets/images/slider1.png"}
         alt="about-images"
         width={500}
         height={400}
@@ -64,7 +65,7 @@ const whyUsData = [
   <div className="w-full gap-6 items-center flex flex-col lg:justify-between lg:flex-row">
     <div className="w-full lg:w-[45%] flex justify-center">
       <Image
-        src={"/assets/images/slider3.jpg"}
+        src={"/assets/images/slider3.png"}
         alt="about-image2"
         width={500}
         height={400}
@@ -136,6 +137,7 @@ const whyUsData = [
           ))}
         </Swiper>
       </div>
+      <FaqSection />
     </Container>
   );
 };

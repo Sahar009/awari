@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MenuIcon, X, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle, User, LogOut, Settings, UserCircle, ChevronDown, PlusCircle, Heart, BarChart3, BedDouble } from "lucide-react";
+import { MenuIcon, X, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle, User, LogOut, Settings, UserCircle, ChevronDown, PlusCircle, Heart, BarChart3, BedDouble, Calendar } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Logo } from "./Logo";
 import { useRouter } from 'next/navigation';
@@ -92,13 +92,13 @@ export const Navbar = () => {
 
             <div className="hidden lg:flex items-center space-x-4">
               {(hasAccess ? [
-                { name: "Dashboard", href: "/home", description: "Your dashboard" },
+              
                 { name: "Properties", href: "/browse-listing", description: "Browse all listings" },
                 { name: "Rentals", href: "/rentals", description: "Find your home" },
                 { name: "Sales", href: "/sales", description: "Buy property" },
                 { name: "Shortlets", href: "/shortlets", description: "Book stays" },
                 { name: "My Listings", href: "/my-listings", description: "Manage properties" },
-                { name: "Favorites", href: "/favorites", description: "Saved properties" },
+               
               ] : [
                 { name: "Properties", href: "/browse-listing", description: "Browse all listings" },
                 { name: "Rentals", href: "/rentals", description: "Find your home" },
@@ -243,14 +243,24 @@ export const Navbar = () => {
                           </a>
                           
                           {['landlord', 'agent'].includes(user?.role ?? '') && (
-                            <a
-                              href="/landlord/dashboard"
-                              className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200"
-                              onClick={() => setIsUserMenuOpen(false)}
-                            >
-                              <BarChart3 size={20} className="text-slate-600" />
-                              <span className="text-slate-700">Landlord Dashboard</span>
-                            </a>
+                            <>
+                              <a
+                                href="/landlord/dashboard"
+                                className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200"
+                                onClick={() => setIsUserMenuOpen(false)}
+                              >
+                                <BarChart3 size={20} className="text-slate-600" />
+                                <span className="text-slate-700">Landlord Dashboard</span>
+                              </a>
+                              <a
+                                href="/landlord/inspections"
+                                className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200"
+                                onClick={() => setIsUserMenuOpen(false)}
+                              >
+                                <Calendar size={20} className="text-slate-600" />
+                                <span className="text-slate-700">Inspection Calendar</span>
+                              </a>
+                            </>
                           )}
                           {user?.role === 'hotel_provider' && (
                             <a
