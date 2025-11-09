@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Sparkles } from "lucide-react";
-import { ShieldQuestionMark } from "lucide-react";
+import { ChevronDown, ShieldQuestionMark } from "lucide-react";
 import clsx from "clsx";
 
 const faqItems = [

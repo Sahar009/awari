@@ -24,6 +24,7 @@ import {
   Star,
   User
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { hydrate } from '@/store/slices/authSlice';
 import {
@@ -152,7 +153,7 @@ export default function DashboardPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    const configs: Record<string, { icon: any; color: string; label: string }> = {
+    const configs: Record<string, { icon: LucideIcon; color: string; label: string }> = {
       pending: { icon: Clock, color: 'bg-yellow-100 text-yellow-700 border-yellow-200', label: 'Pending' },
       confirmed: { icon: CheckCircle, color: 'bg-green-100 text-green-700 border-green-200', label: 'Confirmed' },
       completed: { icon: CheckCircle, color: 'bg-blue-100 text-blue-700 border-blue-200', label: 'Completed' },
@@ -201,7 +202,7 @@ export default function DashboardPage() {
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      <div className="min-h-screen bg-linear-to-br from-gray-50 via-white to-gray-50">
         <Container>
           <div className="py-8">
             {/* Header */}
@@ -365,7 +366,7 @@ export default function DashboardPage() {
                       <div className="text-center py-12">
                         <Home className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">No Rental Applications</h3>
-                        <p className="text-gray-600 mb-6">You haven't applied for any rentals yet.</p>
+                        <p className="text-gray-600 mb-6">You haven&apos;t applied for any rentals yet.</p>
                         <button
                           onClick={() => router.push('/rentals')}
                           className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
@@ -383,7 +384,7 @@ export default function DashboardPage() {
                           >
                             <div className="flex flex-col md:flex-row gap-6">
                               {rental.property?.primaryImage && (
-                                <div className="relative w-full md:w-48 h-48 rounded-lg overflow-hidden flex-shrink-0">
+                                <div className="relative w-full md:w-48 h-48 rounded-lg overflow-hidden shrink-0">
                                   <Image
                                     src={rental.property.primaryImage}
                                     alt={rental.property.title}
@@ -605,7 +606,7 @@ export default function DashboardPage() {
                       <div className="text-center py-12">
                         <Hotel className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">No Shortlet Bookings</h3>
-                        <p className="text-gray-600 mb-6">You haven't booked any shortlets yet.</p>
+                        <p className="text-gray-600 mb-6">You haven&apos;t booked any shortlets yet.</p>
                         <button
                           onClick={() => router.push('/shortlets')}
                           className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
@@ -623,7 +624,7 @@ export default function DashboardPage() {
                           >
                             <div className="flex flex-col md:flex-row gap-6">
                               {booking.property?.primaryImage && (
-                                <div className="relative w-full md:w-48 h-48 rounded-lg overflow-hidden flex-shrink-0">
+                                <div className="relative w-full md:w-48 h-48 rounded-lg overflow-hidden shrink-0">
                                   <Image
                                     src={booking.property.primaryImage}
                                     alt={booking.property.title}

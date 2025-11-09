@@ -30,8 +30,23 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { format } from 'date-fns';
+import type { HotelRoomEntry } from '@/services/hotelDashboardService';
 
 const DEFAULT_PAGINATION = { page: 1, limit: 10 };
+
+type PricingDraft = {
+  price: string;
+  originalPrice: string;
+  pricePeriod: string;
+  negotiable: boolean;
+};
+
+const DEFAULT_PRICING_DRAFT: PricingDraft = {
+  price: '',
+  originalPrice: '',
+  pricePeriod: 'per_night',
+  negotiable: false
+};
 
 const formatCurrency = (amount: number) =>
   `₦${Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 0 })}`;
@@ -47,7 +62,7 @@ export default function HotelDashboardPage() {
   );
 
   const [editRoomId, setEditRoomId] = useState<string | null>(null);
-  const [pricingDraft, setPricingDraft] = useState<Record<string, string | number | boolean>>({});
+  const [pricingDraft, setPricingDraft] = useState<PricingDraft>({ ...DEFAULT_PRICING_DRAFT });
 
   useEffect(() => {
     if (!isAuthenticated || !isHotelProvider) return;
@@ -70,7 +85,7 @@ export default function HotelDashboardPage() {
   const handleEditPricing = (roomId: string) => {
     if (editRoomId === roomId) {
       setEditRoomId(null);
-      setPricingDraft({});
+      setPricingDraft({ ...DEFAULT_PRICING_DRAFT });
       return;
     }
 
@@ -78,28 +93,32 @@ export default function HotelDashboardPage() {
     if (room) {
       setEditRoomId(roomId);
       setPricingDraft({
-        price: room.price,
-        originalPrice: room.originalPrice ?? '',
+        price: room.price !== undefined ? String(room.price) : '',
+        originalPrice: room.originalPrice !== undefined && room.originalPrice !== null ? String(room.originalPrice) : '',
         pricePeriod: room.pricePeriod ?? 'per_night',
-        negotiable: room.negotiable ?? false
+        negotiable: Boolean(room.negotiable)
       });
     }
   };
 
   const handleSavePricing = (roomId: string) => {
-    const payload: any = {};
-    if (pricingDraft.price !== undefined) payload.price = Number(pricingDraft.price);
-    if (pricingDraft.originalPrice !== undefined && pricingDraft.originalPrice !== '') {
+    const payload: Partial<HotelRoomEntry> = {};
+    if (pricingDraft.price !== '') {
+      payload.price = Number(pricingDraft.price);
+    }
+    if (pricingDraft.originalPrice !== '') {
       payload.originalPrice = Number(pricingDraft.originalPrice);
     }
-    if (pricingDraft.pricePeriod) payload.pricePeriod = String(pricingDraft.pricePeriod);
-    if (pricingDraft.negotiable !== undefined) payload.negotiable = Boolean(pricingDraft.negotiable);
+    if (pricingDraft.pricePeriod) {
+      payload.pricePeriod = pricingDraft.pricePeriod;
+    }
+    payload.negotiable = pricingDraft.negotiable;
 
     dispatch(updateHotelRoomPricing({ propertyId: roomId, payload }))
       .unwrap()
       .then(() => {
         setEditRoomId(null);
-        setPricingDraft({});
+        setPricingDraft({ ...DEFAULT_PRICING_DRAFT });
       })
       .catch(() => {});
   };
@@ -238,19 +257,35 @@ export default function HotelDashboardPage() {
                       <p className="text-gray-500 text-sm">No booking data yet.</p>
                     ) : (
                       <ul className="space-y-4">
-                        {summary.popularRooms.map((room) => (
-                          <li key={room.propertyId} className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium text-gray-900">{room.property?.title ?? 'Room'}</p>
-                              <p className="text-sm text-gray-500">
-                                {room.property?.city ?? ''} {room.property?.state ? `, ${room.property.state}` : ''}
-                              </p>
-                            </div>
-                            <span className="text-sm font-semibold text-gray-900">
-                              {room.bookingCount} bookings
-                            </span>
-                          </li>
-                        ))}
+                        {summary.popularRooms.map((room) => {
+                          const property = room.property as
+                            | {
+                                title?: unknown;
+                                city?: unknown;
+                                state?: unknown;
+                              }
+                            | undefined;
+                          const title =
+                            typeof property?.title === 'string' && property.title.trim().length > 0
+                              ? property.title
+                              : 'Room';
+                          const city = typeof property?.city === 'string' ? property.city : '';
+                          const state = typeof property?.state === 'string' ? property.state : '';
+
+                          return (
+                            <li key={room.propertyId} className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-gray-900">{title}</p>
+                                <p className="text-sm text-gray-500">
+                                  {[city, state].filter(Boolean).join(', ')}
+                                </p>
+                              </div>
+                              <span className="text-sm font-semibold text-gray-900">
+                                {room.bookingCount} bookings
+                              </span>
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                   </div>
@@ -485,15 +520,32 @@ export default function HotelDashboardPage() {
                     <tbody className="bg-white divide-y divide-gray-100">
                       {hotelDashboard.bookings.collection.items.map((booking) => {
                         const isUpdating = hotelDashboard.actions.updatingBookingId === booking.id;
+                        const bookingUser = booking.user as
+                          | { firstName?: unknown; lastName?: unknown; email?: unknown }
+                          | undefined;
+                        const firstName =
+                          typeof bookingUser?.firstName === 'string' ? bookingUser.firstName : '';
+                        const lastName =
+                          typeof bookingUser?.lastName === 'string' ? bookingUser.lastName : '';
+                        const email = typeof bookingUser?.email === 'string' ? bookingUser.email : '';
+
+                        const bookingProperty = booking.property as
+                          | { title?: unknown }
+                          | undefined;
+                        const propertyTitle =
+                          typeof bookingProperty?.title === 'string' && bookingProperty.title.trim().length > 0
+                            ? bookingProperty.title
+                            : 'Room';
+
                         return (
                           <tr key={booking.id} className="hover:bg-gray-50 transition">
                             <td className="px-6 py-4">
                               <div className="text-sm font-medium text-gray-900">
-                                {booking.user ? `${booking.user.firstName} ${booking.user.lastName}` : 'Guest'}
+                                {firstName || lastName ? `${firstName} ${lastName}`.trim() : 'Guest'}
                               </div>
-                              <div className="text-xs text-gray-500">{booking.user?.email ?? ''}</div>
+                              <div className="text-xs text-gray-500">{email}</div>
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{booking.property?.title ?? 'Room'}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{propertyTitle}</td>
                             <td className="px-6 py-4 text-sm text-gray-700">
                               <div>Check-in: {booking.checkInDate ? format(new Date(booking.checkInDate), 'PP') : '—'}</div>
                               <div>Check-out: {booking.checkOutDate ? format(new Date(booking.checkOutDate), 'PP') : '—'}</div>

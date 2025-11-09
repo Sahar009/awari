@@ -276,39 +276,58 @@ export default function LandlordDashboardPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
-                      {landlordDashboard.payments.collection.items.map((payment) => (
-                        <tr key={payment.id}>
-                          <td className="px-6 py-4">
-                            <div className="text-sm font-medium text-gray-900">{payment.property?.title ?? '—'}</div>
-                            <div className="text-xs text-gray-500 uppercase">{payment.paymentType}</div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm font-semibold text-gray-900">
-                              ₦{Number(payment.payoutAmount ?? payment.amount).toLocaleString()}
-                            </div>
-                            <div className="text-xs text-gray-500">{payment.paymentMethod}</div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-medium px-3 py-1 rounded-full bg-emerald-100 text-emerald-700">
-                                {payment.status.toUpperCase()}
-                              </span>
-                              {payment.payoutStatus && (
-                                <span className="text-xs text-gray-500">Payout: {payment.payoutStatus}</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm text-gray-900">
-                              {payment.user ? `${payment.user.firstName} ${payment.user.lastName}` : '—'}
-                            </div>
-                            <div className="text-xs text-gray-500">{payment.user?.email ?? ''}</div>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {new Date(payment.createdAt).toLocaleString()}
-                          </td>
-                        </tr>
-                      ))}
+                      {landlordDashboard.payments.collection.items.map((payment) => {
+                        const paymentProperty = payment.property as
+                          | { title?: unknown }
+                          | undefined;
+                        const propertyTitle =
+                          typeof paymentProperty?.title === 'string' && paymentProperty.title.trim().length > 0
+                            ? paymentProperty.title
+                            : '—';
+
+                        const paymentUser = payment.user as
+                          | { firstName?: unknown; lastName?: unknown; email?: unknown }
+                          | undefined;
+                        const firstName =
+                          typeof paymentUser?.firstName === 'string' ? paymentUser.firstName : '';
+                        const lastName =
+                          typeof paymentUser?.lastName === 'string' ? paymentUser.lastName : '';
+                        const email = typeof paymentUser?.email === 'string' ? paymentUser.email : '';
+
+                        return (
+                          <tr key={payment.id}>
+                            <td className="px-6 py-4">
+                              <div className="text-sm font-medium text-gray-900">{propertyTitle}</div>
+                              <div className="text-xs text-gray-500 uppercase">{payment.paymentType}</div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm font-semibold text-gray-900">
+                                ₦{Number(payment.payoutAmount ?? payment.amount).toLocaleString()}
+                              </div>
+                              <div className="text-xs text-gray-500">{payment.paymentMethod}</div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium px-3 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                                  {payment.status.toUpperCase()}
+                                </span>
+                                {payment.payoutStatus && (
+                                  <span className="text-xs text-gray-500">Payout: {payment.payoutStatus}</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm text-gray-900">
+                                {firstName || lastName ? `${firstName} ${lastName}`.trim() : '—'}
+                              </div>
+                              <div className="text-xs text-gray-500">{email}</div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                              {new Date(payment.createdAt).toLocaleString()}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -344,17 +363,36 @@ export default function LandlordDashboardPage() {
                 ) : (
                   landlordDashboard.bookingRequests.collection.items.map((booking) => {
                     const isProcessing = landlordDashboard.actionState.respondingBookingId === booking.id;
+                    const bookingProperty = booking.property as
+                      | { title?: unknown }
+                      | undefined;
+                    const propertyTitle =
+                      typeof bookingProperty?.title === 'string' && bookingProperty.title.trim().length > 0
+                        ? bookingProperty.title
+                        : 'Untitled property';
+
+                    const bookingUser = booking.user as
+                      | { firstName?: unknown; lastName?: unknown }
+                      | undefined;
+                    const guestName =
+                      [
+                        typeof bookingUser?.firstName === 'string' ? bookingUser.firstName : '',
+                        typeof bookingUser?.lastName === 'string' ? bookingUser.lastName : ''
+                      ]
+                        .filter(Boolean)
+                        .join(' ') || 'N/A';
+
                     return (
                       <div key={booking.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                         <div className="flex items-start justify-between gap-4">
                           <div className="space-y-2">
-                            <h3 className="text-lg font-semibold text-gray-900">{booking.property?.title}</h3>
+                            <h3 className="text-lg font-semibold text-gray-900">{propertyTitle}</h3>
                             <div className="flex items-center text-sm text-gray-500">
                               <Calendar className="h-4 w-4 mr-2" />
                               Requested on {new Date(booking.createdAt).toLocaleString()}
                             </div>
                             <div className="text-sm text-gray-600">
-                              Guest: {booking.user ? `${booking.user.firstName} ${booking.user.lastName}` : 'N/A'}
+                              Guest: {guestName}
                             </div>
                             <div className="text-xs font-medium text-primary uppercase">
                               {booking.bookingType}
@@ -421,31 +459,65 @@ export default function LandlordDashboardPage() {
                   <div className="p-10 text-center text-gray-500">No upcoming inspections yet.</div>
                 ) : (
                   <div className="divide-y divide-gray-100">
-                    {landlordDashboard.inspectionSchedule.collection.items.map((booking) => (
-                      <div key={booking.id} className="p-6 flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1">{booking.property?.title}</h3>
-                          <div className="text-sm text-gray-500 mb-1">
-                            Guest: {booking.user ? `${booking.user.firstName} ${booking.user.lastName}` : 'N/A'}
+                    {landlordDashboard.inspectionSchedule.collection.items.map((booking) => {
+                      const bookingProperty = booking.property as
+                        | { title?: unknown }
+                        | undefined;
+                      const propertyTitle =
+                        typeof bookingProperty?.title === 'string' && bookingProperty.title.trim().length > 0
+                          ? bookingProperty.title
+                          : 'Untitled property';
+
+                      const bookingUser = booking.user as
+                        | { firstName?: unknown; lastName?: unknown }
+                        | undefined;
+                      const guestName =
+                        [
+                          typeof bookingUser?.firstName === 'string' ? bookingUser.firstName : '',
+                          typeof bookingUser?.lastName === 'string' ? bookingUser.lastName : ''
+                        ]
+                          .filter(Boolean)
+                          .join(' ') || 'N/A';
+
+                      return (
+                        <div key={booking.id} className="p-6 flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-1">{propertyTitle}</h3>
+                            <div className="text-sm text-gray-500 mb-1">Guest: {guestName}</div>
+                            <div className="text-xs text-gray-400 uppercase">{booking.bookingType}</div>
                           </div>
-                          <div className="text-xs text-gray-400 uppercase">{booking.bookingType}</div>
+                          <div className="text-right text-sm text-gray-600">
+                            {booking.bookingType === 'sale_inspection' ? (
+                              <>
+                                <div>
+                                  Inspection:{' '}
+                                  {booking.inspectionDate
+                                    ? new Date(booking.inspectionDate).toLocaleDateString()
+                                    : 'TBD'}
+                                </div>
+                                {booking.inspectionTime && <div>Time: {booking.inspectionTime}</div>}
+                              </>
+                            ) : (
+                              <>
+                                <div>
+                                  Check-in:{' '}
+                                  {booking.checkInDate
+                                    ? new Date(booking.checkInDate).toLocaleDateString()
+                                    : 'TBD'}
+                                </div>
+                                <div>
+                                  Check-out:{' '}
+                                  {booking.checkOutDate
+                                    ? new Date(booking.checkOutDate).toLocaleDateString()
+                                    : 'TBD'}
+                                </div>
+                              </>
+                            )}
+                            <div className="text-xs text-gray-500 mt-1">Status: {booking.status}</div>
+                          </div>
                         </div>
-                        <div className="text-right text-sm text-gray-600">
-                          {booking.bookingType === 'sale_inspection' ? (
-                            <>
-                              <div>Inspection: {booking.inspectionDate ? new Date(booking.inspectionDate).toLocaleDateString() : 'TBD'}</div>
-                              {booking.inspectionTime && <div>Time: {booking.inspectionTime}</div>}
-                            </>
-                          ) : (
-                            <>
-                              <div>Check-in: {booking.checkInDate ? new Date(booking.checkInDate).toLocaleDateString() : 'TBD'}</div>
-                              <div>Check-out: {booking.checkOutDate ? new Date(booking.checkOutDate).toLocaleDateString() : 'TBD'}</div>
-                            </>
-                          )}
-                          <div className="text-xs text-gray-500 mt-1">Status: {booking.status}</div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

@@ -1,0 +1,177 @@
+"use client";
+
+import Container from "@/components/Container";
+import { Shield, Lock, Eye, Database, Mail, Clock } from "lucide-react";
+
+const pillars = [
+  {
+    title: "Data Transparency",
+    description:
+      "Users can access, export, or request deletion of their personal information at any time. We believe clarity builds trust.",
+    icon: Eye
+  },
+  {
+    title: "Security by Design",
+    description:
+      "Encryption in transit, secure credential storage, and segmented infrastructure safeguard every interaction on Awari.",
+    icon: Lock
+  },
+  {
+    title: "Purpose Limitation",
+    description:
+      "We collect only the data we need to deliver property, booking, and subscription experiences—and nothing more.",
+    icon: Database
+  }
+];
+
+const privacySections = [
+  {
+    title: "1. Information We Collect",
+    points: [
+      "Account Profile: Name, contact details, identity documents (for KYC), and role (e.g., landlord, renter, hotel provider, admin).",
+      "Usage Insights: Feature engagement, device type, and session metadata used to improve dashboards and performance.",
+      "Transactional Records: Bookings, subscriptions, payouts, and customer support conversations stored for compliance."
+    ]
+  },
+  {
+    title: "2. How We Use Information",
+    points: [
+      "Deliver personalised dashboards, recommendations, and reminders across user, landlord, and admin experiences.",
+      "Verify identities, prevent fraud, and maintain platform integrity through auditing and anomaly detection.",
+      "Communicate service updates, policy changes, and marketing offers when explicitly opted in."
+    ]
+  },
+  {
+    title: "3. Sharing & Disclosure",
+    points: [
+      "We never sell personal data. Select third-party processors (payments, cloud hosting, communication) help us operate Awari.",
+      "Business partners and landlords only receive information necessary to complete the requested transaction.",
+      "We may share data to comply with legal requests, enforce our terms, or protect the rights and safety of the Awari community."
+    ]
+  },
+  {
+    title: "4. Your Privacy Controls",
+    points: [
+      "Review and update personal information from profile settings, or contact support for assistance.",
+      "Opt-in or opt-out of marketing communications via notification preferences or the unsubscribe link.",
+      "Request deletion of your account; certain financial or legal records may be retained as required by law."
+    ]
+  }
+];
+
+const contactCards = [
+  {
+    title: "Privacy Officer",
+    description: "Reach out with questions regarding GDPR compliance, data retention, or user rights requests.",
+    email: "privacy@awari.com"
+  },
+  {
+    title: "Data Protection Hours",
+    description: "Our team responds to privacy enquiries within 48 hours during standard business days.",
+    meta: "Mon – Fri • 9:00 to 18:00 WAT"
+  }
+];
+
+const PrivacyPage = () => {
+  return (
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-primary/5 py-16">
+      <Container>
+        <section className="relative overflow-hidden rounded-3xl border border-primary/20 bg-white/95 p-10 shadow-xl">
+          <div className="absolute -top-24 right-10 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute -bottom-28 left-16 h-64 w-64 rounded-full bg-secondary-color/20 blur-3xl" />
+
+          <div className="relative z-10 flex flex-col gap-6 text-slate-700">
+            <span className="inline-flex w-max items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-primary">
+              <Shield className="h-4 w-4" />
+              Privacy Policy
+            </span>
+            <h1 className="text-4xl font-bold text-slate-900 md:text-5xl">
+              Safeguarding every property journey with responsible data practices.
+            </h1>
+            <p className="max-w-3xl text-base leading-relaxed text-slate-600 md:text-lg">
+              This Privacy Policy explains how Awari collects, uses, stores, and protects information when you browse our
+              listings, collaborate through messaging, or manage portfolios across dashboards.
+            </p>
+            <div className="flex flex-wrap items-center gap-6 text-sm text-slate-500">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-primary" />
+                Last updated: 9 November 2025
+              </div>
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-primary" />
+                Contact: privacy@awari.com
+              </div>
+            </div>
+          </div>
+
+          <div className="relative z-10 mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {pillars.map(({ title, description, icon: Icon }) => (
+              <div
+                key={title}
+                className="flex h-full flex-col gap-4 rounded-2xl border border-primary/15 bg-primary/5 p-6 text-slate-700 transition hover:-translate-y-1 hover:border-primary/40 hover:bg-primary/10 hover:shadow-lg"
+              >
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+                <p className="text-sm leading-relaxed text-slate-600">{description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-16 grid gap-8 lg:grid-cols-[2fr_1fr]">
+          <div className="space-y-8">
+            {privacySections.map(({ title, points }) => (
+              <article
+                key={title}
+                className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-md transition hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
+              >
+                <h3 className="text-xl font-semibold text-slate-900">{title}</h3>
+                <ul className="space-y-3">
+                  {points.map((point) => (
+                    <li key={point} className="flex items-start gap-3 text-sm leading-relaxed text-slate-600">
+                      <span className="mt-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        •
+                      </span>
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+
+          <aside className="space-y-6">
+            <div className="rounded-3xl border border-primary/20 bg-primary/5 p-6 shadow-md">
+              <h4 className="text-lg font-semibold text-primary">Your privacy is never an afterthought</h4>
+              <p className="mt-3 text-sm leading-relaxed text-primary/80">
+                From messaging encryption to audit-ready subscription logs, Awari treats your data with the utmost respect.
+                We revisit this policy as features evolve so you always know what to expect.
+              </p>
+            </div>
+
+            {contactCards.map(({ title, description, email, meta }) => (
+              <div
+                key={title}
+                className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-md transition hover:border-primary/30 hover:shadow-lg"
+              >
+                <h5 className="text-base font-semibold text-slate-900">{title}</h5>
+                <p className="mt-2 text-sm text-slate-600">{description}</p>
+                {email ? (
+                  <p className="mt-4 text-sm font-semibold text-primary">{email}</p>
+                ) : (
+                  <p className="mt-4 text-sm font-semibold text-primary">{meta}</p>
+                )}
+              </div>
+            ))}
+          </aside>
+        </section>
+      </Container>
+    </div>
+  );
+};
+
+export default PrivacyPage;
+
+

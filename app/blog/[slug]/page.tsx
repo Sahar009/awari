@@ -41,14 +41,12 @@ const BlogData = [
 ];
 
 type BlogDetailProps = {
-  params: Promise<{ slug: string }>; // ✅ params is a Promise now
+  params: { slug: string };
 };
 
 // ✅ SEO metadata
-export async function generateMetadata(
-  { params }: BlogDetailProps
-): Promise<Metadata> {
-  const { slug } = await params; // ✅ must await
+export async function generateMetadata({ params }: BlogDetailProps): Promise<Metadata> {
+  const { slug } = params;
   const blog = BlogData.find((b) => b.slug === slug);
 
   return {
@@ -60,8 +58,8 @@ export async function generateMetadata(
 }
 
 // ✅ Page must be async
-export default async function BlogDetailPage({ params }: BlogDetailProps) {
-  const { slug } = await params; // ✅ must await
+export default function BlogDetailPage({ params }: BlogDetailProps) {
+  const { slug } = params;
 
   const blog = BlogData.find((b) => b.slug === slug);
 
@@ -134,7 +132,7 @@ export default async function BlogDetailPage({ params }: BlogDetailProps) {
                       key={index}
                       className="flex gap-3 items-center group"
                     >
-                      <div className="relative w-16 h-16 rounded-md overflow-hidden flex-shrink-0">
+                      <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0">
                         <Image
                           src={post.imgSrc}
                           alt={post.title}

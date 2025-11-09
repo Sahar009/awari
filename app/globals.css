@@ -122,6 +122,14 @@
    --breakpoint-sm: 640px;
   }
 
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--font-primary), "Montserrat", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
 /* Navbar Animations */
 @keyframes fadeInDown {
   0% {

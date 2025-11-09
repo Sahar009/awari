@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Exo } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
 
-const geistSans = Exo({
-  variable: "--font-geist-sans",
+const montserrat = Montserrat({
+  variable: "--font-primary",
   subsets: ["latin"],
+  display: "swap",
 });
 
 
@@ -23,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={geistSans.variable}>
+      <body className={`${montserrat.className} ${montserrat.variable} antialiased`}>
         <Providers>
           {children}
         </Providers>
