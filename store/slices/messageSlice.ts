@@ -53,7 +53,7 @@ const initialState: MessageState = {
 // Async Thunks
 export const fetchMessages = createAsyncThunk(
   'messages/fetchMessages',
-  async (params?: GetMessagesParams, { rejectWithValue }) => {
+  async (params: GetMessagesParams | undefined = undefined, { rejectWithValue }) => {
     try {
       const response = await messageService.getMessages(params);
       if (response.success) {
@@ -355,4 +355,5 @@ export const {
 } = messageSlice.actions;
 
 export default messageSlice.reducer;
+
 

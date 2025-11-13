@@ -41,12 +41,12 @@ const BlogData = [
 ];
 
 type BlogDetailProps = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
 // ✅ SEO metadata
 export async function generateMetadata({ params }: BlogDetailProps): Promise<Metadata> {
-  const { slug } = params;
+  const { slug } = await params;
   const blog = BlogData.find((b) => b.slug === slug);
 
   return {
@@ -58,8 +58,8 @@ export async function generateMetadata({ params }: BlogDetailProps): Promise<Met
 }
 
 // ✅ Page must be async
-export default function BlogDetailPage({ params }: BlogDetailProps) {
-  const { slug } = params;
+export default async function BlogDetailPage({ params }: BlogDetailProps) {
+  const { slug } = await params;
 
   const blog = BlogData.find((b) => b.slug === slug);
 

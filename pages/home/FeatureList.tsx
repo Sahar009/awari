@@ -17,7 +17,7 @@ export interface PropertyCard {
 }
 
 interface FeatureListProps {
-  cards: PropertyCard[];
+  cards?: PropertyCard[];
   isLoading?: boolean;
   skeletonCount?: number;
 }
@@ -42,7 +42,10 @@ const FeatureList: React.FC<FeatureListProps> = ({
   isLoading = false,
   skeletonCount = 8
 }) => {
-  if (!isLoading && !cards.length) {
+  // Ensure cards is always an array
+  const safeCards = cards || [];
+  
+  if (!isLoading && !safeCards.length) {
     return (
       <div className="rounded-3xl border border-slate-200 bg-white/90 p-12 text-center shadow-md">
         <h3 className="text-xl font-semibold text-slate-800">No matching properties found</h3>
@@ -53,7 +56,7 @@ const FeatureList: React.FC<FeatureListProps> = ({
     );
   }
 
-  const visibleCards = cards.slice(0, MAX_VISIBLE);
+  const visibleCards = safeCards.slice(0, MAX_VISIBLE);
   const visibleSkeletons = Math.min(MAX_VISIBLE, Math.max(1, skeletonCount));
 
   return (

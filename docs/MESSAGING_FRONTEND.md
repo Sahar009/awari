@@ -287,3 +287,4 @@ Errors are handled at multiple levels:
 3. Check Redux state updates
 4. Refresh the page to sync with server
 
+
