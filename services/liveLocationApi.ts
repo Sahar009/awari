@@ -42,6 +42,7 @@ export interface ApiConfig {
 
 class LiveLocationApiService {
   private config: ApiConfig;
+  private lastNominatimRequest: number = 0; // For rate limiting (1 req/sec)
   
   // API Base URLs
   // Use Next.js API routes to proxy Google Places (avoids CORS)
@@ -50,7 +51,9 @@ class LiveLocationApiService {
   private readonly ADDRESS_DATA_BASE_URL = 'https://api.addressdata.ng/v1';
   private readonly GEOAPIFY_BASE_URL = 'https://api.geoapify.com/v1/geocode';
   // Nominatim (OpenStreetMap) - FREE, NO API KEY REQUIRED
+  // NOTE: Nominatim does NOT support autocomplete - only use for city lookups and single searches
   private readonly NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org';
+  private readonly NOMINATIM_USER_AGENT = 'Awari Property Platform/1.0 (contact@awari.com)'; // Required format
 
   // Available states (limited to 3 major cities)
   private readonly availableStates: NigerianState[] = [
@@ -139,36 +142,20 @@ class LiveLocationApiService {
   }
 
   /**
-   * Get real-time address suggestions using FREE Nominatim API
-   * Using Nominatim (OpenStreetMap) as primary - completely FREE, no API key needed!
+   * Get real-time address suggestions
+   * NOTE: Nominatim does NOT support autocomplete (violates usage policy)
+   * Using fallback static data for now - can enable Google Places later
    */
   async getAddressSuggestions(query: string, city?: string, state?: string): Promise<AddressSuggestion[]> {
     if (!query || query.length < 2) return [];
 
-    const suggestions = new Map<string, AddressSuggestion>();
-
-    // PRIMARY: Use FREE Nominatim API (no API key required!)
-    try {
-      console.log(`🔍 Searching addresses using FREE Nominatim API: "${query}"`);
-      const nominatimSuggestions = await this.getAddressesFromNominatim(query, city, state);
-      console.log(`✅ Nominatim returned ${nominatimSuggestions.length} suggestions`);
-      
-      if (nominatimSuggestions && nominatimSuggestions.length > 0) {
-        nominatimSuggestions.forEach(suggestion => {
-          const key = suggestion.fullAddress.toLowerCase();
-          suggestions.set(key, suggestion);
-        });
-        
-        // Return Nominatim results (they're free and work great!)
-        return Array.from(suggestions.values())
-          .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
-          .slice(0, 10);
-      }
-    } catch (error) {
-      console.error('❌ Nominatim address API failed:', error);
-    }
-
-    // If Nominatim fails, return empty (fallback data will be used by locationApi service)
+    // IMPORTANT: Nominatim does NOT support autocomplete/real-time suggestions
+    // Using it for autocomplete violates their usage policy and causes 403 errors
+    // We'll use static fallback data instead
+    
+    console.log(`🔍 Address suggestions for "${query}" - using fallback data (Nominatim doesn't support autocomplete)`);
+    
+    // Return empty - the locationApi service will use fallback data
     return [];
 
     // PENDING: Other APIs disabled for now
@@ -264,13 +251,30 @@ class LiveLocationApiService {
   }
 
   /**
+   * Rate limit helper for Nominatim (1 request per second)
+   */
+  private async waitForNominatimRateLimit(): Promise<void> {
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastNominatimRequest;
+    if (timeSinceLastRequest < 1000) {
+      const waitTime = 1000 - timeSinceLastRequest;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    this.lastNominatimRequest = Date.now();
+  }
+
+  /**
    * Get cities from Nominatim (OpenStreetMap) API
    * PRIMARY SERVICE - FREE - NO API KEY REQUIRED!
    * 
+   * NOTE: Nominatim allows city lookups but NOT autocomplete
    * This is our primary city lookup service - completely free and works great!
    */
   private async getCitiesFromNominatim(stateName: string): Promise<string[]> {
     try {
+      // Rate limit: 1 request per second
+      await this.waitForNominatimRateLimit();
+
       const params = new URLSearchParams({
         q: `${stateName}, Nigeria`,
         format: 'json',
@@ -284,7 +288,7 @@ class LiveLocationApiService {
 
       const response = await fetch(`${this.NOMINATIM_BASE_URL}/search?${params.toString()}`, {
         headers: {
-          'User-Agent': 'Awari Property Platform', // Required by Nominatim
+          'User-Agent': this.NOMINATIM_USER_AGENT, // Required format: AppName/Version (contact@email.com)
           'Accept': 'application/json',
           'Referer': typeof window !== 'undefined' ? window.location.origin : 'https://awari-ten.vercel.app'
         }
@@ -509,65 +513,21 @@ class LiveLocationApiService {
   }
 
   /**
-   * Get address suggestions from Nominatim (OpenStreetMap) API
-   * PRIMARY SERVICE - FREE - NO API KEY REQUIRED!
-   * Rate limit: 1 request per second (be respectful)
+   * DISABLED: Get address suggestions from Nominatim
    * 
-   * This is our primary geocoding service - completely free and works great!
+   * NOTE: Nominatim does NOT support autocomplete/real-time suggestions
+   * Using it for autocomplete violates their usage policy and results in 403 errors
+   * This method is kept for reference but should NOT be used for autocomplete
+   * 
+   * Nominatim can only be used for:
+   * - Single address lookups (not autocomplete)
+   * - City/place searches (not real-time suggestions)
+   * - Geocoding complete addresses (not partial queries)
    */
   private async getAddressesFromNominatim(query: string, city?: string, state?: string): Promise<AddressSuggestion[]> {
-    try {
-      // Build search query - Nominatim works best with full context
-      let searchQuery = query.trim();
-      if (city) searchQuery += `, ${city}`;
-      if (state) searchQuery += `, ${state}`;
-      searchQuery += ', Nigeria';
-
-      const params = new URLSearchParams({
-        q: searchQuery,
-        format: 'json',
-        addressdetails: '1',
-        limit: '10',
-        countrycodes: 'ng',
-        'accept-language': 'en',
-        dedupe: '1' // Remove duplicates
-      });
-
-      const response = await fetch(`${this.NOMINATIM_BASE_URL}/search?${params.toString()}`, {
-        headers: {
-          'User-Agent': 'Awari Property Platform', // Required by Nominatim
-          'Accept': 'application/json',
-          'Referer': typeof window !== 'undefined' ? window.location.origin : 'https://awari-ten.vercel.app'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (Array.isArray(data) && data.length > 0) {
-          return data.map((place: any, index: number) => {
-            const address = place.address || {};
-            return {
-              id: `nominatim-${place.place_id}`,
-              fullAddress: place.display_name,
-              street: address.road || address.house_number || address.house || '',
-              city: address.city || address.town || address.village || address.suburb || city || '',
-              state: address.state || state || '',
-              postCode: address.postcode,
-              coordinates: {
-                lat: parseFloat(place.lat),
-                lng: parseFloat(place.lon)
-              },
-              confidence: 0.85 - (index * 0.05) // High confidence - this is our primary service!
-            };
-          });
-        }
-      } else {
-        console.warn(`Nominatim API returned status ${response.status}`);
-      }
-    } catch (error) {
-      console.warn('Nominatim (OpenStreetMap) API failed:', error);
-    }
-
+    // DISABLED - Nominatim doesn't support autocomplete
+    // This would violate usage policy and cause 403 errors
+    console.warn('Nominatim autocomplete is disabled - violates usage policy');
     return [];
   }
 

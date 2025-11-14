@@ -130,34 +130,64 @@ class LocationApiService {
   }
 
   /**
-   * Get REAL-TIME address suggestions from multiple live APIs
+   * Get address suggestions using enhanced fallback data
+   * NOTE: Nominatim doesn't support autocomplete (would cause 403 errors)
+   * Using comprehensive static data for Nigerian addresses
    */
   async getAddressSuggestions(query: string, city?: string, state?: string): Promise<AddressSuggestion[]> {
     if (!query || query.length < 2) return [];
 
-    if (this.isConfigured) {
-      console.log(` Fetching real-time address suggestions for "${query}"...`);
-      return await liveLocationApiService.getAddressSuggestions(query, city, state);
-    }
+    console.log(`🔍 Address suggestions for "${query}" - using enhanced fallback data`);
     
-    console.log(` Using minimal fallback addresses for "${query}"`);
-    // Very basic fallback when no APIs are configured
-    const basicStreets = [
-      'Allen Avenue', 'Victoria Island', 'Lekki-Epe Expressway', 'Ikorodu Road',
-      'Ahmadu Bello Way', 'Ring Road', 'Challenge Road', 'Constitution Avenue'
+    // Enhanced fallback addresses for Nigerian cities
+    const addressDatabase: Record<string, string[]> = {
+      'Lagos': [
+        'Allen Avenue', 'Victoria Island', 'Lekki-Epe Expressway', 'Ikorodu Road',
+        'Ahmadu Bello Way', 'Admiralty Way', 'Ajah Road', 'Akin Adesola Street',
+        'Awolowo Road', 'Broad Street', 'Carter Bridge', 'CMS Road',
+        'Dolphin Estate', 'Falomo Bridge', 'Gerrard Road', 'Herbert Macaulay Way',
+        'Idowu Taylor Street', 'Ikeja GRA', 'Jakande Estate', 'Kofo Abayomi Street',
+        'Lekki Phase 1', 'Lekki Phase 2', 'Marina', 'Maryland', 'Murtala Mohammed Way',
+        'Nnamdi Azikiwe Street', 'Obalende', 'Ogudu Road', 'Ojota', 'Ojuelegba Road',
+        'Oshodi Expressway', 'Ozumba Mbadiwe Avenue', 'Samuel Manuwa Street',
+        'Tafawa Balewa Square', 'Tinubu Square', 'Waltersmith Road', 'Yaba'
+      ],
+      'Oyo': [
+        'Ring Road', 'Challenge Road', 'Bodija Road', 'UI Road', 'Dugbe Road',
+        'Mokola Road', 'Agodi Road', 'Gate Road', 'Molete Road', 'Oke-Ado Road',
+        'Oke-Bola Road', 'Sango Road', 'Eleyele Road', 'Apata Road', 'Akobo Road'
+      ],
+      'Federal Capital Territory': [
+        'Constitution Avenue', 'Ahmadu Bello Way', 'Shehu Shagari Way',
+        'Ademola Adetokunbo Crescent', 'Aminu Kano Crescent', 'Herbert Macaulay Way',
+        'Ibrahim Babangida Boulevard', 'Maitama Avenue', 'Wuse Zone 4', 'Wuse Zone 5',
+        'Garki Area 1', 'Garki Area 2', 'Asokoro', 'Gwarinpa', 'Kubwa', 'Jahi',
+        'Life Camp', 'Utako', 'Jabi', 'Kado', 'Dutse', 'Bwari', 'Nyanya', 'Karu'
+      ]
+    };
+
+    // Get addresses for the state or use general list
+    const stateAddresses = addressDatabase[state || ''] || [];
+    const generalAddresses = [
+      'Main Street', 'Market Road', 'Church Street', 'Mosque Street',
+      'School Road', 'Hospital Road', 'Station Road', 'Airport Road'
     ];
     
-    const filtered = basicStreets.filter(street => 
-      street.toLowerCase().includes(query.toLowerCase())
+    const allAddresses = [...stateAddresses, ...generalAddresses];
+    
+    // Filter addresses that match the query
+    const filtered = allAddresses.filter(address => 
+      address.toLowerCase().includes(query.toLowerCase())
     );
     
-    return filtered.map((street, index) => ({
-      id: `basic-${index}`,
-      fullAddress: `${street}, ${city || ''}, ${state || ''}, Nigeria`,
+    // Limit to top 10 matches
+    return filtered.slice(0, 10).map((street, index) => ({
+      id: `fallback-${index}-${Date.now()}`,
+      fullAddress: `${street}, ${city || ''}, ${state || ''}, Nigeria`.trim().replace(/^,\s*|,\s*$/g, ''),
       street,
       city: city || '',
       state: state || '',
-      confidence: 0.5 - (index * 0.1)
+      confidence: 0.7 - (index * 0.05)
     }));
   }
 
