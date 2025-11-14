@@ -95,14 +95,38 @@ class LocationApiService {
     }
     
     console.log(` Using fallback cities for ${stateName}`);
-    // Minimal fallback cities
+    // Comprehensive fallback cities
     const fallbackCities: Record<string, string[]> = {
-      'Lagos': ['Ikeja', 'Victoria Island', 'Lekki', 'Ikoyi', 'Yaba', 'Surulere', 'Ajah', 'Maryland'],
-      'Oyo': ['Ibadan North', 'Ibadan South', 'Bodija', 'UI', 'Challenge', 'Ring Road', 'Dugbe'],
-      'Federal Capital Territory': ['Garki', 'Wuse', 'Maitama', 'Asokoro', 'Gwarinpa', 'Kubwa', 'Jahi']
+      'Lagos': [
+        'Ikeja', 'Victoria Island', 'Lekki', 'Ikoyi', 'Yaba', 'Surulere', 'Ajah', 'Maryland', 'Gbagada',
+        'Alimosho', 'Ajeromi-Ifelodun', 'Kosofe', 'Mushin', 'Oshodi-Isolo', 'Ojo', 'Ikorodu',
+        'Agege', 'Ifako-Ijaiye', 'Shomolu', 'Amuwo-Odofin', 'Lagos Mainland', 'Lagos Island', 'Eti Osa',
+        'Ibeju-Lekki', 'Badagry', 'Epe', 'Apapa', 'Mushin', 'Oshodi', 'Isolo', 'Ejigbo',
+        'Magodo', 'Omole', 'Ogba', 'Ilupeju', 'Palmgrove', 'Anthony', 'Ojota', 'Ketu',
+        'Alapere', 'Berger', 'Ikeja GRA', 'Magodo Phase 1', 'Magodo Phase 2', 'Lekki Phase 1',
+        'Lekki Phase 2', 'Banana Island', 'Chevron', 'Jakande', 'Sangotedo', 'Abraham Adesanya',
+        'Badore', 'Admiralty Way', 'Osapa London', 'Ikota', 'VGC', 'Dolphin Estate',
+        'Oniru', 'Marina', 'Broad Street', 'Idumota', 'Balogun', 'Obalende', 'Tarkwa Bay',
+        'Adeniji Adele', 'CMS', 'Tinubu Square'
+      ],
+      'Oyo': [
+        'Ibadan North', 'Ibadan South', 'Bodija', 'UI', 'Challenge', 'Ring Road', 'Dugbe', 'Mokola',
+        'Agodi', 'Gate', 'Molete', 'Oke-Ado', 'Oke-Bola', 'Oke-Padi', 'Sango', 'Eleyele', 'Apata',
+        'Akobo', 'Ologuneru', 'Oluyole', 'Akinyele', 'Egbeda', 'Ido', 'Lagelu', 'Ona Ara'
+      ],
+      'Federal Capital Territory': [
+        'Garki', 'Wuse', 'Maitama', 'Asokoro', 'Gwarinpa', 'Kubwa', 'Jahi', 'Life Camp',
+        'Wuse 2', 'Wuse Zone 4', 'Wuse Zone 5', 'Wuse Zone 6', 'Wuse Zone 7', 'Garki Area 1',
+        'Garki Area 2', 'Garki Area 3', 'Garki Area 7', 'Garki Area 8', 'Garki Area 10', 'Garki Area 11',
+        'Utako', 'Jabi', 'Kado', 'Dakibiyu', 'Dutse', 'Bwari', 'Nyanya', 'Karu', 'Mararaba',
+        'Lugbe', 'Gudu', 'Apo', 'Central Area', 'Wuse Zone 1', 'Wuse Zone 2', 'Wuse Zone 3',
+        'Mabushi', 'Kaura', 'Dakwo', 'Lokogoma'
+      ]
     };
     
-    return fallbackCities[stateName] || [];
+    // Remove duplicates and return unique cities
+    const cities = fallbackCities[stateName] || [];
+    return [...new Set(cities)];
   }
 
   /**

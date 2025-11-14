@@ -23,7 +23,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { fetchMyProperties, deleteProperty } from '@/store/slices/propertySlice';
+import { fetchMyProperties, deleteProperty, updateProperty, setCurrentPage } from '@/store/slices/propertySlice';
 import Container from '@/components/Container';
 import MainLayout from '../mainLayout';
 import { AuthLoader } from '@/components/ui/Loader';
@@ -52,6 +52,7 @@ export default function MyListingsPage() {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
+  const [togglingPropertyId, setTogglingPropertyId] = useState<string | null>(null);
 
   // Filter options
   const statusOptions = [
@@ -115,10 +116,11 @@ export default function MyListingsPage() {
       limit: 12,
       ...(filters.status && { status: filters.status }),
       ...(filters.propertyType && { propertyType: filters.propertyType }),
-      ...(filters.listingType && { listingType: filters.listingType })
+      ...(filters.listingType && { listingType: filters.listingType }),
+      ...(filters.search && { search: filters.search })
     };
     dispatch(fetchMyProperties(params));
-  }, [currentPage, filters.status, filters.propertyType, filters.listingType, dispatch]);
+  }, [currentPage, filters.status, filters.propertyType, filters.listingType, filters.search, dispatch]);
 
   useEffect(() => {
     if (authChecked) {
@@ -131,6 +133,54 @@ export default function MyListingsPage() {
       await dispatch(deleteProperty(propertyId));
       loadProperties(); // Refresh the list
     }
+  };
+
+  const handleToggleStatus = async (propertyId: string, currentStatus: string) => {
+    if (togglingPropertyId === propertyId) return; // Prevent double clicks
+    
+    try {
+      setTogglingPropertyId(propertyId);
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      await dispatch(updateProperty({
+        propertyId,
+        propertyData: { status: newStatus as 'active' | 'inactive' }
+      })).unwrap();
+      loadProperties(); // Refresh the list
+    } catch (error) {
+      console.error('Failed to toggle property status:', error);
+      alert('Failed to update property status. Please try again.');
+    } finally {
+      setTogglingPropertyId(null);
+    }
+  };
+
+  // Helper function to get primary image from media array
+  const getPrimaryImage = (property: any) => {
+    if (!property.media || property.media.length === 0) return null;
+    // Find primary image first, otherwise use first image
+    const primaryImage = property.media.find((m: any) => m.isPrimary && m.mediaType === 'image');
+    if (primaryImage) return primaryImage.url;
+    const firstImage = property.media.find((m: any) => m.mediaType === 'image');
+    return firstImage ? firstImage.url : null;
+  };
+
+  // Helper function to get location string
+  const getLocationString = (property: any) => {
+    const parts = [property.address, property.city, property.state].filter(Boolean);
+    return parts.join(', ') || 'Location not specified';
+  };
+
+  // Helper function to get area
+  const getArea = (property: any) => {
+    if (property.floorArea) return `${property.floorArea} sqm`;
+    if (property.landArea) return `${property.landArea} sqm`;
+    return 'N/A';
+  };
+
+  // Helper function to count media by type
+  const getMediaCount = (property: any, type: 'image' | 'video' | 'document') => {
+    if (!property.media) return 0;
+    return property.media.filter((m: any) => m.mediaType === type && m.isActive).length;
   };
 
   const getStatusBadge = (status: string) => {
@@ -281,9 +331,9 @@ export default function MyListingsPage() {
                   <div key={property.id} className="bg-white rounded-2xl shadow-lg border border-slate-200/50 overflow-hidden hover:shadow-xl transition-all duration-300 group">
                     {/* Property Image */}
                     <div className="relative h-48 bg-slate-200">
-                      {property.images && property.images.length > 0 ? (
+                      {getPrimaryImage(property) ? (
                         <Image
-                          src={property.images[0]}
+                          src={getPrimaryImage(property)!}
                           alt={property.title}
                           fill
                           className="object-cover"
@@ -346,7 +396,7 @@ export default function MyListingsPage() {
                       
                       <div className="flex items-center gap-1 text-slate-600 mb-3">
                         <MapPin size={16} />
-                        <span className="text-sm">{property.location}</span>
+                        <span className="text-sm">{getLocationString(property)}</span>
                       </div>
 
                       <div className="flex items-center justify-between mb-4">
@@ -362,22 +412,22 @@ export default function MyListingsPage() {
                       <div className="flex justify-between text-sm text-slate-600 mb-4">
                         <span>{property.bedrooms || 0} beds</span>
                         <span>{property.bathrooms || 0} baths</span>
-                        <span>{property.area || 0} sqft</span>
+                        <span>{getArea(property)}</span>
                       </div>
 
                       {/* Media Count */}
                       <div className="flex items-center gap-4 text-xs text-slate-500 border-t pt-4">
                         <div className="flex items-center gap-1">
                           <ImageIcon size={14} />
-                          <span>{property.images?.length || 0} photos</span>
+                          <span>{getMediaCount(property, 'image')} photos</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Video size={14} />
-                          <span>0 videos</span>
+                          <span>{getMediaCount(property, 'video')} videos</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <FileText size={14} />
-                          <span>0 docs</span>
+                          <span>{getMediaCount(property, 'document')} docs</span>
                         </div>
                       </div>
 
@@ -386,6 +436,37 @@ export default function MyListingsPage() {
                         <Calendar size={14} />
                         <span>Created {new Date(property.createdAt).toLocaleDateString()}</span>
                       </div>
+
+                      {/* Availability Toggle */}
+                      {(property.status === 'active' || property.status === 'inactive') && (
+                        <div className="mt-4 pt-4 border-t border-slate-200">
+                          <label className="flex items-center justify-between cursor-pointer">
+                            <span className="text-sm font-medium text-slate-700">
+                              {property.status === 'active' ? 'Available' : 'Unavailable'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStatus(property.id, property.status)}
+                              disabled={togglingPropertyId === property.id}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                property.status === 'active' ? 'bg-green-500' : 'bg-slate-300'
+                              }`}
+                            >
+                              {togglingPropertyId === property.id ? (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                              ) : (
+                                <span
+                                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                    property.status === 'active' ? 'translate-x-6' : 'translate-x-1'
+                                  }`}
+                                />
+                              )}
+                            </button>
+                          </label>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -399,7 +480,9 @@ export default function MyListingsPage() {
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                     <button
                       key={page}
-                      onClick={() => {/* Handle page change */}}
+                      onClick={() => {
+                        dispatch(setCurrentPage(page));
+                      }}
                       className={`px-4 py-2 rounded-lg transition-all ${
                         page === currentPage
                           ? 'bg-primary text-white'

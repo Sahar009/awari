@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, Home, ShoppingBag, Building2, Briefcase, Hotel } from 'lucide-react';
 import { Logo } from '@/components/navbar/Logo';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { registerUser, googleSignIn, clearError } from '@/store/slices/authSlice';
@@ -19,8 +19,7 @@ export default function RegisterPage() {
     password: '',
     firstName: '',
     lastName: '',
-    role: 'renter' as const,
-   
+    role: undefined as 'renter' | 'buyer' | 'landlord' | 'agent' | 'hotel_provider' | undefined,
     gender: undefined as 'male' | 'female' | 'other' | undefined
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -70,13 +69,20 @@ export default function RegisterPage() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value === '' ? undefined : value
+      [name]: value === '' ? undefined : (name === 'role' ? value as 'renter' | 'buyer' | 'landlord' | 'agent' | 'hotel_provider' : value)
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     dispatch(clearError());
+    
+    // Validate role is selected
+    if (!formData.role) {
+      dispatch(clearError());
+      // You might want to set an error here if you have error handling
+      return;
+    }
     
     try {
       console.log('Starting registration with data:', formData);
@@ -300,6 +306,35 @@ export default function RegisterPage() {
                       placeholder="Enter your last name"
                     />
                   </div>
+                </div>
+
+                {/* Role Selection */}
+                <div className="space-y-2">
+                  <label htmlFor="role" className="text-sm font-medium text-slate-700">
+                    What would you like to do on Awari? *
+                  </label>
+                  <div className="relative group">
+                    <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 w-5 h-5 group-focus-within:text-primary transition-colors duration-200 pointer-events-none" />
+                    <select
+                      id="role"
+                      name="role"
+                      value={formData.role || ''}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full pl-10 pr-4 py-3 bg-white/60 border border-purple-200/50 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 appearance-none cursor-pointer"
+                    >
+                      <option value="">Select your role</option>
+                      <option value="renter">🏠 Rent a Property</option>
+                      <option value="buyer">💰 Buy a Property</option>
+                      <option value="landlord">🏘️ List Properties for Rent</option>
+                      <option value="agent">👔 Work as a Real Estate Agent</option>
+                      <option value="hotel_provider">🏨 Offer Shortlets & Hotels</option>
+                    </select>
+                    <ArrowRight className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none -rotate-90" />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Choose how you&apos;ll use Awari to help us personalize your experience
+                  </p>
                 </div>
               </div>
 

@@ -140,6 +140,25 @@ export default function EditPropertyPage() {
   const [isLoadingCities, setIsLoadingCities] = useState(false);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
   
+  // Field-specific validation errors from backend
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  
+  // Type for validation error from backend
+  interface ValidationError {
+    type?: string;
+    value?: string;
+    msg: string;
+    path: string;
+    location?: string;
+  }
+  
+  // Type for error response
+  interface ErrorResponse {
+    message?: string;
+    errors?: ValidationError[];
+    response?: unknown;
+  }
+  
   const [formData, setFormData] = useState<PropertyFormData>({
     // Basic Info
     title: '',
@@ -360,6 +379,15 @@ export default function EditPropertyPage() {
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+    
     // Handle different input types
     let processedValue: string | number | boolean = value;
     
@@ -374,10 +402,19 @@ export default function EditPropertyPage() {
       processedValue = value;
     }
     
-    setFormData(prev => ({
-      ...prev,
-      [name]: processedValue
-    }));
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: processedValue
+      };
+      
+      // Clear documents if listing type changes from 'sale' to something else
+      if (name === 'listingType' && processedValue !== 'sale' && prev.documents.length > 0) {
+        newData.documents = [];
+      }
+      
+      return newData;
+    });
 
     // Update available cities when state changes
     if (name === 'state') {
@@ -522,8 +559,15 @@ export default function EditPropertyPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     
     if (!currentProperty?.id) return;
+    
+    // Prevent submission if not on the last step
+    if (currentStep !== 4) {
+      console.log('❌ Form submission prevented - not on step 4. Current step:', currentStep);
+      return;
+    }
     
     // Validate required fields
     const requiredFields = ['title', 'description', 'propertyType', 'listingType', 'price', 'address', 'city', 'state'];
@@ -531,10 +575,19 @@ export default function EditPropertyPage() {
     
     if (missingFields.length > 0) {
       alert(`Please fill in all required fields: ${missingFields.join(', ')}`);
+      // Go back to the step with missing fields
+      if (missingFields.some(f => ['title', 'description', 'propertyType', 'listingType'].includes(f))) {
+        setCurrentStep(1);
+      } else if (missingFields.some(f => ['price', 'address', 'city', 'state'].includes(f))) {
+        setCurrentStep(2);
+      }
       return;
     }
 
     try {
+      // Clear previous errors
+      setFieldErrors({});
+      dispatch(clearError());
       // Convert form data to match update format
       const updateData: Record<string, unknown> = {
         // Basic Info
@@ -620,13 +673,76 @@ export default function EditPropertyPage() {
       console.log('Property updated successfully');
       router.push('/my-listings');
       
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Property update failed:', error);
+      
+      // Parse validation errors from backend
+      const validationErrors: Record<string, string> = {};
+      const errorResponse = error as ErrorResponse;
+      
+      // Check if error has validation errors array (from rejectWithValue)
+      if (errorResponse?.errors && Array.isArray(errorResponse.errors)) {
+        errorResponse.errors.forEach((err: ValidationError) => {
+          if (err.path && err.msg) {
+            validationErrors[err.path] = err.msg;
+          }
+        });
+      } 
+      // Also check if error.response exists (direct axios error)
+      else if (errorResponse?.response && typeof errorResponse.response === 'object') {
+        const responseData = (errorResponse.response as { data?: { errors?: ValidationError[] } })?.data;
+        if (responseData?.errors && Array.isArray(responseData.errors)) {
+          responseData.errors.forEach((err: ValidationError) => {
+            if (err.path && err.msg) {
+              validationErrors[err.path] = err.msg;
+            }
+          });
+        }
+      }
+      
+      // Set field errors if any validation errors found
+      if (Object.keys(validationErrors).length > 0) {
+        setFieldErrors(validationErrors);
+        
+        // Navigate to the step with the first error
+        const firstErrorField = Object.keys(validationErrors)[0];
+        if (['title', 'description', 'propertyType', 'listingType', 'shortDescription'].includes(firstErrorField)) {
+          setCurrentStep(1);
+        } else if (['price', 'address', 'city', 'state', 'country', 'postalCode'].includes(firstErrorField)) {
+          setCurrentStep(2);
+        } else if (['bedrooms', 'bathrooms', 'features', 'amenities'].includes(firstErrorField)) {
+          setCurrentStep(3);
+        } else if (['images', 'videos', 'documents'].includes(firstErrorField)) {
+          setCurrentStep(4);
+        }
+      }
     }
   };
 
-  const nextStep = () => {
-    if (currentStep < 4) setCurrentStep(currentStep + 1);
+  const nextStep = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Validate current step before moving to next
+    if (currentStep === 1) {
+      if (!formData.title || !formData.description || !formData.propertyType || !formData.listingType) {
+        alert('Please fill in all required fields in Basic Details before continuing.');
+        return;
+      }
+    } else if (currentStep === 2) {
+      if (!formData.price || !formData.address || !formData.city || !formData.state) {
+        alert('Please fill in all required fields in Location & Pricing before continuing.');
+        return;
+      }
+    }
+    
+    if (currentStep < 4) {
+      const newStep = currentStep + 1;
+      console.log('🔄 Moving to step:', newStep);
+      setCurrentStep(newStep);
+    }
   };
 
   const prevStep = () => {
@@ -639,6 +755,13 @@ export default function EditPropertyPage() {
     { number: 3, title: 'Property Features', description: 'Details & amenities' },
     { number: 4, title: 'Media & Documents', description: 'Images, videos & files' }
   ];
+
+  // Responsive steps for mobile
+  const mobileSteps = steps.map(step => ({
+    ...step,
+    isActive: currentStep >= step.number,
+    isCurrent: currentStep === step.number
+  }));
 
   // Show loading while checking auth
   if (!authChecked) {
@@ -687,25 +810,25 @@ export default function EditPropertyPage() {
         {/* Header */}
         <div className="bg-white shadow-sm border-b">
           <Container>
-            <div className="flex items-center justify-between py-6">
-              <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-4 sm:py-6">
+              <div className="flex items-center space-x-3 sm:space-x-4 w-full sm:w-auto">
                 <button
                   onClick={() => router.back()}
-                  className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors duration-200"
+                  className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors duration-200 shrink-0"
                 >
-                  <ArrowLeft className="w-5 h-5 text-slate-600" />
+                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600" />
                 </button>
-                <div>
-                  <h1 className="text-2xl font-bold text-slate-800">Edit Property</h1>
-                  <p className="text-slate-600">Update your property listing and reach thousands of potential buyers/renters</p>
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Edit Property</h1>
+                  <p className="text-sm sm:text-base text-slate-600 hidden sm:block">Update your property listing and reach thousands of potential buyers/renters</p>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
                 <button
                   type="button"
                   onClick={() => router.push('/my-listings')}
-                  className="px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors duration-200"
+                  className="px-3 sm:px-4 py-2 text-sm sm:text-base text-slate-600 hover:text-slate-800 transition-colors duration-200 whitespace-nowrap"
                 >
                   Cancel
                 </button>
@@ -715,29 +838,51 @@ export default function EditPropertyPage() {
         </div>
 
       <Container>
-        <div className="py-8">
-          {/* Progress Steps */}
-          <div className="mb-8">
-            <div className="flex items-center justify-center space-x-8">
+        <div className="py-4 sm:py-6 lg:py-8">
+          {/* Progress Steps - Responsive */}
+          <div className="mb-6 sm:mb-8">
+            {/* Mobile Steps (Vertical) */}
+            <div className="block md:hidden space-y-4">
+              {mobileSteps.map((step) => (
+                <div key={step.number} className="flex items-start space-x-4">
+                  <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 ${
+                    step.isActive 
+                      ? 'bg-primary text-white shadow-lg' 
+                      : 'bg-slate-200 text-slate-500'
+                  }`}>
+                    {step.isCurrent ? step.number : step.isActive ? '✓' : step.number}
+                  </div>
+                  <div className="flex-1 pt-2">
+                    <p className={`font-medium text-sm ${step.isActive ? 'text-primary' : 'text-slate-500'}`}>
+                      {step.title}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-0.5">{step.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Steps (Horizontal) */}
+            <div className="hidden md:flex items-center justify-center space-x-4 lg:space-x-8">
               {steps.map((step, index) => (
                 <div key={step.number} className="flex items-center">
                   <div className="flex flex-col items-center">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all duration-300 ${
+                    <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center font-semibold text-sm lg:text-base transition-all duration-300 ${
                       currentStep >= step.number 
                         ? 'bg-primary text-white shadow-lg' 
                         : 'bg-slate-200 text-slate-500'
                     }`}>
-                      {step.number}
+                      {currentStep === step.number ? step.number : currentStep > step.number ? '✓' : step.number}
                     </div>
                     <div className="mt-2 text-center">
-                      <p className={`font-medium ${currentStep >= step.number ? 'text-primary' : 'text-slate-500'}`}>
+                      <p className={`font-medium text-xs lg:text-sm ${currentStep >= step.number ? 'text-primary' : 'text-slate-500'}`}>
                         {step.title}
                       </p>
-                      <p className="text-xs text-slate-400">{step.description}</p>
+                      <p className="text-xs text-slate-400 hidden lg:block">{step.description}</p>
                     </div>
                   </div>
                   {index < steps.length - 1 && (
-                    <div className={`w-20 h-1 mx-4 rounded-full transition-all duration-300 ${
+                    <div className={`w-12 lg:w-20 h-1 mx-2 lg:mx-4 rounded-full transition-all duration-300 ${
                       currentStep > step.number ? 'bg-primary' : 'bg-slate-200'
                     }`} />
                   )}
@@ -747,17 +892,34 @@ export default function EditPropertyPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-xl border border-slate-200/50 overflow-hidden">
+          <form 
+            onSubmit={(e) => {
+              // Completely prevent form submission - only allow via button click
+              e.preventDefault();
+              e.stopPropagation();
+              return false;
+            }}
+            onKeyDown={(e) => {
+              // Prevent ALL Enter key submissions
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+              }
+            }}
+            className="max-w-4xl mx-auto"
+            noValidate
+          >
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl border border-slate-200/50 overflow-hidden">
               {/* Step 1: Basic Details */}
               {currentStep === 1 && (
-                <div className="p-8">
-                  <div className="mb-8">
-                    <h2 className="text-xl font-bold text-slate-800 mb-2">Basic Property Details</h2>
-                    <p className="text-slate-600">Provide essential information about your property</p>
+                <div className="p-4 sm:p-6 lg:p-8">
+                  <div className="mb-6 sm:mb-8">
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-1 sm:mb-2">Basic Property Details</h2>
+                    <p className="text-sm sm:text-base text-slate-600">Provide essential information about your property</p>
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     {/* Property Title */}
                     <div>
                       <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-2">
@@ -770,13 +932,21 @@ export default function EditPropertyPage() {
                         value={formData.title}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 ${
+                          fieldErrors.title ? 'border-red-500 focus:border-red-500' : 'border-slate-300'
+                        }`}
                         placeholder="e.g., Beautiful 3 Bedroom Apartment in Victoria Island"
                       />
+                      {fieldErrors.title && (
+                        <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                          <span>⚠️</span>
+                          <span>{fieldErrors.title}</span>
+                        </p>
+                      )}
                     </div>
 
                     {/* Property Type and Listing Type */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                       <div>
                         <label htmlFor="propertyType" className="block text-sm font-medium text-slate-700 mb-2">
                           Property Type *
@@ -854,9 +1024,22 @@ export default function EditPropertyPage() {
                         onChange={handleInputChange}
                         required
                         rows={6}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 resize-none"
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 resize-none ${
+                          fieldErrors.description ? 'border-red-500 focus:border-red-500' : 'border-slate-300'
+                        }`}
                         placeholder="Describe your property in detail. Include features, amenities, nearby landmarks, and what makes it special..."
                       />
+                      {fieldErrors.description && (
+                        <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                          <span>⚠️</span>
+                          <span>{fieldErrors.description}</span>
+                        </p>
+                      )}
+                      {!fieldErrors.description && (
+                        <p className="mt-1 text-xs text-slate-500">
+                          {formData.description.length}/5000 characters (minimum 10 characters)
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -864,15 +1047,15 @@ export default function EditPropertyPage() {
 
               {/* Step 2: Location & Price */}
               {currentStep === 2 && (
-                <div className="p-8">
-                  <div className="mb-8">
-                    <h2 className="text-xl font-bold text-slate-800 mb-2">Location & Pricing</h2>
-                    <p className="text-slate-600">Specify where your property is located and set your price</p>
+                <div className="p-4 sm:p-6 lg:p-8">
+                  <div className="mb-6 sm:mb-8">
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-1 sm:mb-2">Location & Pricing</h2>
+                    <p className="text-sm sm:text-base text-slate-600">Specify where your property is located and set your price</p>
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     {/* State and City */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                       <div>
                         <label htmlFor="state" className="block text-sm font-medium text-slate-700 mb-2">
                           State *
@@ -884,7 +1067,9 @@ export default function EditPropertyPage() {
                           onChange={handleInputChange}
                           required
                           disabled={isLoadingStates}
-                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 disabled:bg-slate-100 disabled:cursor-not-allowed ${
+                            fieldErrors.state ? 'border-red-500 focus:border-red-500' : 'border-slate-300'
+                          }`}
                         >
                           <option value="">
                             {isLoadingStates ? 'Loading states...' : 'Select state'}
@@ -893,6 +1078,12 @@ export default function EditPropertyPage() {
                             <option key={state.id} value={state.name}>{state.name}</option>
                           ))}
                         </select>
+                        {fieldErrors.state && (
+                          <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                            <span>⚠️</span>
+                            <span>{fieldErrors.state}</span>
+                          </p>
+                        )}
                       </div>
 
                       <div>
@@ -906,7 +1097,9 @@ export default function EditPropertyPage() {
                           onChange={handleInputChange}
                           required
                           disabled={!formData.state || isLoadingCities || availableCities.length === 0}
-                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 disabled:bg-slate-100 disabled:cursor-not-allowed ${
+                            fieldErrors.city ? 'border-red-500 focus:border-red-500' : 'border-slate-300'
+                          }`}
                         >
                           <option value="">
                             {!formData.state 
@@ -922,6 +1115,12 @@ export default function EditPropertyPage() {
                             <option key={city} value={city}>{city}</option>
                           ))}
                         </select>
+                        {fieldErrors.city && (
+                          <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                            <span>⚠️</span>
+                            <span>{fieldErrors.city}</span>
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -946,7 +1145,9 @@ export default function EditPropertyPage() {
                             setTimeout(() => setShowAddressSuggestions(false), 200);
                           }}
                           required
-                          className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                          className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 ${
+                            fieldErrors.address ? 'border-red-500 focus:border-red-500' : 'border-slate-300'
+                          }`}
                           placeholder={
                             !formData.city 
                               ? "Select city first to see address suggestions" 
@@ -989,8 +1190,13 @@ export default function EditPropertyPage() {
                         )}
                         
                       </div>
-                      
-                      {formData.city && (
+                      {fieldErrors.address && (
+                        <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                          <span>⚠️</span>
+                          <span>{fieldErrors.address}</span>
+                        </p>
+                      )}
+                      {!fieldErrors.address && formData.city && (
                         <p className="mt-1 text-xs text-slate-500">
                           💡 Start typing to get real-time address suggestions for {formData.city}
                         </p>
@@ -1006,23 +1212,33 @@ export default function EditPropertyPage() {
                         </label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 font-semibold text-lg">₦</span>
-                          <input
-                            type="number"
-                            id="price"
-                            name="price"
-                            value={formData.price}
-                            onChange={handleInputChange}
-                            required
-                            min="0"
-                            className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
-                            placeholder="Enter price amount"
-                          />
+                        <input
+                          type="number"
+                          id="price"
+                          name="price"
+                          value={formData.price}
+                          onChange={handleInputChange}
+                          required
+                          min="0"
+                          className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 ${
+                            fieldErrors.price ? 'border-red-500 focus:border-red-500' : 'border-slate-300'
+                          }`}
+                          placeholder="Enter price amount"
+                        />
                         </div>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {formData.listingType === 'rent' && 'Annual rent amount'}
-                          {formData.listingType === 'sale' && 'Total sale price'}
-                          {formData.listingType === 'shortlet' && 'Price per night'}
-                        </p>
+                        {fieldErrors.price && (
+                          <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                            <span>⚠️</span>
+                            <span>{fieldErrors.price}</span>
+                          </p>
+                        )}
+                        {!fieldErrors.price && (
+                          <p className="mt-1 text-sm text-slate-500">
+                            {formData.listingType === 'rent' && 'Annual rent amount'}
+                            {formData.listingType === 'sale' && 'Total sale price'}
+                            {formData.listingType === 'shortlet' && 'Price per night'}
+                          </p>
+                        )}
                       </div>
 
                       <div>
@@ -1085,13 +1301,13 @@ export default function EditPropertyPage() {
 
               {/* Step 3: Property Features */}
               {currentStep === 3 && (
-                <div className="p-8">
-                  <div className="mb-8">
-                    <h2 className="text-xl font-bold text-slate-800 mb-2">Property Features & Details</h2>
-                    <p className="text-slate-600">Provide detailed information about your property</p>
+                <div className="p-4 sm:p-6 lg:p-8">
+                  <div className="mb-6 sm:mb-8">
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-1 sm:mb-2">Property Features & Details</h2>
+                    <p className="text-sm sm:text-base text-slate-600">Provide detailed information about your property</p>
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     {/* Property Specifications */}
                     <div>
                       <h3 className="text-lg font-semibold text-slate-800 mb-4">Property Specifications</h3>
@@ -1352,13 +1568,13 @@ export default function EditPropertyPage() {
 
               {/* Step 4: Media & Documents */}
               {currentStep === 4 && (
-                <div className="p-8">
-                  <div className="mb-8">
-                    <h2 className="text-xl font-bold text-slate-800 mb-2">Media & Documents</h2>
-                    <p className="text-slate-600">Upload images, videos, and documents for your property</p>
+                <div className="p-4 sm:p-6 lg:p-8">
+                  <div className="mb-6 sm:mb-8">
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-1 sm:mb-2">Media & Documents</h2>
+                    <p className="text-sm sm:text-base text-slate-600">Upload images, videos, and documents for your property</p>
                   </div>
 
-                  <div className="space-y-8">
+                  <div className="space-y-6 sm:space-y-8">
                     {/* Images Upload */}
                     <div>
                       <div className="flex items-center justify-between mb-4">
@@ -1368,7 +1584,7 @@ export default function EditPropertyPage() {
                         <span className="text-sm text-slate-500">{formData.images.length}/8</span>
                       </div>
                       
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
                         {previewImages.map((preview, index) => (
                           <div key={index} className="relative group">
                             <Image
@@ -1456,69 +1672,95 @@ export default function EditPropertyPage() {
                       </div>
                     </div>
 
-                    {/* Documents Upload */}
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <label className="block text-sm font-medium text-slate-700">
-                          Property Documents (Max 3)
-                        </label>
-                        <span className="text-sm text-slate-500">{formData.documents.length}/3</span>
-                      </div>
-                      
-                      <div className="space-y-2 mb-4">
-                        {formData.documents.map((doc, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
-                            <div className="flex items-center space-x-3">
-                              <FileText className="w-5 h-5 text-slate-400" />
-                              <span className="text-sm text-slate-600">{doc.name}</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeFile(index, 'documents')}
-                              className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors duration-200"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
-                        
-                        {formData.documents.length < 3 && (
-                          <label className="w-full p-4 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors duration-200">
-                            <FileText className="w-8 h-8 text-slate-400 mb-2" />
-                            <span className="text-sm text-slate-500">Add Document (PDF, DOC, DOCX)</span>
-                            <input
-                              type="file"
-                              multiple
-                              accept=".pdf,.doc,.docx"
-                              onChange={(e) => handleFileUpload(e, 'documents')}
-                              className="hidden"
-                            />
+                    {/* Documents Upload - Only show for sale listings */}
+                    {formData.listingType === 'sale' && (
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <label className="block text-sm font-medium text-slate-700">
+                            Property Documents (Max 3)
                           </label>
+                          <span className="text-sm text-slate-500">{formData.documents.length}/3</span>
+                        </div>
+                        {fieldErrors.documents && (
+                          <p className="mb-2 text-sm text-red-600 flex items-center gap-1">
+                            <span>⚠️</span>
+                            <span>{fieldErrors.documents}</span>
+                          </p>
                         )}
+                        
+                        <div className="space-y-2 mb-4">
+                          {formData.documents.map((doc, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+                              <div className="flex items-center space-x-3">
+                                <FileText className="w-5 h-5 text-slate-400" />
+                                <span className="text-sm text-slate-600">{doc.name}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeFile(index, 'documents')}
+                                className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors duration-200"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                          
+                          {formData.documents.length < 3 && (
+                            <label className="w-full p-4 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors duration-200">
+                              <FileText className="w-8 h-8 text-slate-400 mb-2" />
+                              <span className="text-sm text-slate-500">Add Document (PDF, DOC, DOCX)</span>
+                              <input
+                                type="file"
+                                multiple
+                                accept=".pdf,.doc,.docx"
+                                onChange={(e) => handleFileUpload(e, 'documents')}
+                                className="hidden"
+                              />
+                            </label>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Upload property documents such as title deeds, survey plans, or building permits
+                        </p>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               )}
 
               {/* Error Display */}
-              {(error || propertyError) && (
+              {(error || propertyError || Object.keys(fieldErrors).length > 0) && (
                 <div className="px-8 pb-4">
-                  <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-3 text-red-600 text-sm">
-                    {error || propertyError}
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                    {(error || propertyError) && (
+                      <p className="text-sm text-red-600 mb-2">
+                        {error || propertyError}
+                      </p>
+                    )}
+                    {Object.keys(fieldErrors).length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-red-700 mb-2">Please fix the following errors:</p>
+                        {Object.entries(fieldErrors).map(([field, message]) => (
+                          <p key={field} className="text-sm text-red-600 flex items-center gap-2">
+                            <span>•</span>
+                            <span><strong className="capitalize">{field.replace(/([A-Z])/g, ' $1').trim()}:</strong> {message}</span>
+                          </p>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
-              {/* Form Navigation */}
-              <div className="px-8 py-6 bg-slate-50 border-t border-slate-200">
-                <div className="flex items-center justify-between">
-                  <div>
+              {/* Form Navigation - Responsive */}
+              <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-slate-50 border-t border-slate-200">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                  <div className="w-full sm:w-auto">
                     {currentStep > 1 && (
                       <button
                         type="button"
                         onClick={prevStep}
-                        className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors duration-200"
+                        className="w-full sm:w-auto flex items-center justify-center sm:justify-start space-x-2 px-4 py-2.5 sm:py-2 text-sm sm:text-base text-slate-600 hover:text-slate-800 transition-colors duration-200 rounded-lg hover:bg-slate-100"
                       >
                         <ArrowLeft className="w-4 h-4" />
                         <span>Previous</span>
@@ -1526,21 +1768,45 @@ export default function EditPropertyPage() {
                     )}
                   </div>
 
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center justify-end w-full sm:w-auto">
                     {currentStep < 4 ? (
                       <button
                         type="button"
-                        onClick={nextStep}
-                        className="flex items-center space-x-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-xl transition-all duration-200 transform hover:scale-105"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          nextStep(e);
+                        }}
+                        className="w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-xl transition-all duration-200 transform hover:scale-105 text-sm sm:text-base font-medium"
                       >
                         <span>Continue</span>
                         <ArrowLeft className="w-4 h-4 rotate-180" />
                       </button>
                     ) : (
                       <button
-                        type="submit"
+                        type="button"
+                        onClick={(e) => {
+                          console.log('🟢 Update Property button clicked');
+                          e.preventDefault();
+                          e.stopPropagation();
+                          // Manually trigger handleSubmit only when button is clicked
+                          if (currentStep === 4) {
+                            if (propertyLoading) {
+                              console.log('Already updating, ignoring click');
+                              return;
+                            }
+                            console.log('✅ Calling handleSubmit from button click');
+                            const syntheticEvent = {
+                              preventDefault: () => {},
+                              stopPropagation: () => {},
+                            } as React.FormEvent;
+                            handleSubmit(syntheticEvent);
+                          } else {
+                            console.log('❌ Not on step 4, ignoring');
+                          }
+                        }}
                         disabled={propertyLoading}
-                        className="flex items-center space-x-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        className="w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm sm:text-base font-medium"
                       >
                         {propertyLoading ? (
                           <>

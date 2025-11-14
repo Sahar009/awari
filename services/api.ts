@@ -6,7 +6,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/a
 // Create axios instance
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000, // 30 seconds default (increased from 10s)
   headers: {
     'Content-Type': 'application/json',
   },
@@ -23,7 +23,18 @@ api.interceptors.request.use(
     } else {
       console.warn('⚠️ Request interceptor - No token found');
     }
-    console.log('🌐 Making request to:', (config.baseURL || '') + (config.url || ''), 'Method:', config.method?.toUpperCase());
+    
+    // If FormData, remove Content-Type header and extend timeout for Cloudinary uploads
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+      // Extend timeout for file uploads (Cloudinary can take time)
+      if (!config.timeout || config.timeout < 120000) {
+        config.timeout = 120000; // 2 minutes for file uploads
+        console.log('📤 FormData detected - Extended timeout to 120s for Cloudinary upload');
+      }
+    }
+    
+    console.log('🌐 Making request to:', (config.baseURL || '') + (config.url || ''), 'Method:', config.method?.toUpperCase(), 'Timeout:', config.timeout + 'ms');
     return config;
   },
   (error) => {
@@ -102,7 +113,13 @@ export const apiService = {
 
   // POST request
   post: async <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> => {
-    const response = await api.post(url, data, config);
+    // If FormData and no timeout specified, use longer timeout for file uploads
+    const finalConfig = { ...config };
+    if (data instanceof FormData && !finalConfig.timeout) {
+      finalConfig.timeout = 120000; // 2 minutes for file uploads
+      console.log('📤 FormData detected - using extended timeout (120s)');
+    }
+    const response = await api.post(url, data, finalConfig);
     return response.data;
   },
 
@@ -126,13 +143,14 @@ export const apiService = {
 
   // Upload file
   upload: async <T>(url: string, formData: FormData, config?: AxiosRequestConfig): Promise<ApiResponse<T>> => {
+    // Don't set Content-Type - browser will set it automatically with boundary
+    const headers = { ...config?.headers };
+    delete headers['Content-Type']; // Remove if present, let browser set it
+    
     const response = await api.post(url, formData, {
       ...config,
       timeout: 60000, // 60 seconds for file uploads
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        ...config?.headers,
-      },
+      headers,
     });
     return response.data;
   },

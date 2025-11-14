@@ -429,7 +429,8 @@ export const fetchMyProperties = createAsyncThunk(
     limit?: number; 
     status?: string; 
     propertyType?: string; 
-    listingType?: string; 
+    listingType?: string;
+    search?: string;
   }, { rejectWithValue }) => {
     try {
       const queryParams = new URLSearchParams();
@@ -438,6 +439,7 @@ export const fetchMyProperties = createAsyncThunk(
       if (params.status) queryParams.append('status', params.status);
       if (params.propertyType) queryParams.append('propertyType', params.propertyType);
       if (params.listingType) queryParams.append('listingType', params.listingType);
+      if (params.search) queryParams.append('search', params.search);
       
       const url = `/properties/my-properties${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response = await apiService.get<{
@@ -502,9 +504,10 @@ export const addPropertyMedia = createAsyncThunk(
         });
       }
 
+      // Don't set Content-Type header - browser will set it automatically with boundary
       const response = await apiService.post(`/properties/${params.propertyId}/media`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          // Let browser set Content-Type automatically for FormData
         },
       });
       return { propertyId: params.propertyId, media: response.data };
@@ -619,14 +622,46 @@ export const createProperty = createAsyncThunk(
         formData.append('documents', file);
       });
 
+      // Don't set Content-Type header - browser will set it automatically with boundary
+      // Use longer timeout for file uploads (Cloudinary uploads can take time)
       const response = await apiService.post<Property>('/properties/upload', formData, {
+        timeout: 120000, // 2 minutes for file uploads to Cloudinary
         headers: {
-          'Content-Type': 'multipart/form-data',
+          // Let browser set Content-Type automatically for FormData
         },
       });
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to create property');
+      console.error('❌ Property creation error:', error);
+      
+      // Handle different error types
+      if (error.response) {
+        // Server responded with error status
+        // Pass through the full error response so validation errors can be extracted
+        const errorData = error.response?.data || {};
+        const errorMessage = errorData.message || errorData.error || 'Failed to create property';
+        
+        // Return the full error object so validation errors can be accessed
+        return rejectWithValue({
+          message: errorMessage,
+          errors: errorData.errors || [],
+          response: error.response
+        });
+      } else if (error.request) {
+        // Request was made but no response received
+        console.error('No response received:', error.request);
+        return rejectWithValue({
+          message: 'Network error. Please check your connection and try again.',
+          errors: []
+        });
+      } else {
+        // Error setting up the request
+        console.error('Error setting up request:', error.message);
+        return rejectWithValue({
+          message: error.message || 'Failed to create property',
+          errors: []
+        });
+      }
     }
   }
 );

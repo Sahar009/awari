@@ -44,7 +44,8 @@ class LiveLocationApiService {
   private config: ApiConfig;
   
   // API Base URLs
-  private readonly GOOGLE_PLACES_BASE_URL = 'https://maps.googleapis.com/maps/api/place';
+  // Use Next.js API routes to proxy Google Places (avoids CORS)
+  private readonly GOOGLE_PLACES_BASE_URL = '/api/places';
   private readonly MAPBOX_BASE_URL = 'https://api.mapbox.com/geocoding/v5/mapbox.places';
   private readonly ADDRESS_DATA_BASE_URL = 'https://api.addressdata.ng/v1';
   private readonly GEOAPIFY_BASE_URL = 'https://api.geoapify.com/v1/geocode';
@@ -77,106 +78,156 @@ class LiveLocationApiService {
 
   /**
    * Get cities for a specific state using live APIs
+   * Prioritizes Google Places API, with fallbacks
    */
   async getCitiesByState(stateName: string): Promise<string[]> {
     const cities = new Set<string>();
 
-    // Try multiple APIs in parallel for comprehensive coverage
-    const apiPromises = [
-      this.getCitiesFromGooglePlaces(stateName),
-      this.getCitiesFromMapbox(stateName),
-      this.getCitiesFromAddressData(stateName)
+    // Try Google Places first (primary)
+    try {
+      const googleCities = await this.getCitiesFromGooglePlaces(stateName);
+      if (googleCities && googleCities.length > 0) {
+        googleCities.forEach(city => cities.add(city));
+        // If Google Places returns good results, use them
+        const cityArray = Array.from(cities).sort();
+        if (cityArray.length >= 5) {
+          return cityArray;
+        }
+      }
+    } catch (error) {
+      console.warn('Google Places cities API failed:', error);
+    }
+
+    // Try other APIs as backup
+    const backupApiPromises = [
+      this.getCitiesFromAddressData(stateName),
+      this.getCitiesFromMapbox(stateName)
     ];
 
     try {
-      const results = await Promise.allSettled(apiPromises);
+      const results = await Promise.allSettled(backupApiPromises);
       
       results.forEach(result => {
         if (result.status === 'fulfilled' && result.value) {
           result.value.forEach(city => cities.add(city));
         }
       });
-
-      // Convert to array and sort
-      const cityArray = Array.from(cities).sort();
-      
-      // If we got results, return them
-      if (cityArray.length > 0) {
-        return cityArray;
-      }
     } catch (error) {
-      console.warn('All city APIs failed:', error);
+      console.warn('Backup city APIs failed:', error);
     }
 
-    // Fallback to basic cities if APIs fail
+    // Convert to array and sort
+    const cityArray = Array.from(cities).sort();
+    
+    // If we got results from APIs, return them
+    if (cityArray.length > 0) {
+      return cityArray;
+    }
+
+    // Fallback to comprehensive cities list if APIs fail
     return this.getFallbackCities(stateName);
   }
 
   /**
    * Get real-time address suggestions using live APIs
+   * Prioritizes Google Places API for best results
    */
   async getAddressSuggestions(query: string, city?: string, state?: string): Promise<AddressSuggestion[]> {
     if (!query || query.length < 2) return [];
 
     const suggestions = new Map<string, AddressSuggestion>();
 
-    // Build search query with context
-    const searchQuery = this.buildSearchQuery(query, city, state);
+    // For Google Places, use just the query with Nigeria restriction
+    // Google Places works better with minimal query + component restrictions
+    const googleQuery = query.trim();
+    const googleQueryWithContext = city && state 
+      ? `${googleQuery}, ${city}, ${state}, Nigeria`
+      : state
+        ? `${googleQuery}, ${state}, Nigeria`
+        : `${googleQuery}, Nigeria`;
 
-    // Try multiple APIs in parallel
-    const apiPromises = [
-      this.getAddressesFromGooglePlaces(searchQuery, state),
-      this.getAddressesFromMapbox(searchQuery, state),
+    // Try Google Places first (primary - best quality)
+    try {
+      console.log('🔍 Searching Google Places with query:', googleQueryWithContext);
+      const googleSuggestions = await this.getAddressesFromGooglePlaces(googleQueryWithContext, state);
+      console.log('✅ Google Places returned:', googleSuggestions.length, 'suggestions');
+      
+      if (googleSuggestions && googleSuggestions.length > 0) {
+        googleSuggestions.forEach(suggestion => {
+          const key = suggestion.fullAddress.toLowerCase();
+          suggestions.set(key, suggestion);
+        });
+        
+        // Return Google Places results immediately (they're the best quality)
+        if (googleSuggestions.length > 0) {
+          return Array.from(suggestions.values())
+            .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
+            .slice(0, 10);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Google Places address API failed:', error);
+    }
+
+    // Try backup APIs if Google Places didn't return enough results
+    const backupQuery = this.buildSearchQuery(query, city, state);
+    const backupApiPromises = [
       this.getAddressesFromAddressData(query, city, state),
-      this.getAddressesFromGeoapify(searchQuery, state)
+      this.getAddressesFromGeoapify(backupQuery, state),
+      this.getAddressesFromMapbox(backupQuery, state)
     ];
 
     try {
-      const results = await Promise.allSettled(apiPromises);
+      const results = await Promise.allSettled(backupApiPromises);
       
       results.forEach(result => {
         if (result.status === 'fulfilled' && result.value) {
           result.value.forEach(suggestion => {
             // Use full address as key to avoid duplicates
             const key = suggestion.fullAddress.toLowerCase();
+            // Only add if not already present or if confidence is higher
             if (!suggestions.has(key) || (suggestions.get(key)?.confidence || 0) < (suggestion.confidence || 0)) {
               suggestions.set(key, suggestion);
             }
           });
         }
       });
-
-      // Convert to array, sort by confidence, and limit results
-      return Array.from(suggestions.values())
-        .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
-        .slice(0, 10); // Limit to top 10 suggestions
-
     } catch (error) {
-      console.warn('Address suggestion APIs failed:', error);
-      return [];
+      console.warn('Backup address APIs failed:', error);
     }
+
+    // Convert to array, sort by confidence, and limit results
+    return Array.from(suggestions.values())
+      .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
+      .slice(0, 10); // Limit to top 10 suggestions
   }
 
   /**
    * Get cities from Google Places API
+   * Uses Next.js API route proxy to avoid CORS issues
    */
   private async getCitiesFromGooglePlaces(stateName: string): Promise<string[]> {
-    if (!this.config.googlePlacesApiKey) return [];
-
+    // API key check happens on server side now
+    
     try {
       const searchQuery = `cities in ${stateName} Nigeria`;
+      // Use Next.js API route to proxy the request (avoids CORS)
       const response = await fetch(
-        `${this.GOOGLE_PLACES_BASE_URL}/textsearch/json?query=${encodeURIComponent(searchQuery)}&key=${this.config.googlePlacesApiKey}`
+        `${this.GOOGLE_PLACES_BASE_URL}/textsearch?query=${encodeURIComponent(searchQuery)}`
       );
 
       if (response.ok) {
         const data = await response.json();
         return data.results
           ?.filter((place: any) => place.types?.includes('locality') || place.types?.includes('sublocality'))
-          ?.map((place: any) => place.name)
-          ?.slice(0, 20) || [];
+          ?.map((place: any) => place.name) || [];
+      } else if (response.status === 401 || response.status === 403) {
+        // Invalid token - silently fail and use other APIs
+        console.warn('Google Places API: Invalid API key. Please configure a valid key or remove it.');
+        return [];
       }
     } catch (error) {
+      // Silently fail - other APIs will handle the request
       console.warn('Google Places cities API failed:', error);
     }
 
@@ -187,19 +238,29 @@ class LiveLocationApiService {
    * Get cities from Mapbox Geocoding API
    */
   private async getCitiesFromMapbox(stateName: string): Promise<string[]> {
-    if (!this.config.mapboxAccessToken) return [];
+    // Check if token is valid (not placeholder)
+    if (!this.config.mapboxAccessToken || 
+        this.config.mapboxAccessToken === 'your_mapbox_access_token_here' ||
+        this.config.mapboxAccessToken.includes('your_')) {
+      return [];
+    }
 
     try {
       const searchQuery = `${stateName} Nigeria`;
       const response = await fetch(
-        `${this.MAPBOX_BASE_URL}/${encodeURIComponent(searchQuery)}.json?access_token=${this.config.mapboxAccessToken}&country=NG&types=place&limit=20`
+        `${this.MAPBOX_BASE_URL}/${encodeURIComponent(searchQuery)}.json?access_token=${this.config.mapboxAccessToken}&country=NG&types=place&limit=100`
       );
 
       if (response.ok) {
         const data = await response.json();
         return data.features?.map((feature: any) => feature.text) || [];
+      } else if (response.status === 401) {
+        // Invalid token - silently fail and use other APIs
+        console.warn('Mapbox API: Invalid access token. Please configure a valid token or remove it.');
+        return [];
       }
     } catch (error) {
+      // Silently fail - other APIs will handle the request
       console.warn('Mapbox cities API failed:', error);
     }
 
@@ -234,39 +295,98 @@ class LiveLocationApiService {
 
   /**
    * Get address suggestions from Google Places API
+   * Uses Next.js API route proxy to avoid CORS issues
    */
   private async getAddressesFromGooglePlaces(query: string, state?: string): Promise<AddressSuggestion[]> {
-    if (!this.config.googlePlacesApiKey) return [];
-
+    // Check if token is valid (not placeholder) - but we'll use server-side API key
+    // The API key check happens on the server side now
+    
     try {
-      const response = await fetch(
-        `${this.GOOGLE_PLACES_BASE_URL}/autocomplete/json?input=${encodeURIComponent(query)}&components=country:ng&key=${this.config.googlePlacesApiKey}`
-      );
+      // Clean up query
+      const cleanQuery = query.trim();
+      
+      // Use Next.js API route to proxy the request (avoids CORS)
+      const params = new URLSearchParams({
+        input: cleanQuery,
+      });
+      
+      if (state) {
+        params.append('state', state);
+      }
+      
+      const url = `${this.GOOGLE_PLACES_BASE_URL}/autocomplete?${params.toString()}`;
+      
+      console.log('🌐 Google Places API (via proxy):', url);
+      
+      const response = await fetch(url);
 
       if (response.ok) {
         const data = await response.json();
-        return data.predictions?.map((prediction: any, index: number) => ({
-          id: `google-${prediction.place_id}`,
-          fullAddress: prediction.description,
-          street: prediction.structured_formatting?.main_text || '',
-          city: this.extractCityFromGooglePlace(prediction),
-          state: this.extractStateFromGooglePlace(prediction) || state || '',
-          placeId: prediction.place_id,
-          confidence: 0.9 - (index * 0.1)
-        })) || [];
+        
+        console.log('📦 Google Places API Response:', {
+          status: data.status,
+          predictionsCount: data.predictions?.length || 0,
+          error_message: data.error_message
+        });
+        
+        // Check for API errors in response
+        if (data.status && data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+          console.warn('⚠️ Google Places API error:', data.status, data.error_message || '');
+          return [];
+        }
+        
+        // Check if predictions exist
+        if (!data.predictions || data.predictions.length === 0) {
+          console.log('ℹ️ Google Places API: No predictions found for query:', cleanQuery);
+          return [];
+        }
+        
+        console.log('✅ Google Places API: Found', data.predictions.length, 'predictions');
+        
+        const suggestions = data.predictions.map((prediction: any, index: number) => {
+          const city = this.extractCityFromGooglePlace(prediction);
+          const extractedState = this.extractStateFromGooglePlace(prediction);
+          
+          return {
+            id: `google-${prediction.place_id}`,
+            fullAddress: prediction.description,
+            street: prediction.structured_formatting?.main_text || '',
+            city: city || '',
+            state: extractedState || state || '',
+            placeId: prediction.place_id,
+            confidence: 0.9 - (index * 0.1)
+          };
+        });
+        
+        console.log('📋 Parsed suggestions:', suggestions);
+        return suggestions;
+      } else if (response.status === 401 || response.status === 403) {
+        // Invalid token
+        const errorData = await response.json().catch(() => ({}));
+        console.warn('⚠️ Google Places API: Invalid API key.', errorData);
+        return [];
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.warn('⚠️ Google Places API HTTP error:', response.status, errorData);
+        return [];
       }
     } catch (error) {
-      console.warn('Google Places autocomplete API failed:', error);
+      // Log error for debugging
+      console.error('❌ Google Places autocomplete API failed:', error);
+      return [];
     }
-
-    return [];
   }
 
   /**
    * Get address suggestions from Mapbox Geocoding API
    */
   private async getAddressesFromMapbox(query: string, state?: string): Promise<AddressSuggestion[]> {
-    if (!this.config.mapboxAccessToken) return [];
+    // Check if token is valid (not placeholder)
+    if (!this.config.mapboxAccessToken || 
+        this.config.mapboxAccessToken === 'your_mapbox_access_token_here' ||
+        this.config.mapboxAccessToken.includes('your_')) {
+      return [];
+    }
 
     try {
       const response = await fetch(
@@ -287,8 +407,13 @@ class LiveLocationApiService {
           },
           confidence: 0.8 - (index * 0.1)
         })) || [];
+      } else if (response.status === 401) {
+        // Invalid token - silently fail and use other APIs
+        console.warn('Mapbox API: Invalid access token. Please configure a valid token or remove it.');
+        return [];
       }
     } catch (error) {
+      // Silently fail - other APIs will handle the request
       console.warn('Mapbox geocoding API failed:', error);
     }
 
@@ -371,23 +496,30 @@ class LiveLocationApiService {
 
   /**
    * Build search query with context
+   * Optimized to avoid redundant information
    */
   private buildSearchQuery(query: string, city?: string, state?: string): string {
-    let searchQuery = query;
+    let searchQuery = query.trim();
     
-    if (city && !query.toLowerCase().includes(city.toLowerCase())) {
+    // Don't add city/state if they're already in the query
+    const queryLower = searchQuery.toLowerCase();
+    
+    // Only add city if not already present and provided
+    if (city && !queryLower.includes(city.toLowerCase())) {
       searchQuery += ` ${city}`;
     }
     
-    if (state && !query.toLowerCase().includes(state.toLowerCase())) {
+    // Only add state if not already present and provided
+    if (state && !queryLower.includes(state.toLowerCase())) {
       searchQuery += ` ${state}`;
     }
     
-    if (!query.toLowerCase().includes('nigeria')) {
+    // Only add Nigeria if not already present
+    if (!queryLower.includes('nigeria')) {
       searchQuery += ' Nigeria';
     }
     
-    return searchQuery;
+    return searchQuery.trim();
   }
 
   /**
@@ -442,12 +574,42 @@ class LiveLocationApiService {
    */
   private getFallbackCities(stateName: string): string[] {
     const fallbackCities: Record<string, string[]> = {
-      'Lagos': ['Ikeja', 'Victoria Island', 'Lekki', 'Ikoyi', 'Yaba', 'Surulere', 'Ajah', 'Maryland', 'Gbagada'],
-      'Oyo': ['Ibadan North', 'Ibadan South', 'Bodija', 'UI', 'Challenge', 'Ring Road', 'Dugbe', 'Mokola'],
-      'Federal Capital Territory': ['Garki', 'Wuse', 'Maitama', 'Asokoro', 'Gwarinpa', 'Kubwa', 'Jahi', 'Life Camp']
+      'Lagos': [
+        'Ikeja', 'Victoria Island', 'Lekki', 'Ikoyi', 'Yaba', 'Surulere', 'Ajah', 'Maryland', 'Gbagada',
+        'Alimosho', 'Ajeromi-Ifelodun', 'Kosofe', 'Mushin', 'Oshodi-Isolo', 'Ojo', 'Ikorodu',
+        'Agege', 'Ifako-Ijaiye', 'Shomolu', 'Amuwo-Odofin', 'Lagos Mainland', 'Lagos Island', 'Eti Osa',
+        'Ibeju-Lekki', 'Badagry', 'Epe', 'Apapa', 'Oshodi', 'Isolo', 'Ejigbo',
+        'Magodo', 'Omole', 'Ogba', 'Ilupeju', 'Palmgrove', 'Anthony', 'Ojota', 'Ketu',
+        'Alapere', 'Berger', 'Ikeja GRA', 'Magodo Phase 1', 'Magodo Phase 2', 'Lekki Phase 1',
+        'Lekki Phase 2', 'Banana Island', 'Chevron', 'Jakande', 'Sangotedo', 'Abraham Adesanya',
+        'Badore', 'Admiralty Way', 'Osapa London', 'Ikota', 'VGC', 'Dolphin Estate',
+        'Oniru', 'Marina', 'Broad Street', 'Idumota', 'Balogun', 'Obalende',
+        'Tarkwa Bay', 'Adeniji Adele', 'CMS', 'Tinubu Square', 'Adeniji Adele', 'Ojuelegba',
+        'Bariga', 'Somolu', 'Iwaya', 'Yaba', 'Ebute-Metta', 'Iddo', 'Oyingbo', 'Jibowu',
+        'Fadeyi', 'Palmgrove', 'Onipanu', 'Palm Avenue', 'Ilupeju', 'Mushin', 'Isolo',
+        'Ejigbo', 'Ikotun', 'Egbe', 'Idimu', 'Igando', 'Alimosho', 'Egbeda', 'Ikotun',
+        'Akowonjo', 'Shasha', 'Egbeda', 'Idimu', 'Ikotun', 'Akowonjo', 'Shasha', 'Egbeda'
+      ],
+      'Oyo': [
+        'Ibadan North', 'Ibadan South', 'Bodija', 'UI', 'Challenge', 'Ring Road', 'Dugbe', 'Mokola',
+        'Agodi', 'Gate', 'Molete', 'Oke-Ado', 'Oke-Bola', 'Oke-Padi', 'Sango', 'Eleyele', 'Apata',
+        'Akobo', 'Ologuneru', 'Oluyole', 'Akinyele', 'Egbeda', 'Ido', 'Lagelu', 'Ona Ara',
+        'Agbowo', 'Sango', 'Eleyele', 'Apata', 'Akobo', 'Ologuneru', 'Oluyole', 'Akinyele'
+      ],
+      'Federal Capital Territory': [
+        'Garki', 'Wuse', 'Maitama', 'Asokoro', 'Gwarinpa', 'Kubwa', 'Jahi', 'Life Camp',
+        'Wuse 2', 'Wuse Zone 4', 'Wuse Zone 5', 'Wuse Zone 6', 'Wuse Zone 7', 'Garki Area 1',
+        'Garki Area 2', 'Garki Area 3', 'Garki Area 7', 'Garki Area 8', 'Garki Area 10', 'Garki Area 11',
+        'Utako', 'Jabi', 'Kado', 'Dakibiyu', 'Dutse', 'Bwari',
+        'Nyanya', 'Karu', 'Mararaba', 'Lugbe', 'Gudu', 'Apo',
+        'Central Area', 'Wuse Zone 1', 'Wuse Zone 2', 'Wuse Zone 3', 'Mabushi', 'Kaura', 'Dakwo',
+        'Lokogoma'
+      ]
     };
 
-    return fallbackCities[stateName] || [];
+    // Remove duplicates and return unique cities
+    const cities = fallbackCities[stateName] || [];
+    return [...new Set(cities)];
   }
 
   /**
