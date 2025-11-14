@@ -4,7 +4,7 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const input = searchParams.get('input');
-    const state = searchParams.get('state');
+    // const state = searchParams.get('state'); // Reserved for future use
     
     if (!input) {
       return NextResponse.json(
@@ -53,10 +53,11 @@ export async function GET(request: NextRequest) {
 
     // Return the response
     return NextResponse.json(data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Places API proxy error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return NextResponse.json(
-      { error: 'Failed to fetch places', message: error.message },
+      { error: 'Failed to fetch places', message: errorMessage },
       { status: 500 }
     );
   }

@@ -144,13 +144,15 @@ export const apiService = {
   // Upload file
   upload: async <T>(url: string, formData: FormData, config?: AxiosRequestConfig): Promise<ApiResponse<T>> => {
     // Don't set Content-Type - browser will set it automatically with boundary
-    const headers = { ...config?.headers };
-    delete headers['Content-Type']; // Remove if present, let browser set it
+    const headers = config?.headers ? { ...config.headers } : {};
+    if (headers && typeof headers === 'object' && 'Content-Type' in headers) {
+      delete (headers as Record<string, unknown>)['Content-Type'];
+    }
     
     const response = await api.post(url, formData, {
       ...config,
       timeout: 60000, // 60 seconds for file uploads
-      headers,
+      headers: headers as AxiosRequestConfig['headers'],
     });
     return response.data;
   },

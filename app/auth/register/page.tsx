@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, Home, ShoppingBag, Building2, Briefcase, Hotel } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, Building2 } from 'lucide-react';
 import { Logo } from '@/components/navbar/Logo';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { registerUser, googleSignIn, clearError } from '@/store/slices/authSlice';

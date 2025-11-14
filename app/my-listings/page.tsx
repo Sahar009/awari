@@ -23,7 +23,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { fetchMyProperties, deleteProperty, updateProperty, setCurrentPage } from '@/store/slices/propertySlice';
+import { fetchMyProperties, deleteProperty, updateProperty, setCurrentPage, type Property } from '@/store/slices/propertySlice';
 import Container from '@/components/Container';
 import MainLayout from '../mainLayout';
 import { AuthLoader } from '@/components/ui/Loader';
@@ -155,32 +155,32 @@ export default function MyListingsPage() {
   };
 
   // Helper function to get primary image from media array
-  const getPrimaryImage = (property: any) => {
+  const getPrimaryImage = (property: Property) => {
     if (!property.media || property.media.length === 0) return null;
     // Find primary image first, otherwise use first image
-    const primaryImage = property.media.find((m: any) => m.isPrimary && m.mediaType === 'image');
+    const primaryImage = property.media.find((m) => m.isPrimary && m.mediaType === 'image');
     if (primaryImage) return primaryImage.url;
-    const firstImage = property.media.find((m: any) => m.mediaType === 'image');
+    const firstImage = property.media.find((m) => m.mediaType === 'image');
     return firstImage ? firstImage.url : null;
   };
 
   // Helper function to get location string
-  const getLocationString = (property: any) => {
+  const getLocationString = (property: Property) => {
     const parts = [property.address, property.city, property.state].filter(Boolean);
     return parts.join(', ') || 'Location not specified';
   };
 
   // Helper function to get area
-  const getArea = (property: any) => {
+  const getArea = (property: Property) => {
     if (property.floorArea) return `${property.floorArea} sqm`;
     if (property.landArea) return `${property.landArea} sqm`;
     return 'N/A';
   };
 
   // Helper function to count media by type
-  const getMediaCount = (property: any, type: 'image' | 'video' | 'document') => {
+  const getMediaCount = (property: Property, type: 'image' | 'video' | 'document') => {
     if (!property.media) return 0;
-    return property.media.filter((m: any) => m.mediaType === type && m.isActive).length;
+    return property.media.filter((m) => m.mediaType === type && m.isActive).length;
   };
 
   const getStatusBadge = (status: string) => {
