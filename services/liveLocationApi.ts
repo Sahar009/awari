@@ -49,6 +49,8 @@ class LiveLocationApiService {
   private readonly MAPBOX_BASE_URL = 'https://api.mapbox.com/geocoding/v5/mapbox.places';
   private readonly ADDRESS_DATA_BASE_URL = 'https://api.addressdata.ng/v1';
   private readonly GEOAPIFY_BASE_URL = 'https://api.geoapify.com/v1/geocode';
+  // Nominatim (OpenStreetMap) - FREE, NO API KEY REQUIRED
+  private readonly NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org';
 
   // Available states (limited to 3 major cities)
   private readonly availableStates: NigerianState[] = [
@@ -98,8 +100,9 @@ class LiveLocationApiService {
       console.warn('Google Places cities API failed:', error);
     }
 
-    // Try other APIs as backup
+    // Try other APIs as backup (including FREE Nominatim)
     const backupApiPromises = [
+      this.getCitiesFromNominatim(stateName), // FREE - No API key needed!
       this.getCitiesFromAddressData(stateName),
       this.getCitiesFromMapbox(stateName)
     ];
@@ -170,8 +173,10 @@ class LiveLocationApiService {
     }
 
     // Try backup APIs if Google Places didn't return enough results
+    // Include FREE Nominatim API (no key required!)
     const backupQuery = this.buildSearchQuery(query, city, state);
     const backupApiPromises = [
+      this.getAddressesFromNominatim(query, city, state), // FREE - No API key needed!
       this.getAddressesFromAddressData(query, city, state),
       this.getAddressesFromGeoapify(backupQuery, state),
       this.getAddressesFromMapbox(backupQuery, state)
@@ -262,6 +267,48 @@ class LiveLocationApiService {
     } catch (error) {
       // Silently fail - other APIs will handle the request
       console.warn('Mapbox cities API failed:', error);
+    }
+
+    return [];
+  }
+
+  /**
+   * Get cities from Nominatim (OpenStreetMap) API
+   * FREE - NO API KEY REQUIRED!
+   */
+  private async getCitiesFromNominatim(stateName: string): Promise<string[]> {
+    try {
+      const params = new URLSearchParams({
+        q: `${stateName}, Nigeria`,
+        format: 'json',
+        addressdetails: '1',
+        limit: '50',
+        countrycodes: 'ng',
+        'accept-language': 'en',
+        featuretype: 'city,town,village'
+      });
+
+      const response = await fetch(`${this.NOMINATIM_BASE_URL}/search?${params.toString()}`, {
+        headers: {
+          'User-Agent': 'Awari Property Platform', // Required by Nominatim
+          'Accept': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const cities = new Set<string>();
+        data.forEach((place: any) => {
+          const address = place.address || {};
+          const cityName = address.city || address.town || address.village || address.suburb;
+          if (cityName && address.state === stateName) {
+            cities.add(cityName);
+          }
+        });
+        return Array.from(cities).sort();
+      }
+    } catch (error) {
+      console.warn('Nominatim cities API failed:', error);
     }
 
     return [];
@@ -453,6 +500,61 @@ class LiveLocationApiService {
       }
     } catch (error) {
       console.warn('AddressData.ng autocomplete API failed:', error);
+    }
+
+    return [];
+  }
+
+  /**
+   * Get address suggestions from Nominatim (OpenStreetMap) API
+   * FREE - NO API KEY REQUIRED!
+   * Rate limit: 1 request per second (be respectful)
+   */
+  private async getAddressesFromNominatim(query: string, city?: string, state?: string): Promise<AddressSuggestion[]> {
+    try {
+      // Build search query
+      let searchQuery = query;
+      if (city) searchQuery += `, ${city}`;
+      if (state) searchQuery += `, ${state}`;
+      searchQuery += ', Nigeria';
+
+      const params = new URLSearchParams({
+        q: searchQuery,
+        format: 'json',
+        addressdetails: '1',
+        limit: '10',
+        countrycodes: 'ng',
+        'accept-language': 'en'
+      });
+
+      const response = await fetch(`${this.NOMINATIM_BASE_URL}/search?${params.toString()}`, {
+        headers: {
+          'User-Agent': 'Awari Property Platform', // Required by Nominatim
+          'Accept': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.map((place: any, index: number) => {
+          const address = place.address || {};
+          return {
+            id: `nominatim-${place.place_id}`,
+            fullAddress: place.display_name,
+            street: address.road || address.house_number || '',
+            city: address.city || address.town || address.village || city || '',
+            state: address.state || state || '',
+            postCode: address.postcode,
+            coordinates: {
+              lat: parseFloat(place.lat),
+              lng: parseFloat(place.lon)
+            },
+            confidence: 0.75 - (index * 0.05) // Good confidence for free API
+          };
+        }) || [];
+      }
+    } catch (error) {
+      console.warn('Nominatim (OpenStreetMap) API failed:', error);
     }
 
     return [];

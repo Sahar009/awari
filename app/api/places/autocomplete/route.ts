@@ -16,15 +16,23 @@ export async function GET(request: NextRequest) {
     // Try server-side env var first (more secure), then fallback to public
     const apiKey = process.env.GOOGLE_PLACES_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
     
+    // Log environment check for debugging (without exposing the key)
+    console.log('Google Places API Key check:', {
+      hasServerKey: !!process.env.GOOGLE_PLACES_API_KEY,
+      hasPublicKey: !!process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY,
+      nodeEnv: process.env.NODE_ENV,
+      keyLength: apiKey ? apiKey.length : 0
+    });
+    
     if (!apiKey || apiKey === 'your_google_places_api_key_here' || apiKey.includes('your_')) {
-      console.error('Google Places API key not configured');
+      console.warn('Google Places API key not configured. Returning empty results to allow fallback to free APIs.');
+      // Return empty results instead of error - this allows frontend to use free fallback APIs
       return NextResponse.json(
         { 
-          error: 'Google Places API key not configured',
-          status: 'ERROR',
+          status: 'ZERO_RESULTS',
           predictions: []
         },
-        { status: 500 }
+        { status: 200 }
       );
     }
 

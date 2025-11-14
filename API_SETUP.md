@@ -4,13 +4,15 @@ This guide explains how to set up the location APIs used for address autocomplet
 
 ## Overview
 
-The location service uses **Google Places API as the primary service**, with fallback mechanisms:
+The location service uses **Google Places API as the primary service**, with FREE fallback mechanisms:
 - **Google Places API** (PRIMARY - Recommended) - **FREE: $200 credit/month**
+- **Nominatim (OpenStreetMap)** (FREE FALLBACK - **NO API KEY REQUIRED!**) ⭐
 - **Mapbox Geocoding API** (backup - optional)
 - **AddressData.ng API** (backup - optional)
+- **Geoapify API** (backup - optional)
 - **Fallback data** (always available, no API key needed)
 
-**Note:** The system works without any API keys using fallback data. Google Places API is recommended for best results.
+**Note:** The system works **completely FREE** using Nominatim (OpenStreetMap) as a fallback when Google Places API key is not configured. No API keys are required for basic functionality!
 
 ---
 
@@ -43,10 +45,38 @@ Google Places API is the **primary and recommended** service for location data.
    - Save
 
 6. **Add to Environment Variables**
-   - Add to `.env.local`:
-     ```
+
+   **For Local Development:**
+   - Create or edit `.env.local` in the `frontend` directory:
+     ```env
+     GOOGLE_PLACES_API_KEY=your_actual_key_here
+     # OR (less secure, but works)
      NEXT_PUBLIC_GOOGLE_PLACES_API_KEY=your_actual_key_here
      ```
+   - Restart your dev server after adding
+
+   **For Vercel Deployment (Production):**
+   
+   ⚠️ **IMPORTANT**: You must add the API key to Vercel's environment variables for production!
+   
+   1. Go to your Vercel project dashboard: https://vercel.com/dashboard
+   2. Select your project (e.g., `awari`)
+   3. Go to **Settings** → **Environment Variables**
+   4. Add a new environment variable:
+      - **Name**: `GOOGLE_PLACES_API_KEY` (recommended, server-side only)
+      - **OR**: `NEXT_PUBLIC_GOOGLE_PLACES_API_KEY` (less secure, exposed to client)
+      - **Value**: Your Google Places API key
+      - **Environment**: Select all (Production, Preview, Development)
+   5. Click **Save**
+   6. **Redeploy** your application for the changes to take effect:
+      - Go to **Deployments** tab
+      - Click the **⋯** menu on the latest deployment
+      - Click **Redeploy**
+   
+   **Note**: 
+   - `GOOGLE_PLACES_API_KEY` (without `NEXT_PUBLIC_`) is more secure as it's only available server-side
+   - The API routes (`/api/places/*`) check for both variables, preferring the server-side one
+   - After adding environment variables, you MUST redeploy for them to take effect
 
 ### Google Places Pricing:
 - ✅ **$200 free credit monthly** (covers ~40,000 requests)
@@ -93,14 +123,27 @@ NEXT_PUBLIC_GEOAPIFY_API_KEY=your_geoapify_key_here
 
 ## How It Works
 
-1. **With Google Places API**: The system prioritizes Google Places API first, then falls back to other APIs if needed
-2. **Without API Keys**: The system uses comprehensive fallback data (60+ Lagos cities, etc.)
-3. **Error Handling**: Invalid or missing API keys are silently ignored - no errors shown to users
-4. **Priority Order**: Google Places → AddressData.ng → Geoapify → Mapbox → Fallback data
+1. **With Google Places API**: The system prioritizes Google Places API first, then falls back to FREE Nominatim API if needed
+2. **Without Google Places API Key**: The system automatically uses **FREE Nominatim (OpenStreetMap) API** - no configuration needed!
+3. **Error Handling**: Invalid or missing API keys are silently ignored - system automatically falls back to free APIs
+4. **Priority Order**: 
+   - **Address Suggestions**: Google Places → **Nominatim (FREE)** → AddressData.ng → Geoapify → Mapbox → Fallback data
+   - **City Lists**: Google Places → **Nominatim (FREE)** → AddressData.ng → Mapbox → Fallback data
+
+**⭐ FREE Option**: Nominatim (OpenStreetMap) works immediately without any API key configuration!
 
 ---
 
 ## Troubleshooting
+
+### "Google Places API key not configured" Error (Vercel/Production)
+- **Cause**: Environment variable not set in Vercel
+- **Fix**: 
+  1. Go to Vercel Dashboard → Your Project → Settings → Environment Variables
+  2. Add `GOOGLE_PLACES_API_KEY` with your API key value
+  3. Select all environments (Production, Preview, Development)
+  4. **Redeploy** your application (important!)
+- **Verify**: Check Vercel deployment logs - you should see "Google Places API Key check" logs showing `hasServerKey: true`
 
 ### Mapbox 401 Error
 - **Cause**: Invalid or placeholder token
@@ -110,7 +153,7 @@ NEXT_PUBLIC_GEOAPIFY_API_KEY=your_geoapify_key_here
 ### No Address Suggestions
 - **Check**: Browser console for API errors
 - **Solution**: The system will use fallback data automatically
-- **Verify**: Environment variables are loaded (restart dev server)
+- **Verify**: Environment variables are loaded (restart dev server for local, redeploy for Vercel)
 
 ---
 
@@ -127,5 +170,12 @@ NEXT_PUBLIC_GEOAPIFY_API_KEY=your_geoapify_key_here
 2. Falls back to other APIs if Google Places fails
 3. Uses comprehensive fallback data if all APIs fail
 
-**You can use the system without any API keys** - it will use the comprehensive fallback data (60+ Lagos cities, etc.), but Google Places API provides the best user experience with real-time address suggestions.
+**You can use the system completely FREE** - it will automatically use Nominatim (OpenStreetMap) API for real-time address suggestions when Google Places API key is not configured. No setup required!
+
+**Free Tier Options:**
+- ✅ **Nominatim (OpenStreetMap)**: Completely free, no API key needed, works immediately
+- ✅ **Google Places API**: $200 free credit/month (requires API key setup)
+- ✅ **Fallback data**: Always available (60+ Lagos cities, etc.)
+
+The system will automatically use the best available option!
 
