@@ -79,37 +79,49 @@ class LiveLocationApiService {
   }
 
   /**
-   * Get cities for a specific state using live APIs
-   * Prioritizes Google Places API, with fallbacks
+   * Get cities for a specific state using FREE Nominatim API
+   * Using Nominatim (OpenStreetMap) as primary - completely FREE, no API key needed!
    */
   async getCitiesByState(stateName: string): Promise<string[]> {
-    const cities = new Set<string>();
+    // PRIMARY: Use FREE Nominatim API (no API key required!)
+    try {
+      console.log(`📍 Fetching cities for ${stateName} using FREE Nominatim API...`);
+      const nominatimCities = await this.getCitiesFromNominatim(stateName);
+      if (nominatimCities && nominatimCities.length > 0) {
+        console.log(`✅ Nominatim returned ${nominatimCities.length} cities`);
+        return nominatimCities;
+      }
+    } catch (error) {
+      console.warn('Nominatim cities API failed:', error);
+    }
 
-    // Try Google Places first (primary)
+    // Fallback to comprehensive static data if Nominatim fails
+    console.log(`📋 Using fallback cities for ${stateName}`);
+    return this.getFallbackCities(stateName);
+
+    // PENDING: Other APIs disabled for now
+    // Google Places, Mapbox, AddressData.ng can be enabled later if needed
+    /*
+    const cities = new Set<string>();
+    
+    // Try Google Places as backup
     try {
       const googleCities = await this.getCitiesFromGooglePlaces(stateName);
       if (googleCities && googleCities.length > 0) {
         googleCities.forEach(city => cities.add(city));
-        // If Google Places returns good results, use them
-        const cityArray = Array.from(cities).sort();
-        if (cityArray.length >= 5) {
-          return cityArray;
-        }
       }
     } catch (error) {
       console.warn('Google Places cities API failed:', error);
     }
 
-    // Try other APIs as backup (including FREE Nominatim)
+    // Try other APIs as backup
     const backupApiPromises = [
-      this.getCitiesFromNominatim(stateName), // FREE - No API key needed!
       this.getCitiesFromAddressData(stateName),
       this.getCitiesFromMapbox(stateName)
     ];
 
     try {
       const results = await Promise.allSettled(backupApiPromises);
-      
       results.forEach(result => {
         if (result.status === 'fulfilled' && result.value) {
           result.value.forEach(city => cities.add(city));
@@ -119,92 +131,71 @@ class LiveLocationApiService {
       console.warn('Backup city APIs failed:', error);
     }
 
-    // Convert to array and sort
     const cityArray = Array.from(cities).sort();
-    
-    // If we got results from APIs, return them
     if (cityArray.length > 0) {
       return cityArray;
     }
-
-    // Fallback to comprehensive cities list if APIs fail
-    return this.getFallbackCities(stateName);
+    */
   }
 
   /**
-   * Get real-time address suggestions using live APIs
-   * Prioritizes Google Places API for best results
+   * Get real-time address suggestions using FREE Nominatim API
+   * Using Nominatim (OpenStreetMap) as primary - completely FREE, no API key needed!
    */
   async getAddressSuggestions(query: string, city?: string, state?: string): Promise<AddressSuggestion[]> {
     if (!query || query.length < 2) return [];
 
     const suggestions = new Map<string, AddressSuggestion>();
 
-    // For Google Places, use just the query with Nigeria restriction
-    // Google Places works better with minimal query + component restrictions
-    const googleQuery = query.trim();
-    const googleQueryWithContext = city && state 
-      ? `${googleQuery}, ${city}, ${state}, Nigeria`
-      : state
-        ? `${googleQuery}, ${state}, Nigeria`
-        : `${googleQuery}, Nigeria`;
-
-    // Try Google Places first (primary - best quality)
+    // PRIMARY: Use FREE Nominatim API (no API key required!)
     try {
-      console.log('🔍 Searching Google Places with query:', googleQueryWithContext);
-      const googleSuggestions = await this.getAddressesFromGooglePlaces(googleQueryWithContext, state);
-      console.log('✅ Google Places returned:', googleSuggestions.length, 'suggestions');
+      console.log(`🔍 Searching addresses using FREE Nominatim API: "${query}"`);
+      const nominatimSuggestions = await this.getAddressesFromNominatim(query, city, state);
+      console.log(`✅ Nominatim returned ${nominatimSuggestions.length} suggestions`);
       
-      if (googleSuggestions && googleSuggestions.length > 0) {
-        googleSuggestions.forEach(suggestion => {
+      if (nominatimSuggestions && nominatimSuggestions.length > 0) {
+        nominatimSuggestions.forEach(suggestion => {
           const key = suggestion.fullAddress.toLowerCase();
           suggestions.set(key, suggestion);
         });
         
-        // Return Google Places results immediately (they're the best quality)
-        if (googleSuggestions.length > 0) {
-          return Array.from(suggestions.values())
-            .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
-            .slice(0, 10);
-        }
+        // Return Nominatim results (they're free and work great!)
+        return Array.from(suggestions.values())
+          .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
+          .slice(0, 10);
       }
     } catch (error) {
-      console.error('❌ Google Places address API failed:', error);
+      console.error('❌ Nominatim address API failed:', error);
     }
 
-    // Try backup APIs if Google Places didn't return enough results
-    // Include FREE Nominatim API (no key required!)
-    const backupQuery = this.buildSearchQuery(query, city, state);
-    const backupApiPromises = [
-      this.getAddressesFromNominatim(query, city, state), // FREE - No API key needed!
-      this.getAddressesFromAddressData(query, city, state),
-      this.getAddressesFromGeoapify(backupQuery, state),
-      this.getAddressesFromMapbox(backupQuery, state)
-    ];
+    // If Nominatim fails, return empty (fallback data will be used by locationApi service)
+    return [];
 
+    // PENDING: Other APIs disabled for now
+    // Google Places, Mapbox, AddressData.ng, Geoapify can be enabled later if needed
+    /*
+    // Try Google Places as backup
     try {
-      const results = await Promise.allSettled(backupApiPromises);
+      const googleQuery = query.trim();
+      const googleQueryWithContext = city && state 
+        ? `${googleQuery}, ${city}, ${state}, Nigeria`
+        : state
+          ? `${googleQuery}, ${state}, Nigeria`
+          : `${googleQuery}, Nigeria`;
       
-      results.forEach(result => {
-        if (result.status === 'fulfilled' && result.value) {
-          result.value.forEach(suggestion => {
-            // Use full address as key to avoid duplicates
-            const key = suggestion.fullAddress.toLowerCase();
-            // Only add if not already present or if confidence is higher
-            if (!suggestions.has(key) || (suggestions.get(key)?.confidence || 0) < (suggestion.confidence || 0)) {
-              suggestions.set(key, suggestion);
-            }
-          });
-        }
-      });
+      const googleSuggestions = await this.getAddressesFromGooglePlaces(googleQueryWithContext, state);
+      if (googleSuggestions && googleSuggestions.length > 0) {
+        googleSuggestions.forEach(suggestion => {
+          const key = suggestion.fullAddress.toLowerCase();
+          if (!suggestions.has(key)) {
+            suggestions.set(key, suggestion);
+          }
+        });
+      }
     } catch (error) {
-      console.warn('Backup address APIs failed:', error);
+      console.warn('Google Places API failed:', error);
     }
-
-    // Convert to array, sort by confidence, and limit results
-    return Array.from(suggestions.values())
-      .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
-      .slice(0, 10); // Limit to top 10 suggestions
+    */
   }
 
   /**
@@ -274,7 +265,9 @@ class LiveLocationApiService {
 
   /**
    * Get cities from Nominatim (OpenStreetMap) API
-   * FREE - NO API KEY REQUIRED!
+   * PRIMARY SERVICE - FREE - NO API KEY REQUIRED!
+   * 
+   * This is our primary city lookup service - completely free and works great!
    */
   private async getCitiesFromNominatim(stateName: string): Promise<string[]> {
     try {
@@ -285,27 +278,37 @@ class LiveLocationApiService {
         limit: '50',
         countrycodes: 'ng',
         'accept-language': 'en',
-        featuretype: 'city,town,village'
+        featuretype: 'city,town,village,suburb',
+        dedupe: '1' // Remove duplicates
       });
 
       const response = await fetch(`${this.NOMINATIM_BASE_URL}/search?${params.toString()}`, {
         headers: {
           'User-Agent': 'Awari Property Platform', // Required by Nominatim
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Referer': typeof window !== 'undefined' ? window.location.origin : 'https://awari-ten.vercel.app'
         }
       });
 
       if (response.ok) {
         const data = await response.json();
-        const cities = new Set<string>();
-        data.forEach((place: any) => {
-          const address = place.address || {};
-          const cityName = address.city || address.town || address.village || address.suburb;
-          if (cityName && address.state === stateName) {
-            cities.add(cityName);
-          }
-        });
-        return Array.from(cities).sort();
+        if (Array.isArray(data) && data.length > 0) {
+          const cities = new Set<string>();
+          data.forEach((place: any) => {
+            const address = place.address || {};
+            // Extract city name from various possible fields
+            const cityName = address.city || address.town || address.village || address.suburb || address.municipality;
+            // Make sure it's in the correct state
+            if (cityName && (address.state === stateName || place.display_name.includes(stateName))) {
+              cities.add(cityName);
+            }
+          });
+          const cityArray = Array.from(cities).sort();
+          console.log(`✅ Nominatim found ${cityArray.length} cities for ${stateName}`);
+          return cityArray;
+        }
+      } else {
+        console.warn(`Nominatim API returned status ${response.status} for state: ${stateName}`);
       }
     } catch (error) {
       console.warn('Nominatim cities API failed:', error);
@@ -507,13 +510,15 @@ class LiveLocationApiService {
 
   /**
    * Get address suggestions from Nominatim (OpenStreetMap) API
-   * FREE - NO API KEY REQUIRED!
+   * PRIMARY SERVICE - FREE - NO API KEY REQUIRED!
    * Rate limit: 1 request per second (be respectful)
+   * 
+   * This is our primary geocoding service - completely free and works great!
    */
   private async getAddressesFromNominatim(query: string, city?: string, state?: string): Promise<AddressSuggestion[]> {
     try {
-      // Build search query
-      let searchQuery = query;
+      // Build search query - Nominatim works best with full context
+      let searchQuery = query.trim();
       if (city) searchQuery += `, ${city}`;
       if (state) searchQuery += `, ${state}`;
       searchQuery += ', Nigeria';
@@ -524,34 +529,40 @@ class LiveLocationApiService {
         addressdetails: '1',
         limit: '10',
         countrycodes: 'ng',
-        'accept-language': 'en'
+        'accept-language': 'en',
+        dedupe: '1' // Remove duplicates
       });
 
       const response = await fetch(`${this.NOMINATIM_BASE_URL}/search?${params.toString()}`, {
         headers: {
           'User-Agent': 'Awari Property Platform', // Required by Nominatim
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Referer': typeof window !== 'undefined' ? window.location.origin : 'https://awari-ten.vercel.app'
         }
       });
 
       if (response.ok) {
         const data = await response.json();
-        return data.map((place: any, index: number) => {
-          const address = place.address || {};
-          return {
-            id: `nominatim-${place.place_id}`,
-            fullAddress: place.display_name,
-            street: address.road || address.house_number || '',
-            city: address.city || address.town || address.village || city || '',
-            state: address.state || state || '',
-            postCode: address.postcode,
-            coordinates: {
-              lat: parseFloat(place.lat),
-              lng: parseFloat(place.lon)
-            },
-            confidence: 0.75 - (index * 0.05) // Good confidence for free API
-          };
-        }) || [];
+        if (Array.isArray(data) && data.length > 0) {
+          return data.map((place: any, index: number) => {
+            const address = place.address || {};
+            return {
+              id: `nominatim-${place.place_id}`,
+              fullAddress: place.display_name,
+              street: address.road || address.house_number || address.house || '',
+              city: address.city || address.town || address.village || address.suburb || city || '',
+              state: address.state || state || '',
+              postCode: address.postcode,
+              coordinates: {
+                lat: parseFloat(place.lat),
+                lng: parseFloat(place.lon)
+              },
+              confidence: 0.85 - (index * 0.05) // High confidence - this is our primary service!
+            };
+          });
+        }
+      } else {
+        console.warn(`Nominatim API returned status ${response.status}`);
       }
     } catch (error) {
       console.warn('Nominatim (OpenStreetMap) API failed:', error);
