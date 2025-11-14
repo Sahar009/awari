@@ -91,12 +91,21 @@ export interface VerificationResponse {
   message: string;
 }
 
+export interface ValidationError {
+  type?: string;
+  value?: string;
+  msg: string;
+  path: string;
+  location?: string;
+}
+
 export interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  validationErrors: Record<string, string>;
 }
 
 // Initial state
@@ -106,6 +115,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
   isLoading: false,
   error: null,
+  validationErrors: {},
 };
 
 // Async thunks
@@ -116,7 +126,14 @@ export const registerUser = createAsyncThunk(
       const response = await apiService.post<AuthResponse>('/auth/register', userData);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Registration failed');
+      const errorData = error.response?.data || {};
+      const errorMessage = errorData.message || 'Registration failed';
+      
+      // Pass through validation errors if available
+      return rejectWithValue({
+        message: errorMessage,
+        errors: errorData.errors || []
+      });
     }
   }
 );
@@ -128,7 +145,14 @@ export const loginUser = createAsyncThunk(
       const response = await apiService.post<AuthResponse>('/auth/login', credentials);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Login failed');
+      const errorData = error.response?.data || {};
+      const errorMessage = errorData.message || 'Login failed';
+      
+      // Pass through validation errors if available
+      return rejectWithValue({
+        message: errorMessage,
+        errors: errorData.errors || []
+      });
     }
   }
 );
@@ -262,6 +286,7 @@ const authSlice = createSlice({
   reducers: {
     clearError: (state) => {
       state.error = null;
+      state.validationErrors = {};
     },
     updateUser: (state, action: PayloadAction<Partial<User>>) => {
       if (state.user) {
@@ -287,6 +312,7 @@ const authSlice = createSlice({
       .addCase(registerUser.pending, (state) => {
         state.isLoading = true;
         state.error = null;
+        state.validationErrors = {};
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.isLoading = false;
@@ -312,7 +338,19 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload as string;
+        const payload = action.payload as any;
+        state.error = typeof payload === 'string' ? payload : payload?.message || 'Registration failed';
+        
+        // Parse validation errors
+        state.validationErrors = {};
+        if (payload?.errors && Array.isArray(payload.errors)) {
+          payload.errors.forEach((err: ValidationError) => {
+            if (err.path && err.msg) {
+              state.validationErrors[err.path] = err.msg;
+            }
+          });
+        }
+        state.isAuthenticated = false;
       });
 
     // Login
@@ -320,6 +358,7 @@ const authSlice = createSlice({
       .addCase(loginUser.pending, (state) => {
         state.isLoading = true;
         state.error = null;
+        state.validationErrors = {};
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
@@ -341,7 +380,19 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload as string;
+        const payload = action.payload as any;
+        state.error = typeof payload === 'string' ? payload : payload?.message || 'Login failed';
+        
+        // Parse validation errors
+        state.validationErrors = {};
+        if (payload?.errors && Array.isArray(payload.errors)) {
+          payload.errors.forEach((err: ValidationError) => {
+            if (err.path && err.msg) {
+              state.validationErrors[err.path] = err.msg;
+            }
+          });
+        }
+        state.isAuthenticated = false;
       });
 
 

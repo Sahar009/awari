@@ -11,7 +11,7 @@ import { loginUser, googleSignIn, clearError } from '@/store/slices/authSlice';
 export default function LoginPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { isLoading, error, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { isLoading, error, isAuthenticated, validationErrors } = useAppSelector((state) => state.auth);
   
   const [formData, setFormData] = useState({
     email: '',
@@ -64,6 +64,12 @@ export default function LoginPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    
+    // Clear validation error for this field when user starts typing
+    if (validationErrors[name]) {
+      dispatch(clearError());
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -226,9 +232,17 @@ export default function LoginPage() {
                     value={formData.email}
                     onChange={handleInputChange}
                     required
-                    className="w-full pl-10 pr-4 py-3 bg-white/60 border border-purple-200/50 rounded-xl text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
+                    className={`w-full pl-10 pr-4 py-3 bg-white/60 border rounded-xl text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 ${
+                      validationErrors.email ? 'border-red-500 focus:border-red-500' : 'border-purple-200/50'
+                    }`}
                     placeholder="Enter your email"
                   />
+                  {validationErrors.email && (
+                    <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                      <span>⚠️</span>
+                      <span>{validationErrors.email}</span>
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -254,7 +268,9 @@ export default function LoginPage() {
                     value={formData.password}
                     onChange={handleInputChange}
                     required
-                    className="w-full pl-10 pr-12 py-3 bg-white/60 border border-purple-200/50 rounded-xl text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
+                    className={`w-full pl-10 pr-12 py-3 bg-white/60 border rounded-xl text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 ${
+                      validationErrors.password ? 'border-red-500 focus:border-red-500' : 'border-purple-200/50'
+                    }`}
                     placeholder="Enter your password"
                   />
                   <button
@@ -264,13 +280,31 @@ export default function LoginPage() {
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
+                  {validationErrors.password && (
+                    <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                      <span>⚠️</span>
+                      <span>{validationErrors.password}</span>
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* Error Display */}
-              {error && (
-                <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-3 text-red-600 text-sm animate-shake">
-                  {error}
+              {(error || Object.keys(validationErrors).length > 0) && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                  {error && (
+                    <p className="text-red-600 text-sm mb-2">{error}</p>
+                  )}
+                  {Object.keys(validationErrors).length > 0 && (
+                    <div className="space-y-1">
+                      {Object.entries(validationErrors).map(([field, message]) => (
+                        <p key={field} className="text-xs text-red-600 flex items-center gap-1">
+                          <span>•</span>
+                          <span><strong className="capitalize">{field}:</strong> {message}</span>
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
