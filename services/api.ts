@@ -64,9 +64,55 @@ api.interceptors.response.use(
     // Handle 401 Unauthorized errors
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      console.warn('🔒 Unauthorized access - clearing token and redirecting to login');
       
-      // Clear token and redirect to login
+      // List of public endpoints that don't require authentication
+      // These should not trigger a redirect to login
+      const publicEndpoints = [
+        '/properties',      // GET /properties (list) and GET /properties/:id (detail)
+        '/reviews',         // GET /reviews
+        '/availability',    // GET /availability
+      ];
+      
+      const requestUrl = originalRequest.url || '';
+      const fullUrl = (originalRequest.baseURL || '') + requestUrl;
+      const method = originalRequest.method?.toLowerCase() || '';
+      
+      // Check if this is a public GET endpoint
+      // Check both the relative URL and full URL
+      const isPublicEndpoint = method === 'get' && (
+        publicEndpoints.some(endpoint => requestUrl.includes(endpoint)) ||
+        publicEndpoints.some(endpoint => fullUrl.includes(endpoint))
+      );
+      
+      // Also check if we're on a public page (properties, rentals, shortlets)
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+      const isOnPublicPage = currentPath.includes('/properties') || 
+                             currentPath.includes('/rentals') || 
+                             currentPath.includes('/shortlets') ||
+                             currentPath.includes('/browse-listing') ||
+                             currentPath.includes('/product-details');
+      
+      if (isPublicEndpoint || (isOnPublicPage && method === 'get')) {
+        console.warn('🔒 401 on public endpoint/page - not redirecting to login:', {
+          requestUrl,
+          fullUrl,
+          method,
+          currentPath,
+          isPublicEndpoint,
+          isOnPublicPage
+        });
+        // Just reject the error without redirecting
+        return Promise.reject(error);
+      }
+      
+      console.warn('🔒 Unauthorized access - clearing token and redirecting to login', {
+        requestUrl,
+        fullUrl,
+        method,
+        currentPath
+      });
+      
+      // Clear token and redirect to login only for protected endpoints
       localStorage.removeItem('token');
       if (typeof window !== 'undefined') {
         window.location.href = '/auth/login';

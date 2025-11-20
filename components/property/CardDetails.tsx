@@ -2,10 +2,10 @@
 import { Rating } from "@/components/ui/Rating";
 import Image from "next/image";
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchPropertyById, type Property } from "@/store/slices/propertySlice";
-import { Loader } from "@/components/ui/Loader";
+import PropertyDetailsSkeleton from "@/components/skeletons/PropertyDetailsSkeleton";
 import { MapPin, Heart, Loader2 } from "lucide-react";
 import { 
   toggleFavorite,
@@ -24,6 +24,7 @@ import {
   type Review
 } from '@/store/slices/reviewsSlice';
 import { Star, ThumbsUp, Flag, MessageCircle } from 'lucide-react';
+import { selectIsAuthenticated } from '@/store/slices/authSlice';
 
 export type Listing = {
   id: string;
@@ -44,10 +45,12 @@ export type Listing = {
 
 export const CardDetails = () => {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const propertyId = searchParams?.get('id');
   const dispatch = useAppDispatch();
   const toast = useToast();
   const { currentProperty, isLoading, error } = useAppSelector((state) => state.property);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
   
   // Fallback state for direct API call
   const [fallbackProperty, setFallbackProperty] = useState(null);
@@ -118,9 +121,9 @@ export const CardDetails = () => {
     console.log('🚀 CardDetails - Loading property data for:', propertyId);
     dispatch(fetchPropertyById({ id: propertyId, incrementView: true }));
     
-    // Check favorite status
-    console.log('🚀 CardDetails - Checking favorite status for:', propertyId);
-    dispatch(checkFavoriteStatus(propertyId));
+    // Check favorite status only if user is authenticated
+    // Note: We need to check auth state here, but since this is in useEffect, 
+    // we'll check it in a separate effect that runs when auth state changes
     
     // Load reviews data
     console.log('🚀 CardDetails - Loading reviews for:', propertyId);
@@ -151,6 +154,15 @@ export const CardDetails = () => {
       });
   }, [propertyId]); // Only depend on propertyId
 
+  // Check favorite status when authenticated and property is loaded
+  useEffect(() => {
+    if (!propertyId || !isAuthenticated || favoriteApiCalled.current) return;
+    
+    console.log('🚀 CardDetails - Checking favorite status for authenticated user:', propertyId);
+    favoriteApiCalled.current = true;
+    dispatch(checkFavoriteStatus(propertyId));
+  }, [propertyId, isAuthenticated, dispatch]);
+
   // Cleanup effect
   useEffect(() => {
     return () => {
@@ -167,7 +179,7 @@ export const CardDetails = () => {
   }, []);
 
   const handleToggleFavorite = useCallback(async () => {
-    if (!propertyId || isFavoriteLoading) return;
+    if (!propertyId || isFavoriteLoading || !isAuthenticated) return;
     
     setIsFavoriteLoading(true);
     
@@ -186,7 +198,17 @@ export const CardDetails = () => {
     } finally {
       setIsFavoriteLoading(false);
     }
-  }, [propertyId, isFavoriteLoading, dispatch, toast]);
+  }, [propertyId, isFavoriteLoading, isAuthenticated, dispatch, toast]);
+
+  // Handle booking button click - check authentication before opening modal
+  const handleBookingClick = useCallback(() => {
+    if (!isAuthenticated) {
+      toast.error('Authentication Required', 'Please log in to make a booking.');
+      router.push('/auth/login');
+      return;
+    }
+    setShowBookingModal(true);
+  }, [isAuthenticated, router, toast]);
 
   // Function to refresh reviews data
   const refreshReviewsData = useCallback(() => {
@@ -246,11 +268,7 @@ export const CardDetails = () => {
   }, [propertySummary]);
 
   if (isLoading || fallbackLoading) {
-    return (
-      <div className="w-full max-w-6xl mx-auto px-4 py-8 flex items-center justify-center">
-        <Loader />
-      </div>
-    );
+    return <PropertyDetailsSkeleton />;
   }
 
   if (error) {
@@ -374,8 +392,8 @@ export const CardDetails = () => {
         {/* Left column - Main Content */}
         <div className="lg:col-span-2 space-y-8">
           {/* Property Owner */}
-          <div className="bg-white rounded-xl p-6 shadow-lg border">
-            <h2 className="text-xl font-semibold mb-4">Property Owner</h2>
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">Property Owner</h2>
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
                 <span className="text-white font-bold text-xl">
@@ -394,59 +412,59 @@ export const CardDetails = () => {
           </div>
 
           {/* Description */}
-          <div className="bg-white rounded-xl p-6 shadow-lg border">
-            <h2 className="text-xl font-semibold mb-4">Description</h2>
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">Description</h2>
             <p className="text-gray-700 leading-relaxed">
               {property.description}
             </p>
           </div>
 
           {/* Property Specifications */}
-          <div className="bg-white rounded-xl p-6 shadow-lg border">
-            <h2 className="text-xl font-semibold mb-4">Property Specifications</h2>
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">Property Specifications</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
               {property.bedrooms && (
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-center p-4 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200/50 hover:shadow-sm transition-shadow">
                   <div className="text-2xl font-bold text-primary">{property.bedrooms}</div>
-                  <div className="text-sm text-gray-600">Bedrooms</div>
+                  <div className="text-sm text-gray-600 mt-1">Bedrooms</div>
                 </div>
               )}
               {property.bathrooms && (
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-center p-4 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200/50 hover:shadow-sm transition-shadow">
                   <div className="text-2xl font-bold text-primary">{property.bathrooms}</div>
-                  <div className="text-sm text-gray-600">Bathrooms</div>
+                  <div className="text-sm text-gray-600 mt-1">Bathrooms</div>
                 </div>
               )}
               {property.toilets && (
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-center p-4 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200/50 hover:shadow-sm transition-shadow">
                   <div className="text-2xl font-bold text-primary">{property.toilets}</div>
-                  <div className="text-sm text-gray-600">Toilets</div>
+                  <div className="text-sm text-gray-600 mt-1">Toilets</div>
                 </div>
               )}
               {property.parkingSpaces && (
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-center p-4 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200/50 hover:shadow-sm transition-shadow">
                   <div className="text-2xl font-bold text-primary">{property.parkingSpaces}</div>
-                  <div className="text-sm text-gray-600">Parking Spaces</div>
+                  <div className="text-sm text-gray-600 mt-1">Parking Spaces</div>
                 </div>
               )}
               {property.floorArea && (
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-center p-4 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200/50 hover:shadow-sm transition-shadow">
                   <div className="text-2xl font-bold text-primary">{property.floorArea}</div>
-                  <div className="text-sm text-gray-600">Floor Area (sq ft)</div>
+                  <div className="text-sm text-gray-600 mt-1">Floor Area (sq ft)</div>
                 </div>
               )}
               {property.yearBuilt && (
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-center p-4 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200/50 hover:shadow-sm transition-shadow">
                   <div className="text-2xl font-bold text-primary">{property.yearBuilt}</div>
-                  <div className="text-sm text-gray-600">Year Built</div>
+                  <div className="text-sm text-gray-600 mt-1">Year Built</div>
                 </div>
               )}
             </div>
           </div>
 
           {/* Property Features */}
-          <div className="bg-white rounded-xl p-6 shadow-lg border">
-            <h2 className="text-xl font-semibold mb-4">Property Features</h2>
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">Property Features</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -498,8 +516,8 @@ export const CardDetails = () => {
           </div>
 
           {/* Location Details */}
-          <div className="bg-white rounded-xl p-6 shadow-lg border">
-            <h2 className="text-xl font-semibold mb-4">Location Details</h2>
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">Location Details</h2>
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <MapPin size={20} className="text-gray-500" />
@@ -531,9 +549,9 @@ export const CardDetails = () => {
           </div>
 
           {/* Reviews Section */}
-          <div className="bg-white rounded-xl p-6 shadow-lg border">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">Reviews & Ratings</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Reviews & Ratings</h2>
               {reviews.length > 0 && (
                 <button
                   onClick={() => setShowAllReviews(!showAllReviews)}
@@ -622,7 +640,7 @@ export const CardDetails = () => {
             ) : (
               <div className="space-y-6">
                 {reviews.slice(0, showAllReviews ? reviews.length : 3).map((review) => (
-                  <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
+                  <div key={review.id} className="border-b border-gray-100 pb-6 last:border-b-0 hover:bg-gray-50/30 -mx-2 px-2 py-2 rounded-lg transition-colors">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
@@ -643,11 +661,11 @@ export const CardDetails = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 transition-colors">
+                        <button className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all">
                           <ThumbsUp className="h-3 w-3" />
                           {review.helpfulCount}
                         </button>
-                        <button className="p-1 text-gray-400 hover:text-red-600 transition-colors">
+                        <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
                           <Flag className="h-3 w-3" />
                         </button>
                       </div>
@@ -691,7 +709,7 @@ export const CardDetails = () => {
                     
                     {/* Owner Response */}
                     {review.ownerResponse && (
-                      <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 p-4 rounded-r-lg shadow-sm mt-3">
                         <div className="flex items-center gap-2 mb-2">
                           <MessageCircle className="h-4 w-4 text-blue-600" />
                           <span className="font-medium text-blue-800">Owner Response</span>
@@ -699,7 +717,7 @@ export const CardDetails = () => {
                             {formatDate(review.ownerResponseAt || '')}
                           </span>
                         </div>
-                        <p className="text-blue-700">{review.ownerResponse}</p>
+                        <p className="text-blue-700 leading-relaxed">{review.ownerResponse}</p>
                       </div>
                     )}
                   </div>
@@ -714,7 +732,7 @@ export const CardDetails = () => {
         <div className="lg:col-span-1">
           <div className="sticky top-8 space-y-6">
             {/* Booking Card */}
-            <div className="bg-white rounded-xl p-6 shadow-lg border">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
               <div className="text-center mb-6">
                 <div className="text-3xl font-bold text-primary mb-2">
                   ₦{parseFloat(property.price).toLocaleString('en-NG')}
@@ -733,7 +751,7 @@ export const CardDetails = () => {
                 {/* Dynamic booking button based on property type */}
                 {property.listingType === 'shortlet' && (
                   <button 
-                    onClick={() => setShowBookingModal(true)}
+                    onClick={handleBookingClick}
                     className="w-full bg-primary text-white font-medium py-3 rounded-lg hover:bg-primary/90 transition-colors"
                   >
                     Book Now
@@ -742,7 +760,7 @@ export const CardDetails = () => {
                 
                 {property.listingType === 'rent' && (
                   <button 
-                    onClick={() => setShowBookingModal(true)}
+                    onClick={handleBookingClick}
                     className="w-full bg-primary text-white font-medium py-3 rounded-lg hover:bg-primary/90 transition-colors"
                   >
                     Apply for Rental
@@ -751,37 +769,40 @@ export const CardDetails = () => {
                 
                 {property.listingType === 'sale' && (
                   <button 
-                    onClick={() => setShowBookingModal(true)}
+                    onClick={handleBookingClick}
                     className="w-full bg-primary text-white font-medium py-3 rounded-lg hover:bg-primary/90 transition-colors"
                   >
                     Schedule Inspection
                   </button>
                 )}
                 
-                <button 
-                  onClick={handleToggleFavorite}
-                  disabled={isFavoriteLoading || !propertyId}
-                  className={`
-                    w-full font-medium py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2
-                    ${isFavorited 
-                      ? 'bg-red-500 text-white hover:bg-red-600 border border-red-500' 
-                      : 'border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-red-500 hover:text-red-500'
-                    }
-                    ${isFavoriteLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                  `}
-                >
-                  {isFavoriteLoading ? (
-                    <Loader2 className="animate-spin w-5 h-5" />
-                  ) : (
-                    <Heart 
-                      className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`}
-                    />
-                  )}
-                  {isFavorited ? 'Remove from Favorites' : 'Save to Favorites'}
-                </button>
+                {/* Favorite button - only show when user is authenticated */}
+                {isAuthenticated && (
+                  <button 
+                    onClick={handleToggleFavorite}
+                    disabled={isFavoriteLoading || !propertyId}
+                    className={`
+                      w-full font-medium py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2
+                      ${isFavorited 
+                        ? 'bg-red-500 text-white hover:bg-red-600 border border-red-500' 
+                        : 'border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-red-500 hover:text-red-500'
+                      }
+                      ${isFavoriteLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                    `}
+                  >
+                    {isFavoriteLoading ? (
+                      <Loader2 className="animate-spin w-5 h-5" />
+                    ) : (
+                      <Heart 
+                        className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`}
+                      />
+                    )}
+                    {isFavorited ? 'Remove from Favorites' : 'Save to Favorites'}
+                  </button>
+                )}
               </div>
 
-              <div className="mt-6 pt-6 border-t">
+              <div className="mt-6 pt-6 border-t border-gray-100">
                 <p className="text-xs text-gray-500 text-center">
                   {property.negotiable ? 'Price is negotiable' : 'Fixed price'}
                 </p>
@@ -789,8 +810,8 @@ export const CardDetails = () => {
             </div>
 
             {/* Property Stats */}
-            <div className="bg-white rounded-xl p-6 shadow-lg border">
-              <h3 className="font-semibold mb-4">Property Statistics</h3>
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+              <h3 className="font-semibold mb-4 text-gray-900">Property Statistics</h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Views</span>
@@ -815,8 +836,8 @@ export const CardDetails = () => {
 
             {/* Rental Details (if applicable) */}
             {property.listingType === 'rent' && (
-              <div className="bg-white rounded-xl p-6 shadow-lg border">
-                <h3 className="font-semibold mb-4">Rental Details</h3>
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+                <h3 className="font-semibold mb-4 text-gray-900">Rental Details</h3>
                 <div className="space-y-3">
                   {property.minLeasePeriod && (
                     <div className="flex items-center justify-between">
@@ -852,8 +873,8 @@ export const CardDetails = () => {
 
             {/* Shortlet Details (if applicable) */}
             {property.listingType === 'shortlet' && (
-              <div className="bg-white rounded-xl p-6 shadow-lg border">
-                <h3 className="font-semibold mb-4">Shortlet Details</h3>
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+                <h3 className="font-semibold mb-4 text-gray-900">Shortlet Details</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Min Stay</span>
@@ -880,8 +901,8 @@ export const CardDetails = () => {
             )}
 
             {/* Contact Information */}
-            <div className="bg-white rounded-xl p-6 shadow-lg border">
-              <h3 className="font-semibold mb-4">Contact Information</h3>
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+              <h3 className="font-semibold mb-4 text-gray-900">Contact Information</h3>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center">

@@ -6,7 +6,7 @@ import { SearchFilter } from "@/components/SearchFilter";
 import { Card } from "@/components/ui/Card";
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchProperties, PropertyFilters, Property } from '@/store/slices/propertySlice';
-import { Loader } from './ui/Loader';
+import PropertyListingSkeleton from '@/components/skeletons/PropertyListingSkeleton';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 interface PropertyListingProps {
@@ -180,13 +180,7 @@ const PropertyListing: React.FC<PropertyListingProps> = ({
   }, [isLoading]);
   
   if ((showLoader || debugLoading) && properties.length === 0 && debugProperties.length === 0 && !error) {
-    return (
-      <Container>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader />
-        </div>
-      </Container>
-    );
+    return <PropertyListingSkeleton />;
   }
 
   if (error && properties.length === 0) {
@@ -269,7 +263,7 @@ const PropertyListing: React.FC<PropertyListingProps> = ({
             {/* Loading overlay for pagination */}
             {isLoading && (
               <div className="flex items-center justify-center py-8">
-                <Loader />
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             )}
 
