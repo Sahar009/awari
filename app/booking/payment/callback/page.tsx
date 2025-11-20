@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { handlePaystackCallback } from '@/services/paymentService';
 import { useToast } from '@/components/ui/useToast';
 
-export default function PaymentCallbackPage() {
+function PaymentCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
@@ -16,6 +16,12 @@ export default function PaymentCallbackPage() {
   useEffect(() => {
     const verifyPayment = async () => {
       try {
+        if (!searchParams) {
+          setStatus('error');
+          setMessage('Invalid payment callback. Please contact support.');
+          return;
+        }
+
         const reference = searchParams.get('reference');
         const trxref = searchParams.get('trxref');
 
@@ -94,6 +100,22 @@ export default function PaymentCallbackPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function PaymentCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          <Loader2 className="w-16 h-16 text-blue-600 mx-auto mb-4 animate-spin" />
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Loading...</h2>
+          <p className="text-gray-600">Preparing payment verification...</p>
+        </div>
+      </div>
+    }>
+      <PaymentCallbackContent />
+    </Suspense>
   );
 }
 
