@@ -21,7 +21,6 @@ import { useToast } from '@/components/ui/useToast';
 import { useRouter } from 'next/navigation';
 import { selectUser, selectIsAuthenticated, getProfile } from '@/store/slices/authSlice';
 import { type Property } from '@/store/slices/propertySlice';
-import { initializeBookingPayment, openPaystackPayment } from '@/services/paymentService';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -102,8 +101,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
   const [couponApplied, setCouponApplied] = useState(false);
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
-  const [currentBookingId, setCurrentBookingId] = useState<string | null>(null);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Availability validation state
   const [dateValidationError, setDateValidationError] = useState('');
@@ -134,8 +131,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
       dispatch(clearAvailabilityCheck());
       dispatch(clearUnavailableDates());
       setDateValidationError('');
-      setCurrentBookingId(null);
-      setIsProcessingPayment(false);
       
       // Load unavailable dates for the next 3 months
       if (property?.id) {
@@ -149,14 +144,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
           endDate: endDate.toISOString().split('T')[0]
         }));
       }
-    } else {
-      // Reset state when modal closes
-      setCurrentBookingId(null);
-      setIsProcessingPayment(false);
-      setCurrentStep(1);
-      setCouponApplied(false);
-      setCouponError('');
-      setFormData(prev => ({ ...prev, couponCode: '' }));
     }
   }, [isOpen, dispatch, property?.id]);
 
@@ -276,15 +263,14 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Mock coupon validation logic
-      const validCoupons: Record<string, { discount: number; type: 'percentage' | 'fixed' }> = {
+      const validCoupons = {
         'SAVE10': { discount: 0.1, type: 'percentage' },
         'FLAT50': { discount: 50, type: 'fixed' },
         'WELCOME20': { discount: 0.2, type: 'percentage' },
         'STUDENT15': { discount: 0.15, type: 'percentage' },
       };
 
-      const couponCode = formData.couponCode.toUpperCase().trim();
-      const coupon = validCoupons[couponCode];
+      const coupon = validCoupons[formData.couponCode.toUpperCase() as keyof typeof validCoupons];
       
       if (coupon) {
         let discountAmount = 0;
@@ -303,7 +289,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
         setCouponApplied(true);
         toast.success('Coupon Applied!', `You saved ₦${discountAmount.toLocaleString()}`);
       } else {
-        setCouponError('Invalid coupon code. Try: SAVE10, WELCOME20, STUDENT15, or FLAT50');
+        setCouponError('Invalid coupon code');
       }
     } catch {
       setCouponError('Failed to validate coupon code');
@@ -345,125 +331,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
         return 2; // Viewing Request → Confirmation
       default:
         return 4;
-    }
-  };
-
-  const handlePayment = async (paymentMethod: 'card' | 'bank_transfer') => {
-    setIsProcessingPayment(true);
-
-    try {
-      let bookingId = currentBookingId;
-
-      // If booking hasn't been created yet, create it first
-      if (!bookingId) {
-        console.log('📝 Booking not created yet, creating booking first...');
-        
-        if (!property) {
-          toast.error('Error', 'Property information is missing.');
-          setIsProcessingPayment(false);
-          return;
-        }
-
-        if (!user || !user.id) {
-          console.error('❌ User not authenticated:', { user, isAuthenticated });
-          toast.error('Authentication Error', 'Please log in to make a booking.');
-          setIsProcessingPayment(false);
-          router.push('/auth/login');
-          return;
-        }
-
-        // Validate required fields
-        if (bookingType === 'shortlet' && (!formData.checkInDate || !formData.checkOutDate)) {
-          toast.error('Error', 'Please select check-in and check-out dates.');
-          setIsProcessingPayment(false);
-          return;
-        }
-
-        if (!formData.guestName || !formData.guestEmail || !formData.guestPhone) {
-          toast.error('Error', 'Please fill in all required guest information.');
-          setIsProcessingPayment(false);
-          return;
-        }
-
-        // Create booking
-        const bookingData = {
-          propertyId: property.id,
-          bookingType,
-          ...(bookingType === 'shortlet' && {
-            checkInDate: formData.checkInDate,
-            checkOutDate: formData.checkOutDate,
-            numberOfNights: formData.numberOfNights,
-            numberOfGuests: formData.numberOfGuests,
-          }),
-          ...(bookingType === 'sale_inspection' && {
-            inspectionDate: formData.inspectionDate,
-            inspectionTime: formData.inspectionTime,
-          }),
-          basePrice: pricing.basePrice,
-          totalPrice: pricing.totalPrice,
-          currency: 'NGN',
-          serviceFee: pricing.serviceFee,
-          taxAmount: pricing.taxAmount,
-          discountAmount: pricing.couponDiscount,
-          guestName: formData.guestName,
-          guestEmail: formData.guestEmail,
-          guestPhone: formData.guestPhone,
-          specialRequests: formData.specialRequests,
-        };
-
-        console.log('📤 Sending booking data:', {
-          ...bookingData,
-          guestPhone: '***' // Don't log full phone number
-        });
-        console.log('👤 User info:', {
-          userId: user.id,
-          userEmail: user.email,
-          isAuthenticated
-        });
-
-        const result = await dispatch(createBooking(bookingData)).unwrap();
-        
-        if (!result || !result.id) {
-          throw new Error('Booking creation failed - no booking ID returned');
-        }
-
-        bookingId = result.id;
-        setCurrentBookingId(bookingId);
-        console.log('✅ Booking created successfully:', result);
-      }
-
-      // Initialize Paystack payment
-      const callbackUrl = `${window.location.origin}/booking/payment/callback`;
-      
-      console.log('💳 Initializing Paystack payment:', {
-        bookingId,
-        amount: pricing.totalPrice,
-        paymentMethod,
-        email: formData.guestEmail || user?.email || '',
-        callbackUrl
-      });
-
-      const paymentData = await initializeBookingPayment(bookingId, {
-        amount: pricing.totalPrice,
-        currency: 'NGN',
-        email: formData.guestEmail || user?.email || '',
-        callbackUrl,
-        channels: paymentMethod === 'card' ? ['card'] : ['bank', 'ussd', 'qr'],
-      });
-
-      console.log('✅ Payment initialized, authorization URL:', paymentData.authorizationUrl);
-
-      // Open Paystack payment page
-      if (paymentData.authorizationUrl) {
-        openPaystackPayment(paymentData.authorizationUrl);
-      } else {
-        throw new Error('Authorization URL not received from Paystack');
-      }
-    } catch (error: unknown) {
-      console.error('Payment initialization error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to initialize payment';
-      toast.error('Payment Error', errorMessage);
-      setIsProcessingPayment(false);
     }
   };
 
@@ -562,26 +429,14 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
       const result = await dispatch(createBooking(bookingData)).unwrap();
       console.log('✅ Booking created successfully:', result);
       
-      // Store booking ID for payment
-      setCurrentBookingId(result.id);
+      toast.success('Booking Created!', 
+        bookingType === 'shortlet' ? 'Your booking has been confirmed!' :
+        bookingType === 'rental' ? 'Your rental application has been submitted!' :
+        'Your inspection request has been submitted!'
+      );
       
-      // For sale_inspection, no payment is required
-      if (bookingType === 'sale_inspection') {
-        toast.success('Inspection Requested!', 'Your property inspection request has been submitted.');
-        onClose();
-        setCurrentStep(1);
-        return;
-      }
-      
-      // For shortlet and rental, proceed to payment step
-      if (currentStep < getTotalSteps()) {
-        // Move to payment step
-        setCurrentStep(getTotalSteps() - 1); // Payment is usually second to last step
-        toast.success('Booking Created!', 'Please complete payment to confirm your booking.');
-      } else {
-        // Already on payment step, just show success message
-        toast.success('Booking Created!', 'Please complete payment to confirm your booking.');
-      }
+      onClose();
+      setCurrentStep(1);
       
     } catch (error: unknown) {
       console.error('Booking error:', error);
@@ -719,15 +574,15 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
             )}
 
             {/* Unavailable Dates Display */}
-            {unavailableDates && unavailableDates.unavailableDates && unavailableDates.unavailableDates.length > 0 && (
+            {unavailableDates && unavailableDates.unavailableDates.length > 0 && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <AlertCircle className="w-5 h-5 text-yellow-600" />
                   <span className="text-yellow-800 text-sm font-medium">Unavailable Dates</span>
                 </div>
                 <p className="text-yellow-700 text-sm">
-                  The following dates are currently unavailable: {unavailableDates?.unavailableDates?.slice(0, 5).join(', ') || ''}
-                  {unavailableDates?.unavailableDates && unavailableDates.unavailableDates.length > 5 && ` and ${unavailableDates.unavailableDates.length - 5} more...`}
+                  The following dates are currently unavailable: {unavailableDates.unavailableDates.slice(0, 5).join(', ')}
+                  {unavailableDates.unavailableDates.length > 5 && ` and ${unavailableDates.unavailableDates.length - 5} more...`}
                 </p>
               </div>
             )}
@@ -960,19 +815,11 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
             </div>
 
             <div className="space-y-3">
-              <button 
-                onClick={() => handlePayment('card')}
-                disabled={isProcessingPayment || isLoading}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessingPayment ? 'Processing...' : 'Pay with Card'}
+              <button className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                Pay with Card
               </button>
-              <button 
-                onClick={() => handlePayment('bank_transfer')}
-                disabled={isProcessingPayment || isLoading}
-                className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessingPayment ? 'Processing...' : 'Pay with Bank Transfer'}
+              <button className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors">
+                Pay with Bank Transfer
               </button>
             </div>
           </div>
@@ -1156,19 +1003,11 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
             </div>
 
             <div className="space-y-3">
-              <button 
-                onClick={() => handlePayment('card')}
-                disabled={isProcessingPayment || isLoading}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessingPayment ? 'Processing...' : 'Pay with Card'}
+              <button className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                Pay with Card
               </button>
-              <button 
-                onClick={() => handlePayment('bank_transfer')}
-                disabled={isProcessingPayment || isLoading}
-                className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessingPayment ? 'Processing...' : 'Pay with Bank Transfer'}
+              <button className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors">
+                Pay with Bank Transfer
               </button>
             </div>
           </div>

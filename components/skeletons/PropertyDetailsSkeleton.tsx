@@ -226,3 +226,6 @@ const PropertyDetailsSkeleton = () => {
 
 export default PropertyDetailsSkeleton;
 
+
+
+

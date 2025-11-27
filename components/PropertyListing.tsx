@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Container from "@/components/Container";
 import { SearchFilter } from "@/components/SearchFilter";
 import { Card } from "@/components/ui/Card";
@@ -55,13 +55,41 @@ const PropertyListing: React.FC<PropertyListingProps> = ({
   }, [properties, isLoading, error, totalPages, currentPage, total, hasNextPage, hasPrevPage]);
 
 
-  const [currentFilters, setCurrentFilters] = useState<PropertyFilters>({
-    page: 1,
-    limit: 12,
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
-    ...defaultFilters
+  const [currentFilters, setCurrentFilters] = useState<PropertyFilters>(() => {
+    const initialFilters: PropertyFilters = {
+      page: 1,
+      limit: 12,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+      ...defaultFilters
+    };
+    // FORCE listingType from defaultFilters if it exists
+    if (defaultFilters.listingType) {
+      initialFilters.listingType = defaultFilters.listingType;
+    }
+    console.log('📋 PropertyListing initializing with defaultFilters:', defaultFilters);
+    console.log('📋 Initial currentFilters (WITH FORCED listingType):', initialFilters);
+    console.log('📋 Initial listingType:', initialFilters.listingType);
+    return initialFilters;
   });
+
+  // Ensure defaultFilters.listingType is always preserved on mount
+  useEffect(() => {
+    if (defaultFilters.listingType) {
+      console.log('📋 Setting up default listingType:', defaultFilters.listingType);
+      setCurrentFilters(prev => {
+        // Only update if listingType is missing or different from default
+        if (!prev.listingType || prev.listingType !== defaultFilters.listingType) {
+          console.log('📋 Updating listingType to default:', defaultFilters.listingType);
+          return {
+            ...prev,
+            listingType: defaultFilters.listingType
+          };
+        }
+        return prev;
+      });
+    }
+  }, [defaultFilters.listingType]);
 
   // Temporary debug: Check if we should force show properties
   const [debugProperties, setDebugProperties] = useState<Property[]>([]);
@@ -117,27 +145,82 @@ const PropertyListing: React.FC<PropertyListingProps> = ({
   }, [currentFilters, properties.length, isLoading]);
 
   const loadProperties = useCallback(() => {
-    console.log('🔄 Dispatching fetchProperties with filters:', currentFilters);
-    dispatch(fetchProperties(currentFilters)).then((result) => {
-      console.log('📋 fetchProperties result:', result);
-      if (result.type.endsWith('/fulfilled')) {
-        console.log('✅ fetchProperties fulfilled with payload:', result.payload);
-      } else if (result.type.endsWith('/rejected')) {
-        console.log('❌ fetchProperties rejected with error:', result.payload);
-      }
-    });
-  }, [dispatch, currentFilters]);
+    // CRITICAL FIX: ALWAYS use defaultFilters.listingType if it exists - IGNORE currentFilters.listingType completely
+    // This ensures 'shortlet,hotel' is ALWAYS used for the Shortlets page
+    const filtersToUse: PropertyFilters = {
+      ...currentFilters,
+    };
+    
+    // FORCE override listingType with defaultFilters - this is THE FIX!
+    if (defaultFilters.listingType) {
+      filtersToUse.listingType = defaultFilters.listingType;
+      console.log('✅ FORCING listingType to:', defaultFilters.listingType);
+    }
+    
+    console.log('🔄 ===== loadProperties CALLED =====');
+    console.log('🔄 defaultFilters:', defaultFilters);
+    console.log('🔄 defaultFilters.listingType:', defaultFilters.listingType);
+    console.log('🔄 currentFilters.listingType:', currentFilters.listingType);
+    console.log('🔄 filtersToUse.listingType (FINAL - THIS IS WHAT WILL BE SENT):', filtersToUse.listingType);
+    console.log('🔄 Final URL will be:', `/properties?page=${filtersToUse.page}&limit=${filtersToUse.limit}&listingType=${filtersToUse.listingType}&sortBy=${filtersToUse.sortBy}&sortOrder=${filtersToUse.sortOrder}`);
+    
+    // Double-check before dispatching
+    if (defaultFilters.listingType && filtersToUse.listingType !== defaultFilters.listingType) {
+      console.error('❌ CRITICAL ERROR: listingType mismatch! Forcing correction...');
+      filtersToUse.listingType = defaultFilters.listingType;
+    }
+    
+    dispatch(fetchProperties(filtersToUse));
+  }, [dispatch, currentFilters, defaultFilters]);
 
+  // Load properties when filters change - use a ref to prevent infinite loops
+  const filtersRef = useRef<string>('');
+  
   useEffect(() => {
-    loadProperties();
-  }, [loadProperties]);
+    // Create a stable string representation of filters to detect actual changes
+    const filtersKey = JSON.stringify({
+      page: currentFilters.page,
+      limit: currentFilters.limit,
+      sortBy: currentFilters.sortBy,
+      sortOrder: currentFilters.sortOrder,
+      city: currentFilters.city,
+      state: currentFilters.state,
+      propertyType: currentFilters.propertyType,
+      minPrice: currentFilters.minPrice,
+      maxPrice: currentFilters.maxPrice,
+      search: currentFilters.search,
+      listingType: defaultFilters.listingType || currentFilters.listingType
+    });
+    
+    // Only load if filters actually changed
+    if (filtersRef.current !== filtersKey) {
+      filtersRef.current = filtersKey;
+      loadProperties();
+    }
+  }, [currentFilters, defaultFilters.listingType, loadProperties]);
 
   const handleFilterChange = (newFilters: PropertyFilters) => {
-    setCurrentFilters(prev => ({
-      ...prev,
-      ...newFilters,
-      page: 1, 
-    }));
+    console.log('🔄 handleFilterChange called with:', newFilters);
+    console.log('🔄 Current filters before update:', currentFilters);
+    console.log('🔄 Default filters listingType:', defaultFilters.listingType);
+    
+    setCurrentFilters(prev => {
+      const updated = {
+        ...prev,
+        ...newFilters,
+        page: 1,
+      };
+      
+      // Preserve default listingType if it's not being explicitly changed
+      // Only override if newFilters doesn't have listingType OR if it's being cleared
+      if (defaultFilters.listingType && (!newFilters.listingType || newFilters.listingType === '')) {
+        updated.listingType = defaultFilters.listingType;
+        console.log('🔄 Preserving default listingType:', defaultFilters.listingType);
+      }
+      
+      console.log('🔄 Updated filters:', updated);
+      return updated;
+    });
   };
 
   const handlePageChange = (page: number) => {
@@ -215,7 +298,10 @@ const PropertyListing: React.FC<PropertyListingProps> = ({
         )}
 
         {showSearchFilter && (
-          <SearchFilter />
+          <SearchFilter 
+            onFilterChange={handleFilterChange}
+            defaultFilters={defaultFilters}
+          />
         )}
 
         {(properties.length === 0 && debugProperties.length === 0 && !debugLoading) ? (

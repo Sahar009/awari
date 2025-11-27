@@ -84,11 +84,13 @@ api.interceptors.response.use(
         publicEndpoints.some(endpoint => fullUrl.includes(endpoint))
       );
       
-      // Also check if we're on a public page (properties, rentals, shortlets)
+      // Also check if we're on a public page (properties, rentals, shortlets, hotels)
       const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
       const isOnPublicPage = currentPath.includes('/properties') || 
                              currentPath.includes('/rentals') || 
                              currentPath.includes('/shortlets') ||
+                             currentPath.includes('/hotels') ||
+                             currentPath.includes('/sales') ||
                              currentPath.includes('/browse-listing') ||
                              currentPath.includes('/product-details');
       

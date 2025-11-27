@@ -212,20 +212,36 @@ const HomePage = () => {
 
   return (
     <div className="w-full h-full">
-      <div className="relative w-full rounded-bl-3xl rounded-br-3xl py-10 mb-60 lg:mb-40">
+      {/* Hero Section */}
+      <div className="relative w-full ">
         <HeroSlider />
-        <Container>
-          <div className="absolute w-[85%] sm:w-[90%] lg:w-[85%] mx-auto bottom-[-230px] lg:bottom-[-130px]">
+      </div>
+
+      {/* Search Filter - Positioned after hero on mobile, overlapping on desktop */}
+      <Container>
+        <div className="relative w-full px-4 sm:px-6 mt-24">
+          {/* Mobile: Below hero section */}
+          <div className="block md:hidden -mt-8 mb-8 ">
             <SearchFilter
               locations={locationOptions}
               propertyTypes={propertyTypeOptions}
               onSearch={handleSearch}
             />
           </div>
-        </Container>
-      </div>
+          {/* Desktop: Overlapping hero section */}
+          <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 w-full max-w-7xl mx-auto -bottom-20 lg:-bottom-24">
+            <SearchFilter
+              locations={locationOptions}
+              propertyTypes={propertyTypeOptions}
+              onSearch={handleSearch}
+            />
+          </div>
+        </div>
+      </Container>
+
+      {/* Content Section - Adjusted spacing for search filter */}
       <Container>
-        <div className="space-y-10">
+        <div className="space-y-10 pt-8 md:pt-28 lg:pt-32">
           {loadError ? (
             <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-red-200 bg-red-50/80 p-12 text-center">
               <p className="text-lg font-semibold text-red-600">{loadError}</p>

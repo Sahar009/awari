@@ -20,9 +20,14 @@ const NavListData: NavListProps[] = [
     label: "Sales"
   },
   {
-    link: "",
-    label: "Shortlets & Hotels"
-  },{
+    link: "/shortlets",
+    label: "Shortlets"
+  },
+  {
+    link: "/hotels",
+    label: "Hotels"
+  },
+  {
     link: "",
     label: "About"
   },

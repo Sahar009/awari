@@ -102,7 +102,7 @@ export interface Property {
   
   // Property Details
   propertyType: string;
-  listingType: 'rent' | 'sale' | 'shortlet';
+  listingType: 'rent' | 'sale' | 'shortlet' | 'hotel';
   status: 'draft' | 'pending' | 'active' | 'inactive' | 'sold' | 'rented' | 'rejected' | 'archived';
   bedrooms?: number;
   bathrooms?: number;
@@ -131,6 +131,15 @@ export interface Property {
   maxStayNights?: number;
   instantBooking?: boolean;
   cancellationPolicy?: string;
+  
+  // Hotel-specific fields
+  numberOfRooms?: number;
+  roomTypes?: string[];
+  maxGuestsPerRoom?: number;
+  checkInTime?: string;
+  checkOutTime?: string;
+  starRating?: number;
+  hotelAmenities?: string[];
   
   // Marketing
   featured?: boolean;
@@ -291,7 +300,14 @@ export const fetchProperties = createAsyncThunk(
       
       // Property filters
       if (filters.propertyType) queryParams.append('propertyType', filters.propertyType);
-      if (filters.listingType) queryParams.append('listingType', filters.listingType);
+      if (filters.listingType) {
+        console.log('📡 fetchProperties thunk - appending listingType:', filters.listingType);
+        // ALWAYS append listingType - this ensures 'shortlet,hotel' is sent
+        queryParams.append('listingType', filters.listingType);
+        console.log('📡 fetchProperties thunk - listingType appended to URL:', filters.listingType);
+      } else {
+        console.log('⚠️ fetchProperties thunk - NO listingType in filters!');
+      }
       if (filters.status) queryParams.append('status', filters.status);
       
       // Location filters
@@ -322,7 +338,12 @@ export const fetchProperties = createAsyncThunk(
       if (filters.type) queryParams.append('propertyType', filters.type);
       
       const url = `/properties${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      console.log('🚀 Fetching properties from URL:', url);
+      console.log('🚀 ===== fetchProperties THUNK =====');
+      console.log('🚀 Filters received:', filters);
+      console.log('🚀 Filters.listingType:', filters.listingType);
+      console.log('🚀 Query params:', queryParams.toString());
+      console.log('🚀 Final URL:', url);
+      console.log('🚀 VERIFY listingType in URL:', url.includes('listingType=') ? url.split('listingType=')[1]?.split('&')[0] : 'NOT FOUND');
       
       const response = await apiService.get<{
         properties: Property[];
@@ -429,8 +450,7 @@ export const fetchMyProperties = createAsyncThunk(
     limit?: number; 
     status?: string; 
     propertyType?: string; 
-    listingType?: string;
-    search?: string;
+    listingType?: string; 
   }, { rejectWithValue }) => {
     try {
       const queryParams = new URLSearchParams();
@@ -439,7 +459,6 @@ export const fetchMyProperties = createAsyncThunk(
       if (params.status) queryParams.append('status', params.status);
       if (params.propertyType) queryParams.append('propertyType', params.propertyType);
       if (params.listingType) queryParams.append('listingType', params.listingType);
-      if (params.search) queryParams.append('search', params.search);
       
       const url = `/properties/my-properties${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response = await apiService.get<{
@@ -504,10 +523,9 @@ export const addPropertyMedia = createAsyncThunk(
         });
       }
 
-      // Don't set Content-Type header - browser will set it automatically with boundary
       const response = await apiService.post(`/properties/${params.propertyId}/media`, formData, {
         headers: {
-          // Let browser set Content-Type automatically for FormData
+          'Content-Type': 'multipart/form-data',
         },
       });
       return { propertyId: params.propertyId, media: response.data };
@@ -622,46 +640,14 @@ export const createProperty = createAsyncThunk(
         formData.append('documents', file);
       });
 
-      // Don't set Content-Type header - browser will set it automatically with boundary
-      // Use longer timeout for file uploads (Cloudinary uploads can take time)
       const response = await apiService.post<Property>('/properties/upload', formData, {
-        timeout: 120000, // 2 minutes for file uploads to Cloudinary
         headers: {
-          // Let browser set Content-Type automatically for FormData
+          'Content-Type': 'multipart/form-data',
         },
       });
       return response.data;
     } catch (error: any) {
-      console.error('❌ Property creation error:', error);
-      
-      // Handle different error types
-      if (error.response) {
-        // Server responded with error status
-        // Pass through the full error response so validation errors can be extracted
-        const errorData = error.response?.data || {};
-        const errorMessage = errorData.message || errorData.error || 'Failed to create property';
-        
-        // Return the full error object so validation errors can be accessed
-        return rejectWithValue({
-          message: errorMessage,
-          errors: errorData.errors || [],
-          response: error.response
-        });
-      } else if (error.request) {
-        // Request was made but no response received
-        console.error('No response received:', error.request);
-        return rejectWithValue({
-          message: 'Network error. Please check your connection and try again.',
-          errors: []
-        });
-      } else {
-        // Error setting up the request
-        console.error('Error setting up request:', error.message);
-        return rejectWithValue({
-          message: error.message || 'Failed to create property',
-          errors: []
-        });
-      }
+      return rejectWithValue(error.response?.data?.message || 'Failed to create property');
     }
   }
 );

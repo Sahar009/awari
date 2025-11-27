@@ -7,14 +7,15 @@ const PropertyListing = dynamic(() => import('@/components/PropertyListing'), {
   loading: () => <div className="flex justify-center items-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
 });
 
-const Shortlets = () => {
+const Hotels = () => {
   return (
     <PropertyListing 
-      title="Shortlets"
-      defaultFilters={{ listingType: 'shortlet' }}
+      title="Hotels"
+      defaultFilters={{ listingType: 'hotel' }}
       showSearchFilter={true}
     />
   );
 };
 
-export default Shortlets;
+export default Hotels;
+

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, Building2 } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
 import { Logo } from '@/components/navbar/Logo';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { registerUser, googleSignIn, clearError } from '@/store/slices/authSlice';
@@ -12,14 +12,15 @@ import { Loader } from '@/components/ui/Loader';
 export default function RegisterPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { isLoading, error, isAuthenticated, validationErrors } = useAppSelector((state) => state.auth);
+  const { isLoading, error, isAuthenticated } = useAppSelector((state) => state.auth);
   
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     firstName: '',
     lastName: '',
-    role: undefined as 'renter' | 'buyer' | 'landlord' | 'agent' | 'hotel_provider' | undefined,
+    role: 'renter' as const,
+   
     gender: undefined as 'male' | 'female' | 'other' | undefined
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -67,28 +68,15 @@ export default function RegisterPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
-    // Clear validation error for this field when user starts typing
-    if (validationErrors[name]) {
-      dispatch(clearError());
-    }
-    
     setFormData(prev => ({
       ...prev,
-      [name]: value === '' ? undefined : (name === 'role' ? value as 'renter' | 'buyer' | 'landlord' | 'agent' | 'hotel_provider' : value)
+      [name]: value === '' ? undefined : value
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     dispatch(clearError());
-    
-    // Validate role is selected
-    if (!formData.role) {
-      dispatch(clearError());
-      // You might want to set an error here if you have error handling
-      return;
-    }
     
     try {
       console.log('Starting registration with data:', formData);
@@ -286,17 +274,9 @@ export default function RegisterPage() {
                       required
                       minLength={2}
                       maxLength={100}
-                      className={`w-full pl-10 pr-4 py-3 bg-white/60 border rounded-xl text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 ${
-                        validationErrors.firstName ? 'border-red-500 focus:border-red-500' : 'border-purple-200/50'
-                      }`}
+                      className="w-full pl-10 pr-4 py-3 bg-white/60 border border-purple-200/50 rounded-xl text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
                       placeholder="Enter your first name"
                     />
-                    {validationErrors.firstName && (
-                      <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
-                        <span>⚠️</span>
-                        <span>{validationErrors.firstName}</span>
-                      </p>
-                    )}
                   </div>
                 </div>
 
@@ -316,57 +296,10 @@ export default function RegisterPage() {
                       required
                       minLength={2}
                       maxLength={100}
-                      className={`w-full pl-10 pr-4 py-3 bg-white/60 border rounded-xl text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 ${
-                        validationErrors.lastName ? 'border-red-500 focus:border-red-500' : 'border-purple-200/50'
-                      }`}
+                      className="w-full pl-10 pr-4 py-3 bg-white/60 border border-purple-200/50 rounded-xl text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
                       placeholder="Enter your last name"
                     />
-                    {validationErrors.lastName && (
-                      <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
-                        <span>⚠️</span>
-                        <span>{validationErrors.lastName}</span>
-                      </p>
-                    )}
                   </div>
-                </div>
-
-                {/* Role Selection */}
-                <div className="space-y-2">
-                  <label htmlFor="role" className="text-sm font-medium text-slate-700">
-                    What would you like to do on Awari? *
-                  </label>
-                  <div className="relative group">
-                    <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 w-5 h-5 group-focus-within:text-primary transition-colors duration-200 pointer-events-none" />
-                    <select
-                      id="role"
-                      name="role"
-                      value={formData.role || ''}
-                      onChange={handleInputChange}
-                      required
-                      className={`w-full pl-10 pr-4 py-3 bg-white/60 border rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 appearance-none cursor-pointer ${
-                        validationErrors.role ? 'border-red-500 focus:border-red-500' : 'border-purple-200/50'
-                      }`}
-                    >
-                      <option value="">Select your role</option>
-                      <option value="renter">🏠 Rent a Property</option>
-                      <option value="buyer">💰 Buy a Property</option>
-                      <option value="landlord">🏘️ List Properties for Rent</option>
-                      <option value="agent">👔 Work as a Real Estate Agent</option>
-                      <option value="hotel_provider">🏨 Offer Shortlets & Hotels</option>
-                    </select>
-                    <ArrowRight className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none -rotate-90" />
-                  </div>
-                  {validationErrors.role && (
-                    <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
-                      <span>⚠️</span>
-                      <span>{validationErrors.role}</span>
-                    </p>
-                  )}
-                  {!validationErrors.role && (
-                    <p className="text-xs text-slate-500 mt-1">
-                      Choose how you&apos;ll use Awari to help us personalize your experience
-                    </p>
-                  )}
                 </div>
               </div>
 
@@ -384,17 +317,9 @@ export default function RegisterPage() {
                     value={formData.email}
                     onChange={handleInputChange}
                     required
-                    className={`w-full pl-10 pr-4 py-3 bg-white/60 border rounded-xl text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 ${
-                      validationErrors.email ? 'border-red-500 focus:border-red-500' : 'border-purple-200/50'
-                    }`}
+                    className="w-full pl-10 pr-4 py-3 bg-white/60 border border-purple-200/50 rounded-xl text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
                     placeholder="Enter your email"
                   />
-                  {validationErrors.email && (
-                    <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
-                      <span>⚠️</span>
-                      <span>{validationErrors.email}</span>
-                    </p>
-                  )}
                 </div>
               </div>
 
@@ -413,9 +338,7 @@ export default function RegisterPage() {
                     onChange={handleInputChange}
                     required
                     minLength={8}
-                    className={`w-full pl-10 pr-12 py-3 bg-white/60 border rounded-xl text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 ${
-                      validationErrors.password ? 'border-red-500 focus:border-red-500' : 'border-purple-200/50'
-                    }`}
+                    className="w-full pl-10 pr-12 py-3 bg-white/60 border border-purple-200/50 rounded-xl text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
                     placeholder="Create a strong password (min 8 chars)"
                   />
                   <button
@@ -425,31 +348,13 @@ export default function RegisterPage() {
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
-                  {validationErrors.password && (
-                    <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
-                      <span>⚠️</span>
-                      <span>{validationErrors.password}</span>
-                    </p>
-                  )}
                 </div>
               </div>
 
               {/* Error Display */}
-              {(error || Object.keys(validationErrors).length > 0) && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                  {error && (
-                    <p className="text-red-600 text-sm mb-2">{error}</p>
-                  )}
-                  {Object.keys(validationErrors).length > 0 && (
-                    <div className="space-y-1">
-                      {Object.entries(validationErrors).map(([field, message]) => (
-                        <p key={field} className="text-xs text-red-600 flex items-center gap-1">
-                          <span>•</span>
-                          <span><strong className="capitalize">{field}:</strong> {message}</span>
-                        </p>
-                      ))}
-                    </div>
-                  )}
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-3 text-red-400 text-sm animate-shake">
+                  {error}
                 </div>
               )}
 
