@@ -6,21 +6,50 @@ import { Button } from "./ui/Button";
 import SearchableSelect from "./ui/Select";
 import { PropertyFilters } from "@/store/slices/propertySlice";
 
-interface SearchFilterProps {
-  onFilterChange?: (filters: PropertyFilters) => void;
-  defaultFilters?: PropertyFilters;
+// Export types for backward compatibility
+export interface Option {
+  label: string;
+  value: string;
 }
 
-export const SearchFilter = ({ onFilterChange, defaultFilters = {} }: SearchFilterProps) => {
+export interface SearchCriteria {
+  query: string;
+  location?: string;
+  propertyType?: string;
+  minPrice?: number;
+  maxPrice?: number;
+}
+
+interface SearchFilterProps {
+  // New API
+  onFilterChange?: (filters: PropertyFilters) => void;
+  defaultFilters?: PropertyFilters;
+  // Old API (for backward compatibility with HomePage)
+  locations?: Option[];
+  propertyTypes?: Option[];
+  onSearch?: (criteria: SearchCriteria) => void;
+}
+
+export const SearchFilter = ({ 
+  onFilterChange, 
+  defaultFilters = {},
+  locations,
+  propertyTypes,
+  onSearch
+}: SearchFilterProps) => {
+  // Determine which API to use
+  const useOldAPI = !!onSearch;
+  
   const [search, setSearch] = useState<string>(defaultFilters.search || "");
   const [city, setCity] = useState<string>(defaultFilters.city || "");
   const [state, setState] = useState<string>(defaultFilters.state || "");
   const [minPrice, setMinPrice] = useState<string>(defaultFilters.minPrice?.toString() || "");
   const [maxPrice, setMaxPrice] = useState<string>(defaultFilters.maxPrice?.toString() || "");
   const [propertyType, setPropertyType] = useState<string>(defaultFilters.propertyType || "");
+  const [selectedLocation, setSelectedLocation] = useState<string>("");
 
-  const locationData = [
-    { label: "Lagos", value: "Lagos" },
+  const defaultLocationData = [
+  { label: "Lagos", value: "Lagos" },
     { label: "Abuja", value: "Abuja" },
     { label: "Port Harcourt", value: "Port Harcourt" },
     { label: "Kano", value: "Kano" },
@@ -32,7 +61,7 @@ export const SearchFilter = ({ onFilterChange, defaultFilters = {} }: SearchFilt
     { label: "Warri", value: "Warri" },
   ];
 
-  const propertyTypes = [
+  const defaultPropertyTypes = [
     { label: "All Types", value: "" },
     { label: "Apartment", value: "apartment" },
     { label: "House", value: "house" },
@@ -55,6 +84,10 @@ export const SearchFilter = ({ onFilterChange, defaultFilters = {} }: SearchFilt
     { label: "Serviced Apartment", value: "serviced_apartment" },
     { label: "Bed & Breakfast", value: "bed_and_breakfast" },
   ];
+
+  // Use provided options or defaults
+  const locationData = locations || defaultLocationData;
+  const propertyTypeOptions = propertyTypes || defaultPropertyTypes;
 
   // Build filters object - use useMemo to prevent unnecessary recalculations
   const filters = useMemo((): PropertyFilters => {
@@ -96,9 +129,9 @@ export const SearchFilter = ({ onFilterChange, defaultFilters = {} }: SearchFilt
   // Use ref to track previous filters and prevent unnecessary calls
   const prevFiltersRef = useRef<string>('');
   
-  // Debounce search input to avoid too many API calls
+  // Debounce search input to avoid too many API calls (new API only)
   useEffect(() => {
-    if (!onFilterChange) return;
+    if (useOldAPI || !onFilterChange) return;
     
     const filtersKey = JSON.stringify(filters);
     
@@ -111,10 +144,21 @@ export const SearchFilter = ({ onFilterChange, defaultFilters = {} }: SearchFilt
     }, search ? 500 : 0); // 500ms delay for search, immediate for other filters
     
     return () => clearTimeout(timeoutId);
-  }, [filters, search, onFilterChange]);
+  }, [filters, search, onFilterChange, useOldAPI]);
 
   const handleSearch = () => {
-    if (onFilterChange) {
+    if (useOldAPI && onSearch) {
+      // Old API: convert to SearchCriteria
+      const criteria: SearchCriteria = {
+        query: search,
+        location: selectedLocation || city || undefined,
+        propertyType: propertyType || undefined,
+        minPrice: minPrice ? parseFloat(minPrice) : undefined,
+        maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+      };
+      onSearch(criteria);
+    } else if (onFilterChange) {
+      // New API: use PropertyFilters
       prevFiltersRef.current = JSON.stringify(filters);
       onFilterChange(filters);
     }
@@ -127,14 +171,17 @@ export const SearchFilter = ({ onFilterChange, defaultFilters = {} }: SearchFilt
     setMinPrice("");
     setMaxPrice("");
     setPropertyType("");
+    setSelectedLocation("");
     
-    if (onFilterChange) {
+    if (useOldAPI && onSearch) {
+      onSearch({ query: "" });
+    } else if (onFilterChange) {
       prevFiltersRef.current = '';
       onFilterChange({});
     }
   };
 
-  const hasActiveFilters = search || city || state || minPrice || maxPrice || propertyType;
+  const hasActiveFilters = search || (useOldAPI ? selectedLocation : city) || state || minPrice || maxPrice || propertyType;
 
   return (
     <div className="w-full h-full flex flex-col lg:flex-row lg:rounded-2xl rounded-xl shadow-lg">
@@ -169,12 +216,16 @@ export const SearchFilter = ({ onFilterChange, defaultFilters = {} }: SearchFilt
         <SearchableSelect
           options={locationData}
           placeholder="Location"
-          value={city || ""}
+          value={useOldAPI ? selectedLocation : (city || "")}
           onChange={(val) => {
-            if (val) {
-              setCity(val);
+            if (useOldAPI) {
+              setSelectedLocation(val || "");
             } else {
-              setCity("");
+              if (val) {
+                setCity(val);
+              } else {
+                setCity("");
+              }
             }
           }}
         />
@@ -208,7 +259,7 @@ export const SearchFilter = ({ onFilterChange, defaultFilters = {} }: SearchFilt
 
         {/* Property Type Select */}
         <SearchableSelect
-          options={propertyTypes}
+          options={propertyTypeOptions}
           placeholder="Property Type"
           value={propertyType}
           onChange={(val) => setPropertyType(val || "")}
@@ -226,7 +277,7 @@ export const SearchFilter = ({ onFilterChange, defaultFilters = {} }: SearchFilt
               Clear
             </button>
           )}
-          <Button 
+          <Button
             label="Search" 
             onClick={handleSearch}
             className="whitespace-nowrap"

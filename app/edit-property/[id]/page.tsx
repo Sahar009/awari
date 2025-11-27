@@ -25,7 +25,7 @@ interface PropertyFormData {
   description: string;
   shortDescription: string;
   propertyType: string;
-  listingType: 'rent' | 'sale' | 'shortlet' | '';
+  listingType: 'rent' | 'sale' | 'shortlet' | 'hotel' | '';
   
   // Pricing
   price: number | '';
@@ -106,7 +106,8 @@ const propertyTypes = [
 const listingTypes = [
   { value: 'rent', label: 'For Rent', color: 'bg-blue-500' },
   { value: 'sale', label: 'For Sale', color: 'bg-green-500' },
-  { value: 'shortlet', label: 'Short Let', color: 'bg-purple-500' }
+  { value: 'shortlet', label: 'Short Let', color: 'bg-purple-500' },
+  { value: 'hotel', label: 'Hotel', color: 'bg-orange-500' }
 ];
 
 export default function EditPropertyPage() {
@@ -595,7 +596,7 @@ export default function EditPropertyPage() {
         description: formData.description,
         shortDescription: formData.shortDescription || undefined,
         propertyType: formData.propertyType,
-        listingType: (formData.listingType || undefined) as 'rent' | 'sale' | 'shortlet' | undefined,
+        listingType: (formData.listingType || undefined) as 'rent' | 'sale' | 'shortlet' | 'hotel' | undefined,
         
         // Pricing
         price: formData.price ? (typeof formData.price === 'string' ? parseFloat(formData.price) : formData.price).toString() : '0',
@@ -970,14 +971,14 @@ export default function EditPropertyPage() {
                         <label htmlFor="listingType" className="block text-sm font-medium text-slate-700 mb-2">
                           Listing Type *
                         </label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                           {listingTypes.map(type => (
                             <button
                               key={type.value}
                               type="button"
                               onClick={() => {
                                 const newFormData = { ...formData };
-                                newFormData.listingType = type.value as 'rent' | 'sale' | 'shortlet';
+                                newFormData.listingType = type.value as 'rent' | 'sale' | 'shortlet' | 'hotel';
                                 setFormData(newFormData);
                               }}
                               className={`p-3 rounded-xl border-2 transition-all duration-200 ${
@@ -1208,7 +1209,7 @@ export default function EditPropertyPage() {
                       <div>
                         <label htmlFor="price" className="block text-sm font-medium text-slate-700 mb-2">
                           Price * {formData.listingType === 'rent' && '(per year)'}
-                          {formData.listingType === 'shortlet' && '(per night)'}
+                          {(formData.listingType === 'shortlet' || formData.listingType === 'hotel') && '(per night)'}
                         </label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 font-semibold text-lg">₦</span>
@@ -1236,7 +1237,7 @@ export default function EditPropertyPage() {
                           <p className="mt-1 text-sm text-slate-500">
                             {formData.listingType === 'rent' && 'Annual rent amount'}
                             {formData.listingType === 'sale' && 'Total sale price'}
-                            {formData.listingType === 'shortlet' && 'Price per night'}
+                            {(formData.listingType === 'shortlet' || formData.listingType === 'hotel') && 'Price per night'}
                           </p>
                         )}
                       </div>
@@ -1277,7 +1278,7 @@ export default function EditPropertyPage() {
                         </label>
                       </div>
 
-                      {formData.listingType === 'shortlet' && (
+                      {(formData.listingType === 'shortlet' || formData.listingType === 'hotel') && (
                         <div>
                           <label htmlFor="minStayNights" className="block text-sm font-medium text-slate-700 mb-2">
                             Minimum Stay (nights)
@@ -1529,7 +1530,7 @@ export default function EditPropertyPage() {
                     </div>
 
                     {/* Availability */}
-                    {(formData.listingType === 'rent' || formData.listingType === 'shortlet') && (
+                    {(formData.listingType === 'rent' || formData.listingType === 'shortlet' || formData.listingType === 'hotel') && (
                       <div>
                         <h3 className="text-lg font-semibold text-slate-800 mb-4">Availability</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
