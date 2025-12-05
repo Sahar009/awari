@@ -2,10 +2,10 @@
 import { Rating } from "@/components/ui/Rating";
 import Image from "next/image";
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchPropertyById, type Property } from "@/store/slices/propertySlice";
-import { Loader } from "@/components/ui/Loader";
+import PropertyDetailsSkeleton from "@/components/skeletons/PropertyDetailsSkeleton";
 import { MapPin, Heart, Loader2 } from "lucide-react";
 import { 
   toggleFavorite,
@@ -44,10 +44,12 @@ export type Listing = {
 
 export const CardDetails = () => {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const propertyId = searchParams?.get('id');
   const dispatch = useAppDispatch();
   const toast = useToast();
   const { currentProperty, isLoading, error } = useAppSelector((state) => state.property);
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
   
   // Fallback state for direct API call
   const [fallbackProperty, setFallbackProperty] = useState(null);
@@ -252,13 +254,24 @@ export const CardDetails = () => {
 
   const property = currentProperty || fallbackProperty;
   
-  // Show loader only if we don't have property data yet AND we're still loading
+  // Debug: Log property data when it's available
+  useEffect(() => {
+    if (property) {
+      console.log('🔍 [CARD DETAILS] Property loaded:', {
+        id: property.id,
+        title: property.title,
+        ownerId: property.ownerId,
+        hasOwner: !!property.owner,
+        owner: property.owner,
+        ownerKeys: property.owner ? Object.keys(property.owner) : null,
+        allPropertyKeys: Object.keys(property),
+      });
+    }
+  }, [property]);
+  
+  // Show skeleton loader only if we don't have property data yet AND we're still loading
   if (!property && (isLoading || fallbackLoading)) {
-    return (
-      <div className="w-full max-w-6xl mx-auto px-4 py-8 flex items-center justify-center">
-        <Loader />
-      </div>
-    );
+    return <PropertyDetailsSkeleton />;
   }
 
   // Show error only if we have an error AND no property data
@@ -859,16 +872,7 @@ export const CardDetails = () => {
                   </button>
                 )}
                 
-                {property.listingType === 'rent' && (
-                  <button 
-                    onClick={() => setShowBookingModal(true)}
-                    className="w-full bg-primary text-white font-medium py-3 rounded-lg hover:bg-primary/90 transition-colors"
-                  >
-                    Apply for Rental
-                  </button>
-                )}
-                
-                {property.listingType === 'sale' && (
+                {(property.listingType === 'rent' || property.listingType === 'sale') && (
                   <button 
                     onClick={() => setShowBookingModal(true)}
                     className="w-full bg-primary text-white font-medium py-3 rounded-lg hover:bg-primary/90 transition-colors"
@@ -998,26 +1002,47 @@ export const CardDetails = () => {
               </div>
             )}
 
-            {/* Contact Information */}
-            <div className="bg-white rounded-xl p-6 shadow-lg border">
-              <h3 className="font-semibold mb-4">Contact Information</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">
-                      {property.owner?.firstName?.[0] || 'O'}
-                    </span>
+            {/* Contact Information - Only show if ownerId exists AND owner object exists (not null or undefined) */}
+            {property.ownerId && property.owner !== null && property.owner !== undefined && Object.keys(property.owner || {}).length > 0 && (
+              <div className="bg-white rounded-xl p-6 shadow-lg border">
+                <h3 className="font-semibold mb-4">Contact Information</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
+                      <span className="text-white font-semibold text-sm">
+                        {property.owner?.firstName?.[0] || property.ownerId?.[0]?.toUpperCase() || 'O'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium">
+                        {property.owner?.firstName && property.owner?.lastName 
+                          ? `${property.owner.firstName} ${property.owner.lastName}`
+                          : property.owner?.email || 'Property Owner'}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {property.owner?.email || 'Contact information available'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">{property.owner?.firstName} {property.owner?.lastName}</p>
-                    <p className="text-sm text-gray-600">{property.owner?.email}</p>
-                  </div>
+                  <button 
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        toast.error('Authentication Required', 'Please log in to send messages');
+                        router.push('/auth/login');
+                        return;
+                      }
+                      
+                      // Navigate to messages page with owner ID
+                      router.push(`/messages?userId=${property.ownerId}&propertyId=${property.id}`);
+                    }}
+                    className="w-full bg-primary text-white font-medium py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <MessageCircle size={18} />
+                    Send Message
+                  </button>
                 </div>
-                <button className="w-full bg-gray-100 text-gray-700 font-medium py-2 rounded-lg hover:bg-gray-200 transition-colors">
-                  Send Message
-                </button>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

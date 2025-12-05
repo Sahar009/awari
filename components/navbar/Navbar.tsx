@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logoutUser } from '@/store/slices/authSlice';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import { fetchUnreadCount } from '@/store/slices/messageSlice';
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,9 +18,24 @@ export const Navbar = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { user, isAuthenticated, isLoading, token } = useAppSelector((state) => state.auth);
+  const { unreadCount } = useAppSelector((state) => state.messages);
   
   // Check if user has access (either fully authenticated or has token)
   const hasAccess = isAuthenticated || !!token;
+  
+  // Fetch unread message count when authenticated and refresh periodically
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchUnreadCount());
+      
+      // Refresh unread count every 30 seconds
+      const interval = setInterval(() => {
+        dispatch(fetchUnreadCount());
+      }, 30000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, dispatch]);
 
   // Debug logging
   useEffect(() => {
@@ -80,6 +96,7 @@ export const Navbar = () => {
                 { name: "Sales", href: "/sales", description: "Buy property" },
                 { name: "Shortlets", href: "/shortlets", description: "Book short stays" },
                 { name: "Hotels", href: "/hotels", description: "Book hotels" },
+                { name: "Messages", href: "/messages", description: "Your conversations" },
               ] : [
                 { name: "Properties", href: "/browse-listing", description: "Browse all listings" },
                 { name: "Rentals", href: "/rentals", description: "Find your home" },
@@ -127,9 +144,17 @@ export const Navbar = () => {
                   <NotificationBell className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110" />
 
                   {/* Messages */}
-                  <div className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110 relative">
+                  <div 
+                    className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110 relative"
+                    onClick={() => router.push('/messages')}
+                    title="Messages"
+                  >
                     <MessageCircle size={20} className="text-slate-600" />
-                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-secondary-color rounded-full animate-pulse"></span>
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1.5 bg-red-500 text-white text-xs font-semibold rounded-full flex items-center justify-center animate-pulse">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
                   </div>
 
                   {/* User Menu */}
@@ -223,6 +248,20 @@ export const Navbar = () => {
                           >
                             <Home size={20} className="text-slate-600" />
                             <span className="text-slate-700">Favorites</span>
+                          </a>
+                          
+                          <a
+                            href="/messages"
+                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200 relative"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <MessageCircle size={20} className="text-slate-600" />
+                            <span className="text-slate-700">Messages</span>
+                            {unreadCount > 0 && (
+                              <span className="ml-auto min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-semibold rounded-full flex items-center justify-center">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                              </span>
+                            )}
                           </a>
                           
                           <div className="border-t border-slate-200 my-2"></div>

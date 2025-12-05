@@ -62,6 +62,15 @@ interface PropertyFormData {
   smokingAllowed: boolean;
   furnished: boolean;
   
+  // Hotel-specific fields
+  numberOfRooms: number | '';
+  maxGuestsPerRoom: number | '';
+  starRating: number | '';
+  checkInTime: string;
+  checkOutTime: string;
+  roomTypes: string[];
+  hotelAmenities: string[];
+  
   // Availability
   availableFrom: string;
   availableUntil: string;
@@ -106,7 +115,20 @@ const propertyTypes = [
 const listingTypes = [
   { value: 'rent', label: 'For Rent', color: 'bg-blue-500' },
   { value: 'sale', label: 'For Sale', color: 'bg-green-500' },
-  { value: 'shortlet', label: 'Short Let', color: 'bg-purple-500' }
+  { value: 'shortlet', label: 'Short Let', color: 'bg-purple-500' },
+  { value: 'hotel', label: 'Hotel', color: 'bg-orange-500' }
+];
+
+const HOTEL_AMENITIES = [
+  'Swimming Pool', 'Fitness Center', 'Spa', 'Restaurant', 'Bar', 'Room Service',
+  'Concierge', 'Laundry Service', 'Business Center', 'Conference Room', 'Parking',
+  'Airport Shuttle', 'WiFi', 'Cable TV', 'Mini Bar', 'Safe', 'Hair Dryer',
+  'Iron', 'Coffee Maker', 'Refrigerator', 'Microwave', 'Balcony', 'Ocean View',
+];
+
+const ROOM_TYPES = [
+  'Single', 'Double', 'Twin', 'Triple', 'Quad', 'Suite', 'Deluxe', 'Executive',
+  'Presidential', 'Family', 'Studio', 'Apartment',
 ];
 
 // Dynamic states and addresses will be loaded from API
@@ -164,6 +186,15 @@ export default function AddPropertyPage() {
     petFriendly: false,
     smokingAllowed: false,
     furnished: false,
+    
+    // Hotel-specific fields
+    numberOfRooms: '',
+    maxGuestsPerRoom: '',
+    starRating: '',
+    checkInTime: '',
+    checkOutTime: '',
+    roomTypes: [],
+    hotelAmenities: [],
     
     // Availability
     availableFrom: '',
@@ -457,6 +488,15 @@ export default function AddPropertyPage() {
         smokingAllowed: formData.smokingAllowed,
         furnished: formData.furnished,
         
+        // Hotel-specific fields
+        numberOfRooms: formData.listingType === 'hotel' && formData.numberOfRooms ? (typeof formData.numberOfRooms === 'string' ? parseInt(formData.numberOfRooms) : formData.numberOfRooms) : undefined,
+        maxGuestsPerRoom: formData.listingType === 'hotel' && formData.maxGuestsPerRoom ? (typeof formData.maxGuestsPerRoom === 'string' ? parseInt(formData.maxGuestsPerRoom) : formData.maxGuestsPerRoom) : undefined,
+        starRating: formData.listingType === 'hotel' && formData.starRating ? (typeof formData.starRating === 'string' ? parseInt(formData.starRating) : formData.starRating) : undefined,
+        checkInTime: formData.listingType === 'hotel' && formData.checkInTime ? formData.checkInTime : undefined,
+        checkOutTime: formData.listingType === 'hotel' && formData.checkOutTime ? formData.checkOutTime : undefined,
+        roomTypes: formData.listingType === 'hotel' && formData.roomTypes.length > 0 ? formData.roomTypes : undefined,
+        hotelAmenities: formData.listingType === 'hotel' && formData.hotelAmenities.length > 0 ? formData.hotelAmenities : undefined,
+        
         // Availability
         availableFrom: formData.availableFrom || undefined,
         availableUntil: formData.availableUntil || undefined,
@@ -602,8 +642,46 @@ export default function AddPropertyPage() {
                       />
                     </div>
 
-                    {/* Property Type and Listing Type */}
+                    {/* Listing Type and Property Type */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label htmlFor="listingType" className="block text-sm font-medium text-slate-700 mb-2">
+                          Listing Type *
+                        </label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          {listingTypes.map(type => (
+                            <button
+                              key={type.value}
+                              type="button"
+                              onClick={() => {
+                                setFormData(prev => {
+                                  const newData = { ...prev, listingType: type.value };
+                                  // Clear hotel-specific fields if switching away from hotel
+                                  if (type.value !== 'hotel') {
+                                    newData.numberOfRooms = '';
+                                    newData.maxGuestsPerRoom = '';
+                                    newData.starRating = '';
+                                    newData.checkInTime = '';
+                                    newData.checkOutTime = '';
+                                    newData.roomTypes = [];
+                                    newData.hotelAmenities = [];
+                                  }
+                                  return newData;
+                                });
+                              }}
+                              className={`p-3 rounded-xl border-2 transition-all duration-200 ${
+                                formData.listingType === type.value
+                                  ? 'border-primary bg-primary/10 text-primary'
+                                  : 'border-slate-300 hover:border-slate-400'
+                              }`}
+                            >
+                              <div className={`w-3 h-3 rounded-full ${type.color} mx-auto mb-1`}></div>
+                              <span className="text-sm font-medium">{type.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       <div>
                         <label htmlFor="propertyType" className="block text-sm font-medium text-slate-700 mb-2">
                           Property Type *
@@ -621,29 +699,6 @@ export default function AddPropertyPage() {
                             <option key={type.value} value={type.value}>{type.label}</option>
                           ))}
                         </select>
-                      </div>
-
-                      <div>
-                        <label htmlFor="listingType" className="block text-sm font-medium text-slate-700 mb-2">
-                          Listing Type *
-                        </label>
-                        <div className="grid grid-cols-3 gap-2">
-                          {listingTypes.map(type => (
-                            <button
-                              key={type.value}
-                              type="button"
-                              onClick={() => setFormData(prev => ({ ...prev, listingType: type.value }))}
-                              className={`p-3 rounded-xl border-2 transition-all duration-200 ${
-                                formData.listingType === type.value
-                                  ? 'border-primary bg-primary/10 text-primary'
-                                  : 'border-slate-300 hover:border-slate-400'
-                              }`}
-                            >
-                              <div className={`w-3 h-3 rounded-full ${type.color} mx-auto mb-1`}></div>
-                              <span className="text-sm font-medium">{type.label}</span>
-                            </button>
-                          ))}
-                        </div>
                       </div>
                     </div>
 
@@ -1099,6 +1154,159 @@ export default function AddPropertyPage() {
                         </label>
                       </div>
                     </div>
+
+                    {/* Hotel-Specific Fields */}
+                    {formData.listingType === 'hotel' && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-800 mb-4">Hotel Information</h3>
+                        <div className="space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <label htmlFor="numberOfRooms" className="block text-sm font-medium text-slate-700 mb-2">
+                                Number of Rooms
+                              </label>
+                              <input
+                                type="number"
+                                id="numberOfRooms"
+                                name="numberOfRooms"
+                                value={formData.numberOfRooms}
+                                onChange={handleInputChange}
+                                min="1"
+                                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                                placeholder="0"
+                              />
+                            </div>
+                            <div>
+                              <label htmlFor="maxGuestsPerRoom" className="block text-sm font-medium text-slate-700 mb-2">
+                                Max Guests per Room
+                              </label>
+                              <input
+                                type="number"
+                                id="maxGuestsPerRoom"
+                                name="maxGuestsPerRoom"
+                                value={formData.maxGuestsPerRoom}
+                                onChange={handleInputChange}
+                                min="1"
+                                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                                placeholder="0"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                              Star Rating
+                            </label>
+                            <div className="flex space-x-2">
+                              {[1, 2, 3, 4, 5].map((rating) => (
+                                <button
+                                  key={rating}
+                                  type="button"
+                                  onClick={() => setFormData(prev => ({ ...prev, starRating: rating }))}
+                                  className={`flex-1 px-4 py-3 rounded-xl border-2 transition-all duration-200 ${
+                                    formData.starRating === rating
+                                      ? 'border-primary bg-primary/10 text-primary'
+                                      : 'border-slate-300 hover:border-slate-400'
+                                  }`}
+                                >
+                                  <span className="font-medium">{rating} ⭐</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <label htmlFor="checkInTime" className="block text-sm font-medium text-slate-700 mb-2">
+                                Check-in Time
+                              </label>
+                              <input
+                                type="text"
+                                id="checkInTime"
+                                name="checkInTime"
+                                value={formData.checkInTime}
+                                onChange={handleInputChange}
+                                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                                placeholder="e.g., 14:00"
+                              />
+                            </div>
+                            <div>
+                              <label htmlFor="checkOutTime" className="block text-sm font-medium text-slate-700 mb-2">
+                                Check-out Time
+                              </label>
+                              <input
+                                type="text"
+                                id="checkOutTime"
+                                name="checkOutTime"
+                                value={formData.checkOutTime}
+                                onChange={handleInputChange}
+                                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                                placeholder="e.g., 12:00"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                              Room Types
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                              {ROOM_TYPES.map((type) => (
+                                <button
+                                  key={type}
+                                  type="button"
+                                  onClick={() => {
+                                    const roomTypes = formData.roomTypes.includes(type)
+                                      ? formData.roomTypes.filter((t) => t !== type)
+                                      : [...formData.roomTypes, type];
+                                    setFormData(prev => ({ ...prev, roomTypes }));
+                                  }}
+                                  className={`px-4 py-2 rounded-xl border-2 transition-all duration-200 ${
+                                    formData.roomTypes.includes(type)
+                                      ? 'border-primary bg-primary/10 text-primary'
+                                      : 'border-slate-300 hover:border-slate-400'
+                                  }`}
+                                >
+                                  <span className="text-sm font-medium">{type}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                              Hotel Amenities
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                              {HOTEL_AMENITIES.map((amenity) => (
+                                <button
+                                  key={amenity}
+                                  type="button"
+                                  onClick={() => {
+                                    const hotelAmenities = formData.hotelAmenities.includes(amenity)
+                                      ? formData.hotelAmenities.filter((a) => a !== amenity)
+                                      : [...formData.hotelAmenities, amenity];
+                                    setFormData(prev => ({ ...prev, hotelAmenities }));
+                                  }}
+                                  className={`px-4 py-2 rounded-xl border-2 transition-all duration-200 ${
+                                    formData.hotelAmenities.includes(amenity)
+                                      ? 'border-primary bg-primary/10 text-primary'
+                                      : 'border-slate-300 hover:border-slate-400'
+                                  }`}
+                                >
+                                  <span className="text-sm font-medium">{amenity}</span>
+                                </button>
+                              ))}
+                            </div>
+                            {formData.hotelAmenities.length > 0 && (
+                              <p className="mt-2 text-sm text-slate-500">
+                                {formData.hotelAmenities.length} amenity(ies) selected
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Availability */}
                     {(formData.listingType === 'rent' || formData.listingType === 'shortlet') && (

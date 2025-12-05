@@ -231,3 +231,11 @@ export default PropertyDetailsSkeleton;
 
 
 
+
+
+
+
+
+
+
+

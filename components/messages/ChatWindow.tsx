@@ -17,10 +17,12 @@ import { Send, Paperclip, X } from 'lucide-react';
 
 interface ChatWindowProps {
   userId: string | null;
+  propertyId?: string | null;
+  bookingId?: string | null;
   onClose?: () => void;
 }
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ userId, onClose }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({ userId, propertyId, bookingId, onClose }) => {
   const dispatch = useAppDispatch();
   const { currentConversation, isLoading, isSending, error } = useAppSelector(
     (state) => state.messages
@@ -34,7 +36,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ userId, onClose }) => {
 
   useEffect(() => {
     if (userId) {
-      dispatch(fetchConversation({ userId }));
+      dispatch(fetchConversation({ 
+        userId, 
+        params: propertyId || bookingId ? { propertyId: propertyId || undefined, bookingId: bookingId || undefined } : undefined 
+      }));
       joinConversation(userId);
     }
 
@@ -43,7 +48,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ userId, onClose }) => {
         leaveConversation(userId);
       }
     };
-  }, [userId, dispatch, joinConversation, leaveConversation]);
+  }, [userId, propertyId, bookingId, dispatch, joinConversation, leaveConversation]);
 
   useEffect(() => {
     if (userId && currentConversation.length > 0) {
@@ -76,6 +81,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ userId, onClose }) => {
       await dispatch(sendMessage({
         receiverId: userId,
         content,
+        ...(propertyId && { propertyId }),
+        ...(bookingId && { bookingId }),
       })).unwrap();
     } catch (error) {
       console.error('Failed to send message:', error);

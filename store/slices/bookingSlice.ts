@@ -6,7 +6,7 @@ export interface Booking {
   propertyId: string;
   userId: string;
   ownerId: string;
-  bookingType: 'shortlet' | 'rental' | 'sale_inspection';
+  bookingType: 'shortlet' | 'hotel' | 'sale_inspection';
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'rejected' | 'expired';
   checkInDate?: string;
   checkOutDate?: string;
@@ -92,7 +92,7 @@ export interface BookingFilters {
 
 export interface CreateBookingRequest {
   propertyId: string;
-  bookingType: 'shortlet' | 'rental' | 'sale_inspection';
+  bookingType: 'shortlet' | 'hotel' | 'sale_inspection';
   checkInDate?: string;
   checkOutDate?: string;
   inspectionDate?: string;

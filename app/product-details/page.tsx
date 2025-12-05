@@ -2,13 +2,13 @@
 import React, { Suspense } from "react";
 import MainLayout from "../mainLayout";
 import dynamic from 'next/dynamic';
-import { Loader } from "@/components/ui/Loader";
+import PropertyDetailsSkeleton from "@/components/skeletons/PropertyDetailsSkeleton";
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const CardDetails = dynamic(() => import('@/components/property/CardDetails').then(mod => ({ default: mod.CardDetails })), {
   ssr: false,
-  loading: () => <div className="w-full max-w-6xl mx-auto px-4 py-8 flex items-center justify-center"><Loader /></div>
+  loading: () => <PropertyDetailsSkeleton />
 });
 
 const ProductDetailsPage = () => {
@@ -33,12 +33,7 @@ const ProductDetailsPage = () => {
 
         {/* Add top padding to ensure content doesn't overlap with back button */}
         <div className="pt-16">
-
-          <Suspense fallback={
-            <div className="w-full max-w-6xl mx-auto px-4 py-8 flex items-center justify-center">
-              <Loader />
-            </div>
-          }>
+          <Suspense fallback={<PropertyDetailsSkeleton />}>
             <CardDetails />
           </Suspense>
         </div>

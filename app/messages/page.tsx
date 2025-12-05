@@ -1,19 +1,25 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchConversations, setCurrentConversationUserId, clearCurrentConversation } from '@/store/slices/messageSlice';
 import { ChatList } from '@/components/messages/ChatList';
 import { ChatWindow } from '@/components/messages/ChatWindow';
 import MainLayout from '../mainLayout';
 import { BreadCrumbs } from '@/components/BreadCrumbs';
-import { MessageSquare, X } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 
 export default function MessagesPage() {
+  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const { currentConversationUserId } = useAppSelector((state) => state.messages);
   const { isAuthenticated } = useAppSelector((state) => state.auth);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Get userId and propertyId from query params
+  const userIdParam = searchParams?.get('userId');
+  const propertyIdParam = searchParams?.get('propertyId');
 
   useEffect(() => {
     const checkMobile = () => {
@@ -29,6 +35,13 @@ export default function MessagesPage() {
       dispatch(fetchConversations());
     }
   }, [dispatch, isAuthenticated]);
+
+  // Auto-select conversation if userId is provided in query params
+  useEffect(() => {
+    if (userIdParam && isAuthenticated) {
+      dispatch(setCurrentConversationUserId(userIdParam));
+    }
+  }, [userIdParam, isAuthenticated, dispatch]);
 
   const handleSelectConversation = (userId: string) => {
     dispatch(setCurrentConversationUserId(userId));
@@ -87,6 +100,7 @@ export default function MessagesPage() {
               {currentConversationUserId ? (
                 <ChatWindow
                   userId={currentConversationUserId}
+                  propertyId={propertyIdParam || null}
                   onClose={isMobile ? handleCloseConversation : undefined}
                 />
               ) : (

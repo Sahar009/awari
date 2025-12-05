@@ -77,11 +77,10 @@ class LocationApiService {
     }
     
     console.log(' Using fallback states (configure APIs for live data)');
-    // Fallback states
+    // Fallback states - Lagos and Ibadan only
     return [
       { id: '1', name: 'Lagos', code: 'LG', capital: 'Ikeja', region: 'South West' },
-      { id: '2', name: 'Oyo', code: 'OY', capital: 'Ibadan', region: 'South West' },
-      { id: '3', name: 'Federal Capital Territory', code: 'FCT', capital: 'Abuja', region: 'North Central' }
+      { id: '2', name: 'Ibadan', code: 'IB', capital: 'Ibadan', region: 'South West' }
     ];
   }
 
@@ -95,51 +94,74 @@ class LocationApiService {
     }
     
     console.log(` Using fallback cities for ${stateName}`);
-    // Comprehensive fallback cities
+    // Comprehensive fallback cities for Lagos and Ibadan
     const fallbackCities: Record<string, string[]> = {
       'Lagos': [
         'Ikeja', 'Victoria Island', 'Lekki', 'Ikoyi', 'Yaba', 'Surulere', 'Ajah', 'Maryland', 'Gbagada',
         'Alimosho', 'Ajeromi-Ifelodun', 'Kosofe', 'Mushin', 'Oshodi-Isolo', 'Ojo', 'Ikorodu',
         'Agege', 'Ifako-Ijaiye', 'Shomolu', 'Amuwo-Odofin', 'Lagos Mainland', 'Lagos Island', 'Eti Osa',
-        'Ibeju-Lekki', 'Badagry', 'Epe', 'Apapa', 'Mushin', 'Oshodi', 'Isolo', 'Ejigbo',
+        'Ibeju-Lekki', 'Badagry', 'Epe', 'Apapa', 'Oshodi', 'Isolo', 'Ejigbo',
         'Magodo', 'Omole', 'Ogba', 'Ilupeju', 'Palmgrove', 'Anthony', 'Ojota', 'Ketu',
         'Alapere', 'Berger', 'Ikeja GRA', 'Magodo Phase 1', 'Magodo Phase 2', 'Lekki Phase 1',
         'Lekki Phase 2', 'Banana Island', 'Chevron', 'Jakande', 'Sangotedo', 'Abraham Adesanya',
         'Badore', 'Admiralty Way', 'Osapa London', 'Ikota', 'VGC', 'Dolphin Estate',
         'Oniru', 'Marina', 'Broad Street', 'Idumota', 'Balogun', 'Obalende', 'Tarkwa Bay',
-        'Adeniji Adele', 'CMS', 'Tinubu Square'
+        'Adeniji Adele', 'CMS', 'Tinubu Square', 'Ajah', 'Awoyaya', 'Epe', 'Ibeju', 'Eti-Osa',
+        'Ikeja', 'Alausa', 'Oregun', 'Adeniyi Jones', 'Allen Avenue', 'Opebi', 'Ilupeju',
+        'Mushin', 'Isolo', 'Ejigbo', 'Ikotun', 'Egbeda', 'Alimosho', 'Egbe', 'Idimu',
+        'Akowonjo', 'Egbeda', 'Shasha', 'Akowonjo', 'Egbeda', 'Alimosho', 'Igando', 'Ikotun',
+        'Ejigbo', 'Isolo', 'Mushin', 'Oshodi', 'Ikeja', 'Agege', 'Ifako-Ijaiye', 'Alimosho',
+        'Kosofe', 'Shomolu', 'Surulere', 'Lagos Mainland', 'Lagos Island', 'Eti Osa', 'Ibeju-Lekki',
+        'Badagry', 'Epe', 'Ikorodu', 'Ojo', 'Amuwo-Odofin', 'Ajeromi-Ifelodun'
       ],
-      'Oyo': [
+      'Ibadan': [
         'Ibadan North', 'Ibadan South', 'Bodija', 'UI', 'Challenge', 'Ring Road', 'Dugbe', 'Mokola',
         'Agodi', 'Gate', 'Molete', 'Oke-Ado', 'Oke-Bola', 'Oke-Padi', 'Sango', 'Eleyele', 'Apata',
-        'Akobo', 'Ologuneru', 'Oluyole', 'Akinyele', 'Egbeda', 'Ido', 'Lagelu', 'Ona Ara'
-      ],
-      'Federal Capital Territory': [
-        'Garki', 'Wuse', 'Maitama', 'Asokoro', 'Gwarinpa', 'Kubwa', 'Jahi', 'Life Camp',
-        'Wuse 2', 'Wuse Zone 4', 'Wuse Zone 5', 'Wuse Zone 6', 'Wuse Zone 7', 'Garki Area 1',
-        'Garki Area 2', 'Garki Area 3', 'Garki Area 7', 'Garki Area 8', 'Garki Area 10', 'Garki Area 11',
-        'Utako', 'Jabi', 'Kado', 'Dakibiyu', 'Dutse', 'Bwari', 'Nyanya', 'Karu', 'Mararaba',
-        'Lugbe', 'Gudu', 'Apo', 'Central Area', 'Wuse Zone 1', 'Wuse Zone 2', 'Wuse Zone 3',
-        'Mabushi', 'Kaura', 'Dakwo', 'Lokogoma'
+        'Akobo', 'Ologuneru', 'Oluyole', 'Akinyele', 'Egbeda', 'Ido', 'Lagelu', 'Ona Ara',
+        'Iwo Road', 'Bodija Market', 'Agbowo', 'UI Road', 'Samonda', 'Ajibode', 'Ojoo', 'Akobo',
+        'Odo-Ona', 'Oke-Are', 'Oke-Ado', 'Oke-Bola', 'Oke-Padi', 'Oke-Itunu', 'Oke-Fia', 'Oke-Aremo',
+        'Oke-Ado', 'Oke-Bola', 'Oke-Padi', 'Oke-Itunu', 'Oke-Fia', 'Oke-Aremo', 'Oke-Ado', 'Oke-Bola',
+        'Mokola', 'Agodi', 'Gate', 'Molete', 'Oke-Ado', 'Oke-Bola', 'Oke-Padi', 'Sango', 'Eleyele',
+        'Apata', 'Akobo', 'Ologuneru', 'Oluyole', 'Akinyele', 'Egbeda', 'Ido', 'Lagelu', 'Ona Ara',
+        'Iwo Road', 'Bodija Market', 'Agbowo', 'UI Road', 'Samonda', 'Ajibode', 'Ojoo', 'Akobo',
+        'Odo-Ona', 'Oke-Are', 'Oke-Ado', 'Oke-Bola', 'Oke-Padi', 'Oke-Itunu', 'Oke-Fia', 'Oke-Aremo',
+        'Iwo Road', 'Bodija', 'UI', 'Challenge', 'Ring Road', 'Dugbe', 'Mokola', 'Agodi', 'Gate',
+        'Molete', 'Oke-Ado', 'Oke-Bola', 'Oke-Padi', 'Sango', 'Eleyele', 'Apata', 'Akobo', 'Ologuneru',
+        'Oluyole', 'Akinyele', 'Egbeda', 'Ido', 'Lagelu', 'Ona Ara', 'Iwo Road', 'Bodija Market',
+        'Agbowo', 'UI Road', 'Samonda', 'Ajibode', 'Ojoo', 'Akobo', 'Odo-Ona', 'Oke-Are'
       ]
     };
     
     // Remove duplicates and return unique cities
     const cities = fallbackCities[stateName] || [];
-    return [...new Set(cities)];
+    return [...new Set(cities)].sort();
   }
 
   /**
-   * Get address suggestions using enhanced fallback data
-   * NOTE: Nominatim doesn't support autocomplete (would cause 403 errors)
-   * Using comprehensive static data for Nigerian addresses
+   * Get address suggestions using live APIs (Google Places, Mapbox) with fallback
+   * When city is selected, uses real-time map data for accurate autocomplete
    */
   async getAddressSuggestions(query: string, city?: string, state?: string): Promise<AddressSuggestion[]> {
     if (!query || query.length < 2) return [];
 
+    // If city is selected, try to use live API first for real map data
+    if (this.isConfigured && city && state) {
+      try {
+        console.log(`🔍 Address suggestions for "${query}" in ${city}, ${state} - using live APIs`);
+        const liveSuggestions = await liveLocationApiService.getAddressSuggestions(query, city, state);
+        if (liveSuggestions && liveSuggestions.length > 0) {
+          console.log(`✅ Live API returned ${liveSuggestions.length} suggestions`);
+          return liveSuggestions;
+        }
+      } catch (error) {
+        console.warn('Live API failed, using fallback:', error);
+      }
+    }
+
+    // Fallback to enhanced static data
     console.log(`🔍 Address suggestions for "${query}" - using enhanced fallback data`);
     
-    // Enhanced fallback addresses for Nigerian cities
+    // Enhanced fallback addresses for Lagos and Ibadan
     const addressDatabase: Record<string, string[]> = {
       'Lagos': [
         'Allen Avenue', 'Victoria Island', 'Lekki-Epe Expressway', 'Ikorodu Road',
@@ -152,17 +174,12 @@ class LocationApiService {
         'Oshodi Expressway', 'Ozumba Mbadiwe Avenue', 'Samuel Manuwa Street',
         'Tafawa Balewa Square', 'Tinubu Square', 'Waltersmith Road', 'Yaba'
       ],
-      'Oyo': [
+      'Ibadan': [
         'Ring Road', 'Challenge Road', 'Bodija Road', 'UI Road', 'Dugbe Road',
         'Mokola Road', 'Agodi Road', 'Gate Road', 'Molete Road', 'Oke-Ado Road',
-        'Oke-Bola Road', 'Sango Road', 'Eleyele Road', 'Apata Road', 'Akobo Road'
-      ],
-      'Federal Capital Territory': [
-        'Constitution Avenue', 'Ahmadu Bello Way', 'Shehu Shagari Way',
-        'Ademola Adetokunbo Crescent', 'Aminu Kano Crescent', 'Herbert Macaulay Way',
-        'Ibrahim Babangida Boulevard', 'Maitama Avenue', 'Wuse Zone 4', 'Wuse Zone 5',
-        'Garki Area 1', 'Garki Area 2', 'Asokoro', 'Gwarinpa', 'Kubwa', 'Jahi',
-        'Life Camp', 'Utako', 'Jabi', 'Kado', 'Dutse', 'Bwari', 'Nyanya', 'Karu'
+        'Oke-Bola Road', 'Sango Road', 'Eleyele Road', 'Apata Road', 'Akobo Road',
+        'Iwo Road', 'Bodija Market', 'Agbowo', 'Samonda', 'Ajibode', 'Ojoo',
+        'Odo-Ona', 'Oke-Are', 'Oke-Itunu', 'Oke-Fia', 'Oke-Aremo'
       ]
     };
 
@@ -181,9 +198,10 @@ class LocationApiService {
     );
     
     // Limit to top 10 matches
+    // Format: address, city, state (without Nigeria)
     return filtered.slice(0, 10).map((street, index) => ({
       id: `fallback-${index}-${Date.now()}`,
-      fullAddress: `${street}, ${city || ''}, ${state || ''}, Nigeria`.trim().replace(/^,\s*|,\s*$/g, ''),
+      fullAddress: `${street}, ${city || ''}, ${state || ''}`.trim().replace(/^,\s*|,\s*$/g, ''),
       street,
       city: city || '',
       state: state || '',

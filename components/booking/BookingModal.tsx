@@ -70,7 +70,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
   // Booking state
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [bookingType, setBookingType] = useState<'shortlet' | 'rental' | 'sale_inspection'>('shortlet');
+  const [bookingType, setBookingType] = useState<'shortlet' | 'hotel' | 'sale_inspection'>('shortlet');
   
   // Form data
   const [formData, setFormData] = useState<BookingFormData>({
@@ -148,10 +148,12 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
   }, [isOpen, dispatch, property?.id]);
 
   // Initialize booking type based on property
+  // Shortlet and hotel use booking flow, rent and sale use inspection scheduling
   useEffect(() => {
     if (property) {
-      const type = property.listingType === 'shortlet' ? 'shortlet' : 
-                   property.listingType === 'rent' ? 'rental' : 'sale_inspection';
+      const type = property.listingType === 'shortlet' || property.listingType === 'hotel' 
+        ? (property.listingType === 'hotel' ? 'hotel' : 'shortlet')
+        : 'sale_inspection'; // Both rent and sale use inspection scheduling
       setBookingType(type);
       setPricing(prev => ({
         ...prev,
@@ -164,9 +166,9 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
     }
   }, [property]);
 
-  // Calculate pricing when dates change (for shortlet)
+  // Calculate pricing when dates change (for shortlet and hotel)
   useEffect(() => {
-    if (bookingType === 'shortlet' && formData.checkInDate && formData.checkOutDate) {
+    if ((bookingType === 'shortlet' || bookingType === 'hotel') && formData.checkInDate && formData.checkOutDate) {
       const checkIn = new Date(formData.checkInDate);
       const checkOut = new Date(formData.checkOutDate);
       const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
@@ -324,9 +326,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
   const getTotalSteps = () => {
     switch (bookingType) {
       case 'shortlet':
+      case 'hotel':
         return 4; // Date Selection → Guest Info → Payment → Confirmation
-      case 'rental':
-        return 3; // Application → Payment → Confirmation
       case 'sale_inspection':
         return 2; // Viewing Request → Confirmation
       default:
@@ -379,8 +380,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
     setIsLoading(true);
     
     try {
-      // For shortlet bookings, validate availability one more time before submission
-      if (bookingType === 'shortlet' && formData.checkInDate && formData.checkOutDate) {
+      // For shortlet and hotel bookings, validate availability one more time before submission
+      if ((bookingType === 'shortlet' || bookingType === 'hotel') && formData.checkInDate && formData.checkOutDate) {
         const availabilityResult = await dispatch(checkDateRangeAvailability({
           propertyId: property.id,
           checkInDate: formData.checkInDate,
@@ -397,7 +398,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
       const bookingData = {
         propertyId: property.id,
         bookingType,
-        ...(bookingType === 'shortlet' && {
+        ...((bookingType === 'shortlet' || bookingType === 'hotel') && {
           checkInDate: formData.checkInDate,
           checkOutDate: formData.checkOutDate,
           numberOfNights: formData.numberOfNights,
@@ -430,8 +431,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
       console.log('✅ Booking created successfully:', result);
       
       toast.success('Booking Created!', 
-        bookingType === 'shortlet' ? 'Your booking has been confirmed!' :
-        bookingType === 'rental' ? 'Your rental application has been submitted!' :
+        (bookingType === 'shortlet' || bookingType === 'hotel') ? 'Your booking has been confirmed!' :
         'Your inspection request has been submitted!'
       );
       
@@ -469,9 +469,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
   const renderStepContent = () => {
     switch (bookingType) {
       case 'shortlet':
+      case 'hotel':
         return renderShortletSteps();
-      case 'rental':
-        return renderRentalSteps();
       case 'sale_inspection':
         return renderSaleInspectionSteps();
       default:
@@ -1209,8 +1208,9 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
         return currentStep === 1 ? (formData.checkInDate && formData.checkOutDate && !dateValidationError && !isCheckingAvailability) :
                currentStep === 2 ? (formData.guestName && formData.guestEmail && formData.guestPhone) :
                true;
-      case 'rental':
-        return currentStep === 1 ? (formData.guestName && formData.guestEmail && formData.guestPhone && formData.specialRequests) :
+      case 'hotel':
+        return currentStep === 1 ? (formData.checkInDate && formData.checkOutDate && !dateValidationError && !isCheckingAvailability) :
+               currentStep === 2 ? (formData.guestName && formData.guestEmail && formData.guestPhone) :
                true;
       case 'sale_inspection':
         return currentStep === 1 ? (formData.inspectionDate && formData.inspectionTime && formData.guestName && formData.guestEmail && formData.guestPhone) :

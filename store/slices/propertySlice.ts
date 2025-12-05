@@ -47,6 +47,15 @@ export interface CreatePropertyRequest {
   smokingAllowed?: boolean;
   furnished?: boolean;
   
+  // Hotel-specific fields
+  numberOfRooms?: number;
+  roomTypes?: string[];
+  maxGuestsPerRoom?: number;
+  checkInTime?: string;
+  checkOutTime?: string;
+  starRating?: number;
+  hotelAmenities?: string[];
+  
   // Availability
   availableFrom?: string;
   availableUntil?: string;
@@ -191,6 +200,8 @@ export interface Property {
     lastName: string;
     email: string;
     phone?: string;
+    avatarUrl?: string;
+    status?: string;
   };
   
   // Agent

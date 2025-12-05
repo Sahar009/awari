@@ -55,11 +55,10 @@ class LiveLocationApiService {
   private readonly NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org';
   private readonly NOMINATIM_USER_AGENT = 'Awari Property Platform/1.0 (contact@awari.com)'; // Required format
 
-  // Available states (limited to 3 major cities)
+  // Available states (Lagos and Ibadan)
   private readonly availableStates: NigerianState[] = [
     { id: '1', name: 'Lagos', code: 'LG', capital: 'Ikeja', region: 'South West' },
-    { id: '2', name: 'Oyo', code: 'OY', capital: 'Ibadan', region: 'South West' },
-    { id: '3', name: 'Federal Capital Territory', code: 'FCT', capital: 'Abuja', region: 'North Central' }
+    { id: '2', name: 'Ibadan', code: 'IB', capital: 'Ibadan', region: 'South West' }
   ];
 
   constructor(config: ApiConfig = {}) {
@@ -275,11 +274,14 @@ class LiveLocationApiService {
       // Rate limit: 1 request per second
       await this.waitForNominatimRateLimit();
 
+      // For Ibadan, search specifically for Ibadan areas
+      const searchQuery = stateName === 'Ibadan' ? 'Ibadan, Nigeria' : `${stateName}, Nigeria`;
+      
       const params = new URLSearchParams({
-        q: `${stateName}, Nigeria`,
+        q: searchQuery,
         format: 'json',
         addressdetails: '1',
-        limit: '50',
+        limit: '100', // Increased limit to get all cities
         countrycodes: 'ng',
         'accept-language': 'en',
         featuretype: 'city,town,village,suburb',
@@ -301,10 +303,18 @@ class LiveLocationApiService {
           data.forEach((place: any) => {
             const address = place.address || {};
             // Extract city name from various possible fields
-            const cityName = address.city || address.town || address.village || address.suburb || address.municipality;
-            // Make sure it's in the correct state
-            if (cityName && (address.state === stateName || place.display_name.includes(stateName))) {
-              cities.add(cityName);
+            const cityName = address.city || address.town || address.village || address.suburb || address.municipality || address.neighbourhood;
+            // For Ibadan, include all areas within Ibadan
+            // For Lagos, include all areas within Lagos
+            if (cityName) {
+              const displayName = place.display_name?.toLowerCase() || '';
+              const isInState = stateName === 'Ibadan' 
+                ? displayName.includes('ibadan') || address.state?.toLowerCase().includes('oyo')
+                : displayName.includes(stateName.toLowerCase()) || address.state?.toLowerCase().includes(stateName.toLowerCase());
+              
+              if (isInState) {
+                cities.add(cityName);
+              }
             }
           });
           const cityArray = Array.from(cities).sort();
