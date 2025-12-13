@@ -21,8 +21,8 @@ export const ReviewCard: React.FC<ReviewCardProps>= ({imageSrc,customerName,cust
                 width={50}
                 height={50}
                 src={imageSrc}
-                className="w-12 h-12 bg-center bg-cover border rounded-full"
-                alt="Tim Cook"
+                className="w-12 h-12 bg-center bg-cover border rounded-full object-cover"
+                alt={customerName}
               />
               <div className="flex flex-col items-start">
                 <h3 className="text-xl font-semibold text-primary">{customerName}</h3>

@@ -1,13 +1,70 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
 import Image from "next/image";
-import { HouseIcon, Building2Icon, UsersIcon } from "lucide-react";
+import { HouseIcon, Building2Icon, UsersIcon, Award, Building2, TrendingUp, MapPin } from "lucide-react";
 import "swiper/css";
 import "swiper/css/pagination";
 import Container from "@/components/Container";
 import FaqSection from "@/components/about/FaqSection";
+
+// Animated Counter Component
+const AnimatedCounter = ({ value, suffix = "", duration = 2000 }: { value: string; suffix?: string; duration?: number }) => {
+  const [count, setCount] = useState(0);
+  const [hasAnimated, setHasAnimated] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const currentRef = ref.current;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasAnimated) {
+          setHasAnimated(true);
+          
+          const numericValue = parseInt(value.replace(/\D/g, ""));
+          const startTime = Date.now();
+          const startValue = 0;
+          const endValue = numericValue;
+
+          const animate = () => {
+            const now = Date.now();
+            const progress = Math.min((now - startTime) / duration, 1);
+            const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+            const currentValue = Math.floor(startValue + (endValue - startValue) * easeOutQuart);
+            
+            setCount(currentValue);
+
+            if (progress < 1) {
+              requestAnimationFrame(animate);
+            } else {
+              setCount(endValue);
+            }
+          };
+
+          animate();
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [value, duration, hasAnimated]);
+
+  return (
+    <span ref={ref}>
+      {count}{suffix}
+    </span>
+  );
+};
 
 const About = () => {
 
@@ -30,11 +87,33 @@ const whyUsData = [
   icon: <UsersIcon size={28} className="text-orange-500" />,
   title: "Trusted Expertise",
   content:
-    "With 20+ years of experience, our experts carefully guide you through every step of your property journey with confidence.",
+    "With 7+ years of experience, our experts carefully guide you through every step of your property journey with confidence.",
   imgSrc: "/assets/images/slider6.png",
 },
 ];
 
+const stats = [
+  { 
+    value: "7+", 
+    label: "Years of Expertise", 
+    icon: Award 
+  },
+  { 
+    value: "12K", 
+    label: "Curated Listings", 
+    icon: Building2 
+  },
+  { 
+    value: "98%", 
+    label: "Client Satisfaction", 
+    icon: TrendingUp 
+  },
+  { 
+    value: "30+", 
+    label: "Local Government", 
+    icon: MapPin 
+  }
+];
 
   return (
     <Container>
@@ -79,13 +158,49 @@ const whyUsData = [
       shapes spaces that energize, inspire, and bring lasting comfort.
       Every floor plan emphasizes natural light, refreshing colors, and
       clean air — qualities that support your wellbeing, creativity, and
-      energy levels each day. When you walk into our homes, you’ll see
+      energy levels each day. When you walk into our homes, you&apos;ll see
       thoughtful design that puts people first — and more importantly,
-      you’ll feel it deeply.
+      you&apos;ll feel it deeply.
     </p>
   </div>
 </div>
 
+      {/* Stats Section with Animated Counters */}
+      <div className="w-full py-16 bg-gradient-to-br from-primary via-primary/95 to-purple-900 rounded-4xl my-12">
+        <div className="flex flex-col items-center gap-12 px-6">
+          <div className="text-center space-y-4">
+            <h2 className="text-4xl md:text-5xl font-bold text-white">
+              Our <span className="text-orange-500">Achievements</span>
+            </h2>
+            <p className="text-lg md:text-xl text-white/80 max-w-2xl">
+              Numbers that reflect our commitment and excellence in real estate
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 w-full max-w-5xl">
+            {stats.map((stat, index) => {
+              const Icon = stat.icon;
+              const suffix = stat.value.replace(/[0-9]/g, "");
+              
+              return (
+                <div
+                  key={stat.label}
+                  className="flex flex-col items-center text-center p-6 rounded-3xl bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/15 hover:border-white/30 transition-all duration-300 group"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <div className="mb-4 rounded-2xl bg-orange-500/20 p-4 group-hover:bg-orange-500 group-hover:scale-110 transition-all duration-300">
+                    <Icon className="h-8 w-8 text-orange-500 group-hover:text-white" />
+                  </div>
+                  <div className="text-5xl md:text-6xl font-bold text-white mb-2">
+                    <AnimatedCounter value={stat.value} suffix={suffix} />
+                  </div>
+                  <p className="text-sm md:text-base text-white/80 font-medium">{stat.label}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
 
       <div className="flex flex-col items-center w-full gap-10 bg-primary py-10 px-6 rounded-4xl my-12">
         <div className="flex items-center flex-col justify-center gap-5 text=center">
@@ -93,7 +208,7 @@ const whyUsData = [
             Why <span className="text-orange-500">Choose</span> us?
           </h1>
           <p className="md:text-2xl text-lg font-light text-purple-300 text-center w-full md:w-2/3">
-            We are a real estate firm with over 20 years of expertise, and our
+            We are a real estate firm with over <AnimatedCounter value="7+" /> years of expertise, and our
             main goal is to provide amazing locations to our partners and
             clients. Within the luxury real estate market, our agency offers
             customized solutions.
