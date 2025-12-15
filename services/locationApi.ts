@@ -158,55 +158,96 @@ class LocationApiService {
       }
     }
 
-    // Fallback to enhanced static data
+    // Fallback to enhanced static data - Default to Lagos
     console.log(`🔍 Address suggestions for "${query}" - using enhanced fallback data`);
     
-    // Enhanced fallback addresses for Lagos and Ibadan
-    const addressDatabase: Record<string, string[]> = {
-      'Lagos': [
-        'Allen Avenue', 'Victoria Island', 'Lekki-Epe Expressway', 'Ikorodu Road',
-        'Ahmadu Bello Way', 'Admiralty Way', 'Ajah Road', 'Akin Adesola Street',
-        'Awolowo Road', 'Broad Street', 'Carter Bridge', 'CMS Road',
-        'Dolphin Estate', 'Falomo Bridge', 'Gerrard Road', 'Herbert Macaulay Way',
-        'Idowu Taylor Street', 'Ikeja GRA', 'Jakande Estate', 'Kofo Abayomi Street',
-        'Lekki Phase 1', 'Lekki Phase 2', 'Marina', 'Maryland', 'Murtala Mohammed Way',
-        'Nnamdi Azikiwe Street', 'Obalende', 'Ogudu Road', 'Ojota', 'Ojuelegba Road',
-        'Oshodi Expressway', 'Ozumba Mbadiwe Avenue', 'Samuel Manuwa Street',
-        'Tafawa Balewa Square', 'Tinubu Square', 'Waltersmith Road', 'Yaba'
-      ],
-      'Ibadan': [
-        'Ring Road', 'Challenge Road', 'Bodija Road', 'UI Road', 'Dugbe Road',
-        'Mokola Road', 'Agodi Road', 'Gate Road', 'Molete Road', 'Oke-Ado Road',
-        'Oke-Bola Road', 'Sango Road', 'Eleyele Road', 'Apata Road', 'Akobo Road',
-        'Iwo Road', 'Bodija Market', 'Agbowo', 'Samonda', 'Ajibode', 'Ojoo',
-        'Odo-Ona', 'Oke-Are', 'Oke-Itunu', 'Oke-Fia', 'Oke-Aremo'
-      ]
-    };
-
-    // Get addresses for the state or use general list
-    const stateAddresses = addressDatabase[state || ''] || [];
-    const generalAddresses = [
-      'Main Street', 'Market Road', 'Church Street', 'Mosque Street',
-      'School Road', 'Hospital Road', 'Station Road', 'Airport Road'
+    // Enhanced fallback addresses - Comprehensive Lagos addresses
+    const lagosAddresses = [
+      // Areas/Neighborhoods
+      'Ikeja', 'Victoria Island', 'Lekki', 'Ikoyi', 'Yaba', 'Surulere', 'Ajah', 'Maryland', 
+      'Gbagada', 'Alimosho', 'Kosofe', 'Mushin', 'Oshodi', 'Isolo', 'Ejigbo', 'Ikotun', 
+      'Egbeda', 'Agege', 'Ifako-Ijaiye', 'Shomolu', 'Amuwo-Odofin', 'Lagos Mainland', 
+      'Lagos Island', 'Eti Osa', 'Ibeju-Lekki', 'Badagry', 'Epe', 'Ikorodu', 'Ojo', 
+      'Apapa', 'Magodo', 'Omole', 'Ogba', 'Ilupeju', 'Palmgrove', 'Anthony', 'Ojota', 
+      'Ketu', 'Alapere', 'Berger', 'Ikeja GRA', 'Lekki Phase 1', 'Lekki Phase 2', 
+      'Banana Island', 'Chevron', 'Jakande', 'Sangotedo', 'Abraham Adesanya', 'Badore', 
+      'VGC', 'Dolphin Estate', 'Oniru', 'Marina', 'Broad Street', 'Obalende',
+      
+      // Streets/Roads
+      'Allen Avenue', 'Ahmadu Bello Way', 'Admiralty Way', 'Ajah Road', 'Akin Adesola Street',
+      'Awolowo Road', 'Carter Bridge', 'CMS Road', 'Falomo Bridge', 'Gerrard Road', 
+      'Herbert Macaulay Way', 'Idowu Taylor Street', 'Kofo Abayomi Street',
+      'Murtala Mohammed Way', 'Nnamdi Azikiwe Street', 'Ogudu Road', 'Ojuelegba Road',
+      'Oshodi Expressway', 'Ozumba Mbadiwe Avenue', 'Samuel Manuwa Street',
+      'Waltersmith Road', 'Ikorodu Road', 'Lekki-Epe Expressway', 'Ring Road',
+      'Ikeja Airport Road', 'Oba Akran Avenue', 'Adeniji Adele Road', 'Simpson Street'
     ];
     
-    const allAddresses = [...stateAddresses, ...generalAddresses];
+    const ibadanAddresses = [
+      'Ring Road', 'Challenge Road', 'Bodija Road', 'UI Road', 'Dugbe Road',
+      'Mokola Road', 'Agodi Road', 'Gate Road', 'Molete Road', 'Oke-Ado Road',
+      'Oke-Bola Road', 'Sango Road', 'Eleyele Road', 'Apata Road', 'Akobo Road',
+      'Iwo Road', 'Bodija Market', 'Agbowo', 'Samonda', 'Ajibode', 'Ojoo',
+      'Odo-Ona', 'Oke-Are', 'Oke-Itunu', 'Oke-Fia', 'Oke-Aremo', 'Bodija', 'UI',
+      'Challenge', 'Ring Road', 'Dugbe', 'Mokola', 'Agodi', 'Gate', 'Molete'
+    ];
     
-    // Filter addresses that match the query
-    const filtered = allAddresses.filter(address => 
-      address.toLowerCase().includes(query.toLowerCase())
+    // Use Lagos by default if no state specified, or use specified state
+    const addressDatabase: Record<string, string[]> = {
+      'Lagos': lagosAddresses,
+      'Lagos State': lagosAddresses,
+      'Ibadan': ibadanAddresses,
+      'Oyo': ibadanAddresses
+    };
+    
+    // Determine which addresses to use - default to Lagos
+    const useState = state || 'Lagos';
+    const stateAddresses = addressDatabase[useState] || addressDatabase['Lagos'] || [];
+    
+    // Also include cities from getCitiesByState for broader matching
+    let cityMatches: string[] = [];
+    if (useState === 'Lagos' || useState === 'Lagos State') {
+      cityMatches = await this.getCitiesByState('Lagos');
+    } else if (useState === 'Ibadan' || useState === 'Oyo') {
+      cityMatches = await this.getCitiesByState('Ibadan');
+    }
+    
+    // Combine addresses and cities, remove duplicates
+    const allOptions = [...new Set([...stateAddresses, ...cityMatches])];
+    
+    // Filter options that match the query (case-insensitive)
+    const queryLower = query.toLowerCase().trim();
+    const filtered = allOptions.filter(option => 
+      option.toLowerCase().includes(queryLower)
     );
     
+    // Sort by relevance (exact matches first, then partial)
+    const sorted = filtered.sort((a, b) => {
+      const aLower = a.toLowerCase();
+      const bLower = b.toLowerCase();
+      const aExact = aLower === queryLower || aLower.startsWith(queryLower);
+      const bExact = bLower === queryLower || bLower.startsWith(queryLower);
+      if (aExact && !bExact) return -1;
+      if (!aExact && bExact) return 1;
+      return a.localeCompare(b);
+    });
+    
     // Limit to top 10 matches
-    // Format: address, city, state (without Nigeria)
-    return filtered.slice(0, 10).map((street, index) => ({
-      id: `fallback-${index}-${Date.now()}`,
-      fullAddress: `${street}, ${city || ''}, ${state || ''}`.trim().replace(/^,\s*|,\s*$/g, ''),
-      street,
-      city: city || '',
-      state: state || '',
-      confidence: 0.7 - (index * 0.05)
-    }));
+    return sorted.slice(0, 10).map((name, index) => {
+      // Determine if it's a city/area or a street
+      const isCity = cityMatches.includes(name);
+      const displayCity = isCity ? name : (city || 'Lagos');
+      const displayState = useState === 'Lagos State' ? 'Lagos' : useState;
+      
+      return {
+        id: `fallback-${index}-${Date.now()}`,
+        fullAddress: `${name}, ${displayCity}, ${displayState}`,
+        street: isCity ? '' : name,
+        city: displayCity,
+        state: displayState,
+        confidence: 0.8 - (index * 0.05)
+      };
+    });
   }
 
   /**

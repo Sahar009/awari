@@ -7,37 +7,37 @@ const serviceData: selectCardProps[] = [
     icon: <Home size={32} />,
     title: "Property for Rent",
     content: "Find rental apartments, houses, and commercial spaces tailored to your needs.",
-    image: "/assets/images/services/rent.jpg", // You can add your image path here
+    image: "/assets/images/imagew.jpg",
   },
   {
     icon: <ShoppingBag size={32} />,
     title: "Property for Sale",
     content: "Browse a wide range of properties available for purchase in prime locations.",
-    image: "/assets/images/services/sale.jpg", // You can add your image path here
+    image: "/assets/images/imagew2.jpg",
   },
   {
     icon: <Hotel size={32} />,
     title: "Shortlet & Hotels",
     content: "Book short-term stays and hotel accommodations with ease and convenience.",
-    image: "/assets/images/services/shortlet.jpg", // You can add your image path here
+    image: "/assets/images/imagew3.jpg",
   },
   {
     icon: <ClipboardCheck size={32} />,
     title: "Home Inspection",
     content: "Professional property inspection services to ensure quality and safety standards.",
-    image: "/assets/images/services/inspection.jpg", // You can add your image path here
+    image: "/assets/images/imagew5.jpg",
   },
   {
     icon: <Shield size={32} />,
     title: "Escrow Services",
     content: "Secure and transparent payment escrow services for safe property transactions.",
-    image: "/assets/images/services/escrow.jpg", // You can add your image path here
+    image: "/assets/images/imagew6.jpg", // Using imagew.jpg as fallback for 5th service
   },
   {
     icon: <Building2 size={32} />,
     title: "Property Management",
     content: "Comprehensive property management solutions for landlords and property owners.",
-    image: "/assets/images/services/management.jpg", // You can add your image path here
+    image: "/assets/images/imagew7.jpg", // Using imagew2.jpg as fallback for 6th service
   },
 ];
 

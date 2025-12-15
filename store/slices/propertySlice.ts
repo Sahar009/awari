@@ -260,6 +260,11 @@ export interface PropertyFilters {
   // Search
   search?: string;
   
+  // Availability filters (for shortlet/rent/hotel)
+  checkInDate?: string;
+  checkOutDate?: string;
+  numberOfGuests?: number;
+  
   // Legacy support
   location?: string;
   type?: string;
@@ -343,6 +348,10 @@ export const fetchProperties = createAsyncThunk(
       
       // Search
       if (filters.search) queryParams.append('search', filters.search);
+      
+      // Availability filters (for shortlet/rent/hotel)
+      if (filters.checkInDate) queryParams.append('checkInDate', filters.checkInDate);
+      if (filters.checkOutDate) queryParams.append('checkOutDate', filters.checkOutDate);
       
       // Legacy support - map old filters to new ones
       if (filters.location) queryParams.append('city', filters.location);

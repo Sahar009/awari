@@ -14,7 +14,7 @@ const slides = [
     badge: "Rent & Buy",
   },
   {
-    img: "/assets/images/slider7.png",
+    img: "/assets/images/slider7.jpg",
     header: "Premium Shortlets & Hotels",
     description: "Book luxury short-stay accommodations for vacations, business trips, and weekend getaways. Premium amenities, instant booking, and verified hosts ensure memorable experiences every time.",
     gradient: "from-secondary-color/90 via-pink-500/80 to-rose-600/90",
@@ -22,7 +22,7 @@ const slides = [
     badge: "Shortlets",
   },
   {
-    img: "/assets/images/slider3.png",
+    img: "/assets/images/slider34.jpg",
     header: "Smart Property Management",
     description: "Streamline your real estate business with our comprehensive platform. List properties, manage bookings, schedule inspections, and handle payments all in one place.",
     gradient: "from-orange-500/90 via-red-500/80 to-amber-600/90",
@@ -38,7 +38,7 @@ const slides = [
     badge: "Tenant Care",
   },
   {
-    img: "/assets/images/slider5.png",
+    img: "/assets/images/slider36.jpg",
     header: "Developer Sales Acceleration",
     description: "Launch new projects with immersive storytelling, lead nurture, and real-time analytics. Manage inventory, buyers, and agents from a single command center.",
     gradient: "from-sky-500/90 via-blue-600/80 to-cyan-600/90",
@@ -47,8 +47,8 @@ const slides = [
   },
   {
     img: "/assets/images/slider6.png",
-    header: "Data-Driven Investment Insights",
-    description: "Unlock market intelligence with AI-powered valuation, performance tracking, and portfolio optimization. Make smarter decisions faster.",
+    header: "Expert Investment Guidance",
+    description: "Navigate property investments with verified listings, market intelligence, and personalized advisory. From market research to acquisition, we guide you through every step with trusted expertise.",
     gradient: "from-purple-600/90 via-indigo-600/80 to-violet-700/90",
     accentColor: "text-purple-500",
     badge: "Investors",

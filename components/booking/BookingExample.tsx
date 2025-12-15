@@ -46,7 +46,7 @@ const BookingExample: React.FC<BookingExampleProps> = ({ propertyId, userId }) =
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createBookingData, setCreateBookingData] = useState({
     propertyId: propertyId || '',
-    bookingType: 'shortlet' as 'shortlet' | 'rental' | 'sale_inspection',
+    bookingType: 'shortlet' as 'shortlet' | 'hotel' | 'sale_inspection',
     checkInDate: '',
     checkOutDate: '',
     numberOfNights: 1,
@@ -266,7 +266,7 @@ const BookingExample: React.FC<BookingExampleProps> = ({ propertyId, userId }) =
           >
             <option value="">All Types</option>
             <option value="shortlet">Shortlet</option>
-            <option value="rental">Rental</option>
+            <option value="hotel">Hotel</option>
             <option value="sale_inspection">Sale Inspection</option>
           </select>
         </div>
@@ -299,11 +299,11 @@ const BookingExample: React.FC<BookingExampleProps> = ({ propertyId, userId }) =
               <label className="block text-sm font-medium text-gray-700 mb-1">Booking Type</label>
               <select
                 value={createBookingData.bookingType}
-                onChange={(e) => setCreateBookingData({ ...createBookingData, bookingType: e.target.value as 'shortlet' | 'rental' | 'sale_inspection' })}
+                onChange={(e) => setCreateBookingData({ ...createBookingData, bookingType: e.target.value as 'shortlet' | 'hotel' | 'sale_inspection' })}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2"
               >
                 <option value="shortlet">Shortlet</option>
-                <option value="rental">Rental</option>
+                <option value="hotel">Hotel</option>
                 <option value="sale_inspection">Sale Inspection</option>
               </select>
             </div>

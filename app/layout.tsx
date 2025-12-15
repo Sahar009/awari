@@ -15,6 +15,9 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "Awari",
   description: "Awari Website",
+  icons: {
+    icon: "/assets/images/favicon.png",
+  },
 };
 
 export default function RootLayout({

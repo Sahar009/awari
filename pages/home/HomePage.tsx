@@ -229,7 +229,7 @@ const HomePage = () => {
             />
           </div>
           {/* Desktop: Overlapping hero section */}
-          <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 w-full max-w-7xl mx-auto -bottom-20 lg:-bottom-24">
+          <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 w-full max-w-7xl mx-auto -bottom-20 lg:-bottom-24 z-50">
             <SearchFilter
               locations={locationOptions}
               propertyTypes={propertyTypeOptions}

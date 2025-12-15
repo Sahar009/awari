@@ -36,28 +36,28 @@ const reviews = [
       "The creativity and commitment from this team are outstanding. My clients loved the results.",
   },
   {
-    imageSrc: "/assets/images/user5.png",
+    imageSrc: "/assets/images/eme.jpg",
     customerName: "Emeka Okafor",
     customerType: "Business Owner",
     content:
       "They understood my vision perfectly and executed it with excellence.",
   },
   {
-    imageSrc: "/assets/images/user6.png",
+    imageSrc: "/assets/images/aisha.jpg",
     customerName: "Aisha Bello",
     customerType: "Property Developer",
     content:
       "Their innovative approach and timely delivery made my project a huge success. Highly recommended!",
   },
   {
-    imageSrc: "/assets/images/user7.png",
+    imageSrc: "/assets/images/uue.jpg",
     customerName: "Obinna Okwu",
     customerType: "Construction Manager",
     content:
       "Professional, reliable, and detail-oriented. They transformed my vision into reality beyond my expectations.",
   },
   {
-    imageSrc: "/assets/images/user8.png",
+    imageSrc: "/assets/images/fat.jpg",
     customerName: "Fatima Ibrahim",
     customerType: "Investment Banker",
     content:
