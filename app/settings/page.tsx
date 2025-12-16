@@ -1,17 +1,20 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Container from "@/components/Container";
 import { ArrowLeft, Bell, Shield, Palette, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/useToast';
 import MainLayout from "../mainLayout";
+import { authService } from '@/services/authService';
 
 const SettingsPageContent = () => {
   const router = useRouter();
   const toast = useToast();
   
   // Settings state
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
@@ -37,6 +40,7 @@ const SettingsPageContent = () => {
   });
 
   const [privacySettings, setPrivacySettings] = useState({
+    profileVisible: true,
     showEmail: false,
     showPhone: false,
     showLocation: false,
@@ -45,13 +49,74 @@ const SettingsPageContent = () => {
     dataSharing: false,
   });
 
+  // Load preferences on mount
+  const loadPreferences = async () => {
+    try {
+      setIsLoading(true);
+      const response = await authService.getPreferences();
+      if (response.success && response.data) {
+        const { notifications, privacy } = response.data;
+        
+        // Map backend preferences to frontend state
+        if (notifications) {
+          setNotificationSettings(prev => ({
+            ...prev,
+            emailNotifications: notifications.email ?? prev.emailNotifications,
+            pushNotifications: notifications.push ?? prev.pushNotifications,
+            smsNotifications: notifications.sms ?? prev.smsNotifications,
+          }));
+        }
+        
+        if (privacy) {
+          setPrivacySettings(prev => ({
+            ...prev,
+            showEmail: privacy.showEmail ?? prev.showEmail,
+            showPhone: privacy.showPhone ?? prev.showPhone,
+            profileVisible: privacy.profileVisible ?? prev.profileVisible,
+          }));
+        }
+      }
+    } catch (error: unknown) {
+      console.error('Error loading preferences:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load preferences. Using defaults.';
+      toast.error('Error', errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (authService.isAuthenticated()) {
+      loadPreferences();
+    } else {
+      setIsLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   const handleNotificationUpdate = async () => {
     try {
-      // TODO: Implement notification settings API call
-      toast.success('Settings Saved', 'Your notification preferences have been saved.');
-    } catch {
-      toast.error('Error', 'Failed to save notification settings.');
+      setIsSaving(true);
+      const response = await authService.updatePreferences({
+        notifications: {
+          email: notificationSettings.emailNotifications,
+          push: notificationSettings.pushNotifications,
+          sms: notificationSettings.smsNotifications,
+        },
+      });
+
+      if (response.success) {
+        toast.success('Settings Saved', 'Your notification preferences have been saved.');
+      } else {
+        throw new Error(response.message || 'Failed to save settings');
+      }
+    } catch (error: unknown) {
+      console.error('Error updating notification settings:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save notification settings.';
+      toast.error('Error', errorMessage);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -66,10 +131,26 @@ const SettingsPageContent = () => {
 
   const handlePrivacyUpdate = async () => {
     try {
-      // TODO: Implement privacy settings API call
-      toast.success('Settings Saved', 'Your privacy settings have been saved.');
-    } catch {
-      toast.error('Error', 'Failed to save privacy settings.');
+      setIsSaving(true);
+      const response = await authService.updatePreferences({
+        privacy: {
+          showEmail: privacySettings.showEmail,
+          showPhone: privacySettings.showPhone,
+          profileVisible: privacySettings.profileVisible ?? true,
+        },
+      });
+
+      if (response.success) {
+        toast.success('Settings Saved', 'Your privacy settings have been saved.');
+      } else {
+        throw new Error(response.message || 'Failed to save settings');
+      }
+    } catch (error: unknown) {
+      console.error('Error updating privacy settings:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save privacy settings.';
+      toast.error('Error', errorMessage);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -192,6 +273,9 @@ const SettingsPageContent = () => {
               <div className="flex items-center gap-3 mb-6">
                 <Bell className="w-6 h-6 text-primary" />
                 <h2 className="text-xl font-semibold text-gray-900">Notification Preferences</h2>
+                {isLoading && (
+                  <span className="text-sm text-gray-500">Loading...</span>
+                )}
               </div>
 
               <div className="space-y-4">
@@ -261,94 +345,24 @@ const SettingsPageContent = () => {
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <button
                   onClick={handleNotificationUpdate}
-                  className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                  disabled={isSaving || isLoading}
+                  className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save Notifications
+                  {isSaving ? 'Saving...' : 'Save Notifications'}
                 </button>
               </div>
             </section>
 
-            {/* Preferences */}
-            <section id="preferences" className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <Palette className="w-6 h-6 text-primary" />
-                <h2 className="text-xl font-semibold text-gray-900">Preferences</h2>
-              </div>
-
-              <div className="space-y-4">
-                <SettingToggle
-                  category="preference"
-                  setting="newsletter"
-                  label="Newsletter Subscription"
-                  description="Subscribe to our weekly newsletter with property insights"
-                />
-                
-                <SettingToggle
-                  category="preference"
-                  setting="autoSave"
-                  label="Auto-save Drafts"
-                  description="Automatically save your property listings as drafts"
-                />
-
-                <SettingToggle
-                  category="preference"
-                  setting="twoFactorAuth"
-                  label="Two-Factor Authentication"
-                  description="Add an extra layer of security to your account"
-                />
-
-                <SettingToggle
-                  category="preference"
-                  setting="publicProfile"
-                  label="Public Profile"
-                  description="Make your profile visible to other users"
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
-                    <select
-                      value={preferenceSettings.language}
-                      onChange={(e) => setPreferenceSettings(prev => ({ ...prev, language: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                    >
-                      <option value="en">English</option>
-                      <option value="fr">French</option>
-                      <option value="es">Spanish</option>
-                      <option value="de">German</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
-                    <select
-                      value={preferenceSettings.currency}
-                      onChange={(e) => setPreferenceSettings(prev => ({ ...prev, currency: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                    >
-                      <option value="NGN">Nigerian Naira (₦)</option>
-                      <option value="USD">US Dollar ($)</option>
-                      <option value="EUR">Euro (€)</option>
-                      <option value="GBP">British Pound (£)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <button
-                  onClick={handlePreferenceUpdate}
-                  className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                >
-                  Save Preferences
-                </button>
-              </div>
-            </section>
+          
 
             {/* Privacy & Security */}
             <section id="privacy" className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-6">
                 <Shield className="w-6 h-6 text-primary" />
                 <h2 className="text-xl font-semibold text-gray-900">Privacy & Security</h2>
+                {isLoading && (
+                  <span className="text-sm text-gray-500">Loading...</span>
+                )}
               </div>
 
               <div className="space-y-4">
@@ -398,9 +412,10 @@ const SettingsPageContent = () => {
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <button
                   onClick={handlePrivacyUpdate}
-                  className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                  disabled={isSaving || isLoading}
+                  className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save Privacy Settings
+                  {isSaving ? 'Saving...' : 'Save Privacy Settings'}
                 </button>
               </div>
             </section>

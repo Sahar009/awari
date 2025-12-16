@@ -31,6 +31,23 @@ export interface ProfileUpdateData {
   avatar?: File;
 }
 
+export interface NotificationPreferences {
+  email?: boolean;
+  push?: boolean;
+  sms?: boolean;
+}
+
+export interface PrivacyPreferences {
+  profileVisible?: boolean;
+  showEmail?: boolean;
+  showPhone?: boolean;
+}
+
+export interface UserPreferences {
+  notifications: NotificationPreferences;
+  privacy: PrivacyPreferences;
+}
+
 // Authentication service
 export const authService = {
   // User login
@@ -130,6 +147,16 @@ export const authService = {
   clearAuth: (): void => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+  },
+
+  // Get user preferences
+  getPreferences: async (): Promise<ApiResponse<UserPreferences>> => {
+    return apiService.get<UserPreferences>('/auth/settings/preferences');
+  },
+
+  // Update user preferences
+  updatePreferences: async (preferences: Partial<UserPreferences>): Promise<ApiResponse<UserPreferences>> => {
+    return apiService.put<UserPreferences>('/auth/settings/preferences', preferences);
   },
 };
 

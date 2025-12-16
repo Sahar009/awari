@@ -268,14 +268,14 @@ const HeroSlider = () => {
       </div>
 
       {/* Slide Counter (Desktop) */}
-      <div className="absolute top-8 right-8 z-40 hidden lg:block">
+      {/* <div className="absolute top-8 right-8 z-40 hidden lg:block">
         <div className="slide-counter bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
           <div className="text-center">
             <div className="text-3xl font-bold text-white mb-1">{String(current + 1).padStart(2, '0')}</div>
             <div className="text-sm text-gray-300">of {String(slides.length).padStart(2, '0')}</div>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
