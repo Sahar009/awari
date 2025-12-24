@@ -102,6 +102,10 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
 
+  // Validation errors state
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState('');
+
   // Availability validation state
   const [dateValidationError, setDateValidationError] = useState('');
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
@@ -131,6 +135,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
       dispatch(clearAvailabilityCheck());
       dispatch(clearUnavailableDates());
       setDateValidationError('');
+      setValidationErrors({});
+      setGeneralError('');
       
       // Load unavailable dates for the next 3 months
       if (property?.id) {
@@ -443,24 +449,55 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
       
       // Handle different types of errors
       let errorMessage = 'Failed to create booking';
+      const errors: Record<string, string> = {};
       
-      if (error instanceof Error) {
+      interface ValidationError {
+        path?: string;
+        msg?: string;
+        message?: string;
+      }
+      
+      interface BackendError {
+        errors?: ValidationError[];
+        message?: string;
+      }
+      
+      if (error && typeof error === 'object') {
+        // Check if it's a validation error from the backend
+        if ('errors' in error && Array.isArray((error as BackendError).errors)) {
+          const validationErrors = (error as BackendError).errors || [];
+          validationErrors.forEach((err: ValidationError) => {
+            if (err.path) {
+              errors[err.path] = err.msg || err.message || 'Invalid value';
+            }
+          });
+          errorMessage = (error as BackendError).message || 'Validation failed. Please check the form.';
+          setValidationErrors(errors);
+        } else if ('message' in error) {
+          errorMessage = (error as Error).message;
+        }
+      } else if (error instanceof Error) {
         errorMessage = error.message;
       } else if (typeof error === 'string') {
         errorMessage = error;
-      } else if (error && typeof error === 'object' && 'message' in error) {
-        errorMessage = (error as Error).message;
       }
       
       console.error('Detailed booking error:', {
         error,
         errorMessage,
+        validationErrors: errors,
         bookingType,
         propertyId: property?.id,
         formData
       });
       
-      toast.error('Booking Failed', errorMessage);
+      // Set general error for display
+      setGeneralError(errorMessage);
+      
+      // Only toast if there are no specific field errors
+      if (Object.keys(errors).length === 0) {
+        toast.error('Booking Failed', errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -1048,6 +1085,17 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
               <p className="text-gray-600">Request a property inspection appointment</p>
             </div>
 
+            {/* Display general error */}
+            {generalError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                  <span className="font-medium text-red-800">Error</span>
+                </div>
+                <p className="text-sm text-red-700 mt-1">{generalError}</p>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1056,11 +1104,26 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
                 <input
                   type="date"
                   value={formData.inspectionDate}
-                  onChange={(e) => handleInputChange('inspectionDate', e.target.value)}
+                  onChange={(e) => {
+                    handleInputChange('inspectionDate', e.target.value);
+                    // Clear error when user types
+                    if (validationErrors.inspectionDate) {
+                      setValidationErrors(prev => {
+                        const newErrors = { ...prev };
+                        delete newErrors.inspectionDate;
+                        return newErrors;
+                      });
+                    }
+                  }}
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    validationErrors.inspectionDate ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   required
                 />
+                {validationErrors.inspectionDate && (
+                  <p className="text-red-600 text-sm mt-1">{validationErrors.inspectionDate}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1068,8 +1131,20 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
                 </label>
                 <select
                   value={formData.inspectionTime}
-                  onChange={(e) => handleInputChange('inspectionTime', e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onChange={(e) => {
+                    handleInputChange('inspectionTime', e.target.value);
+                    // Clear error when user selects
+                    if (validationErrors.inspectionTime) {
+                      setValidationErrors(prev => {
+                        const newErrors = { ...prev };
+                        delete newErrors.inspectionTime;
+                        return newErrors;
+                      });
+                    }
+                  }}
+                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    validationErrors.inspectionTime ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   required
                 >
                   <option value="">Select time</option>
@@ -1083,6 +1158,9 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, property }
                   <option value="16:00">4:00 PM</option>
                   <option value="17:00">5:00 PM</option>
                 </select>
+                {validationErrors.inspectionTime && (
+                  <p className="text-red-600 text-sm mt-1">{validationErrors.inspectionTime}</p>
+                )}
               </div>
             </div>
 

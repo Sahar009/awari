@@ -29,16 +29,12 @@ export const Favourite: React.FC<FavouriteProps> = ({
   const componentId = React.useMemo(() => Math.random().toString(36).substr(2, 9), []);
   const clickCountRef = React.useRef(0);
   
-  // Debug: Log component renders
-  console.log(`[Favourite-${componentId}] Component rendered for property: ${propertyId}`);
-  
   const isFavorited = useAppSelector((state) => {
     const favoriteState = (state as { favorite: { favoriteStatus?: Record<string, { isFavorited: boolean }>, favorites?: Array<{ propertyId: string }> } }).favorite;
     
     // First check the favoriteStatus map
     const statusInfo = favoriteState?.favoriteStatus?.[propertyId];
     if (statusInfo?.isFavorited) {
-      console.log('[Favourite] Found in favoriteStatus:', statusInfo);
       return true;
     }
     
@@ -46,23 +42,12 @@ export const Favourite: React.FC<FavouriteProps> = ({
     const list = favoriteState?.favorites as Array<{ propertyId: string }> | undefined;
     const inList = Array.isArray(list) ? list.some(item => item.propertyId === propertyId) : false;
     
-    console.log('[Favourite] Status check:', {
-      propertyId,
-      statusInfo,
-      inList,
-      favoritesListLength: list?.length || 0
-    });
-    
     return inList;
   });
 
   // Check favorite status on mount (only if not already in state)
   useEffect(() => {
     if (propertyId) {
-      console.log(`[Favourite-${componentId}] mount -> propertyId:`, propertyId);
-      
-      // Always check status on mount to ensure we have the latest state
-      console.log(`[Favourite-${componentId}] Checking favorite status on mount...`);
       dispatch(checkFavoriteStatus(propertyId));
       
       // Run debug tests if debug mode is enabled
@@ -70,12 +55,7 @@ export const Favourite: React.FC<FavouriteProps> = ({
         debugUtils.runAllTests(propertyId);
       }
     }
-  }, [dispatch, propertyId, debugMode, componentId]);
-
-  // Log whenever derived favorited state changes
-  useEffect(() => {
-    console.log('[Favourite] isFavorited changed:', { propertyId, isFavorited });
-  }, [propertyId, isFavorited]);
+  }, [dispatch, propertyId, debugMode]);
 
   const toggleLike = async (e?: React.MouseEvent<HTMLDivElement>) => {
     if (e) {

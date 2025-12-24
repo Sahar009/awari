@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MenuIcon, X, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle, User, LogOut, Settings, UserCircle, ChevronDown, PlusCircle, Heart } from "lucide-react";
+import { MenuIcon, X, MessageCircle, Home, Building2, HomeIcon, DollarSign, Hotel, Info, Phone, HelpCircle, User, LogOut, Settings, UserCircle, ChevronDown, PlusCircle, Heart, Calendar } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Logo } from "./Logo";
 import { useRouter } from 'next/navigation';
@@ -88,46 +88,26 @@ export const Navbar = () => {
         <Logo />
             </div>
 
-            <div className="hidden lg:flex items-center space-x-4">
+            <div className="hidden lg:flex items-center space-x-6">
               {(hasAccess ? [
-                { name: "Dashboard", href: "/home", description: "Your dashboard" },
-                { name: "Properties", href: "/browse-listing", description: "Browse all listings" },
-                { name: "Rentals", href: "/rentals", description: "Find your home" },
-                { name: "Sales", href: "/sales", description: "Buy property" },
-                { name: "Shortlets", href: "/shortlets", description: "Book short stays" },
-                { name: "Hotels", href: "/hotels", description: "Book hotels" },
-                { name: "Messages", href: "/messages", description: "Your conversations" },
+                { name: "Dashboard", href: "/home" },
+                { name: "Properties", href: "/browse-listing" },
+                { name: "Shortlets", href: "/shortlets" },
+                { name: "Hotels", href: "/hotels" },
               ] : [
-                { name: "Properties", href: "/browse-listing", description: "Browse all listings" },
-                { name: "Rentals", href: "/rentals", description: "Find your home" },
-                { name: "Sales", href: "/sales", description: "Buy property" },
-                { name: "Shortlets", href: "/shortlets", description: "Book short stays" },
-                { name: "Hotels", href: "/hotels", description: "Book hotels" },
-                { name: "About", href: "/about", description: "Learn more" },
+                { name: "Properties", href: "/browse-listing" },
+                { name: "Rentals", href: "/rentals" },
+                { name: "Shortlets", href: "/shortlets" },
+                { name: "Hotels", href: "/hotels" },
+                { name: "About", href: "/about" },
               ]).map((item, index) => (
-                <div key={item.name} className="group relative">
-                  <a
-                    href={item.href}
-                    className="flex flex-col items-center text-slate-700 hover:text-primary transition-all duration-300 ease-out transform hover:-translate-y-1"
-                    style={{
-                      animationDelay: `${index * 0.1}s`,
-                      animationName: 'fadeInDown',
-                      animationDuration: '0.6s',
-                      animationTimingFunction: 'ease-out',
-                      animationFillMode: 'forwards'
-                    }}
-                  >
-                    <span className="font-medium text-sm relative">
-                      {item.name}
-                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
-                    </span>
-                    <span className="text-xs text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      {item.description}
-                    </span>
-                  </a>
-                  
-                  <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 scale-0 group-hover:scale-100"></div>
-                </div>
+                <a
+                  key={item.name}
+                  href={item.href}
+                  className="text-slate-700 hover:text-primary transition-colors duration-200 font-medium text-sm"
+                >
+                  {item.name}
+                </a>
               ))}
             </div>
 
@@ -142,20 +122,6 @@ export const Navbar = () => {
                 <>
                   {/* Notifications */}
                   <NotificationBell className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110" />
-
-                  {/* Messages */}
-                  <div 
-                    className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-all duration-300 cursor-pointer transform hover:scale-110 relative"
-                    onClick={() => router.push('/messages')}
-                    title="Messages"
-                  >
-                    <MessageCircle size={20} className="text-slate-600" />
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1.5 bg-red-500 text-white text-xs font-semibold rounded-full flex items-center justify-center animate-pulse">
-                        {unreadCount > 99 ? '99+' : unreadCount}
-                      </span>
-                    )}
-                  </div>
 
                   {/* User Menu */}
                   <div className="relative user-menu-container">
@@ -224,12 +190,12 @@ export const Navbar = () => {
                           </a>
                           
                           <a
-                            href="/settings"
+                            href="/my-bookings"
                             className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200"
                             onClick={() => setIsUserMenuOpen(false)}
                           >
-                            <Settings size={20} className="text-slate-600" />
-                            <span className="text-slate-700">Settings</span>
+                            <Calendar size={20} className="text-slate-600" />
+                            <span className="text-slate-700">My Bookings</span>
                           </a>
                           
                           <a
@@ -246,7 +212,7 @@ export const Navbar = () => {
                             className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200"
                             onClick={() => setIsUserMenuOpen(false)}
                           >
-                            <Home size={20} className="text-slate-600" />
+                            <Heart size={20} className="text-slate-600" />
                             <span className="text-slate-700">Favorites</span>
                           </a>
                           
@@ -262,6 +228,15 @@ export const Navbar = () => {
                                 {unreadCount > 99 ? '99+' : unreadCount}
                               </span>
                             )}
+                          </a>
+                          
+                          <a
+                            href="/settings"
+                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors duration-200"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <Settings size={20} className="text-slate-600" />
+                            <span className="text-slate-700">Settings</span>
                           </a>
                           
                           <div className="border-t border-slate-200 my-2"></div>
@@ -386,6 +361,7 @@ export const Navbar = () => {
             { name: "Sales", href: "/sales", description: "Buy your dream property", icon: DollarSign },
             { name: "Shortlets", href: "/shortlets", description: "Book short stays", icon: Hotel },
             { name: "Hotels", href: "/hotels", description: "Book hotels", icon: Hotel },
+            { name: "My Bookings", href: "/my-bookings", description: "View your bookings", icon: Calendar },
             { name: "Sell/Rent", href: "/add-property", description: "List your property", icon: PlusCircle },
             { name: "My Listings", href: "/my-listings", description: "Manage your properties", icon: HomeIcon },
             { name: "Favorites", href: "/favorites", description: "Saved properties", icon: Heart },

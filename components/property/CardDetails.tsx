@@ -23,7 +23,7 @@ import {
   selectSummaryLoading,
   type Review
 } from '@/store/slices/reviewsSlice';
-import { Star, ThumbsUp, Flag, MessageCircle, CheckCircle2, Building2, Users, Clock } from 'lucide-react';
+import { Star, ThumbsUp, Flag, MessageCircle, CheckCircle2, Building2, Users, Clock, Bed, Bath, Car, Home, Calendar, Maximize2, User2, FileText, Sparkles, Shield, PawPrint, Cigarette, DollarSign, Award } from 'lucide-react';
 
 export type Listing = {
   id: string;
@@ -313,48 +313,46 @@ export const CardDetails = () => {
     <div className="w-full max-w-7xl mx-auto px-4 py-8">
       {/* Header Section */}
       <div className="mb-8">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="flex-1">
+            <h1 className="text-3xl md:text-5xl font-extrabold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent mb-4 leading-tight">
               {property.title}
             </h1>
-            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-              <div className="flex items-center gap-1">
-                <MapPin size={16} />
-                <span>{property.address}, {property.city}, {property.state}</span>
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+                <MapPin size={16} className="text-blue-600" />
+                <span className="text-gray-700 font-medium">{property.address}, {property.city}, {property.state}</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-100">
                 <div className="flex items-center gap-1">
                   {renderStars(Math.floor(getDisplayRating()), 'sm')}
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-bold text-amber-700">
                     {getDisplayRating().toFixed(1)}
                   </span>
                 </div>
-                <span className="text-sm text-gray-700">
-                  {getDisplayReviewsCount()} reviews
+                <span className="text-sm text-gray-600 font-medium">
+                  ({getDisplayReviewsCount()} reviews)
                 </span>
                 {summaryLoading && (
-                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-amber-600"></div>
                 )}
               </div>
-              <div className="flex items-center gap-1">
-                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg text-xs font-bold shadow-md uppercase tracking-wide">
                   {property.status}
                 </span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium capitalize">
+                <span className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg text-xs font-bold shadow-md capitalize">
                   {property.listingType}
                 </span>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="text-right">
-              <div className="text-3xl font-bold text-primary">
+            <div className="text-right bg-gradient-to-br from-primary/10 to-secondary/10 px-6 py-4 rounded-2xl border-2 border-primary/20">
+              <div className="text-4xl font-black bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                 ₦{parseFloat(property.price).toLocaleString('en-NG')}
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-600 font-semibold mt-1">
                 {property.listingType === 'rent' ? 'per month' : 'total price'}
               </div>
             </div>
@@ -363,27 +361,29 @@ export const CardDetails = () => {
       </div>
 
       {/* Image Gallery */}
-      <div className="mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 rounded-2xl overflow-hidden">
-          <div className="relative col-span-2 row-span-2 h-64 md:h-96">
+      <div className="mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 rounded-3xl overflow-hidden shadow-2xl">
+          <div className="relative col-span-2 row-span-2 h-64 md:h-96 group">
             <Image
               src={property.media?.[0]?.url || '/assets/images/houseimg (1).jpg'}
               alt="Main property image"
               fill
-              className="object-cover hover:scale-102 transition-transform duration-200"
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
             />
-            <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-              {property.media?.length || 0} photos
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="absolute top-4 left-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg backdrop-blur-sm">
+              📸 {property.media?.length || 0} photos
             </div>
           </div>
           {property.media?.slice(1, 5).map((media, i) => (
-            <div key={i} className="relative h-32 md:h-48 group cursor-pointer">
+            <div key={i} className="relative h-32 md:h-48 group cursor-pointer overflow-hidden">
               <Image 
                 src={media.url} 
                 alt={`Property image ${i + 2}`} 
                 fill 
-                className="object-cover group-hover:scale-102 transition-transform duration-200" 
+                className="object-cover group-hover:scale-110 transition-transform duration-500" 
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
           ))}
         </div>
@@ -394,121 +394,165 @@ export const CardDetails = () => {
         {/* Left column - Main Content */}
         <div className="lg:col-span-2 space-y-8">
           {/* Property Owner */}
-          <div className="bg-white rounded-xl p-6 shadow-lg border">
-            <h2 className="text-xl font-semibold mb-4">Property Owner</h2>
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
-                <span className="text-white font-bold text-xl">
+          <div className="bg-gradient-to-br from-white to-blue-50/30 rounded-2xl p-8 shadow-xl border-2 border-blue-100/50 hover:shadow-2xl transition-shadow duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <User2 className="w-6 h-6 text-blue-600" />
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Property Owner</h2>
+            </div>
+            <div className="flex items-center gap-5">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 flex items-center justify-center shadow-lg ring-4 ring-blue-100">
+                <span className="text-white font-black text-2xl">
                   {property.owner?.firstName?.[0] || 'O'}
                 </span>
               </div>
               <div>
-                <h3 className="font-semibold text-lg">{property.owner?.firstName} {property.owner?.lastName}</h3>
-                {/* <p className="text-gray-600">{property.owner?.email}</p> */}
-                {/* <div className="flex items-center gap-2 mt-1">
-                  <div className="flex">{renderStars(5, 'sm')}</div>
-                  <span className="text-sm text-gray-500">5.0 · Super Host</span>
-                </div> */}
+                <h3 className="font-bold text-xl text-gray-900">{property.owner?.firstName} {property.owner?.lastName}</h3>
+                <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-green-600" />
+                  <span className="font-medium">Verified Owner</span>
+                </p>
               </div>
             </div>
           </div>
 
           {/* Description */}
-          <div className="bg-white rounded-xl p-6 shadow-lg border">
-            <h2 className="text-xl font-semibold mb-4">Description</h2>
-            <p className="text-gray-700 leading-relaxed">
-              {property.description}
-            </p>
+          <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl p-8 shadow-xl border-2 border-purple-100/50 hover:shadow-2xl transition-shadow duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <FileText className="w-6 h-6 text-purple-600" />
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Description</h2>
+            </div>
+            <div className="relative">
+              <div className="absolute -left-4 top-0 w-1 h-full bg-gradient-to-b from-purple-400 to-pink-400 rounded-full"></div>
+              <p className="text-gray-700 leading-relaxed text-base font-normal pl-4">
+                {property.description}
+              </p>
+            </div>
           </div>
 
           {/* Property Specifications */}
-          <div className="bg-white rounded-xl p-6 shadow-lg border">
-            <h2 className="text-xl font-semibold mb-4">Property Specifications</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+          <div className="bg-gradient-to-br from-white to-emerald-50/30 rounded-2xl p-8 shadow-xl border-2 border-emerald-100/50 hover:shadow-2xl transition-shadow duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <Sparkles className="w-6 h-6 text-emerald-600" />
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Property Specifications</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {property.bedrooms && (
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-primary">{property.bedrooms}</div>
-                  <div className="text-sm text-gray-600">Bedrooms</div>
+                <div className="group text-center p-5 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl border-2 border-blue-200/50 hover:border-blue-400 hover:shadow-lg transition-all duration-300">
+                  <Bed className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                  <div className="text-3xl font-black text-blue-700">{property.bedrooms}</div>
+                  <div className="text-sm text-gray-700 font-semibold mt-1">Bedrooms</div>
                 </div>
               )}
               {property.bathrooms && (
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-primary">{property.bathrooms}</div>
-                  <div className="text-sm text-gray-600">Bathrooms</div>
+                <div className="group text-center p-5 bg-gradient-to-br from-cyan-50 to-cyan-100/50 rounded-xl border-2 border-cyan-200/50 hover:border-cyan-400 hover:shadow-lg transition-all duration-300">
+                  <Bath className="w-8 h-8 text-cyan-600 mx-auto mb-2" />
+                  <div className="text-3xl font-black text-cyan-700">{property.bathrooms}</div>
+                  <div className="text-sm text-gray-700 font-semibold mt-1">Bathrooms</div>
                 </div>
               )}
               {property.toilets && (
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-primary">{property.toilets}</div>
-                  <div className="text-sm text-gray-600">Toilets</div>
+                <div className="group text-center p-5 bg-gradient-to-br from-teal-50 to-teal-100/50 rounded-xl border-2 border-teal-200/50 hover:border-teal-400 hover:shadow-lg transition-all duration-300">
+                  <Bath className="w-8 h-8 text-teal-600 mx-auto mb-2" />
+                  <div className="text-3xl font-black text-teal-700">{property.toilets}</div>
+                  <div className="text-sm text-gray-700 font-semibold mt-1">Toilets</div>
                 </div>
               )}
               {property.parkingSpaces && (
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-primary">{property.parkingSpaces}</div>
-                  <div className="text-sm text-gray-600">Parking Spaces</div>
+                <div className="group text-center p-5 bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl border-2 border-purple-200/50 hover:border-purple-400 hover:shadow-lg transition-all duration-300">
+                  <Car className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+                  <div className="text-3xl font-black text-purple-700">{property.parkingSpaces}</div>
+                  <div className="text-sm text-gray-700 font-semibold mt-1">Parking Spaces</div>
                 </div>
               )}
               {property.floorArea && (
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-primary">{property.floorArea}</div>
-                  <div className="text-sm text-gray-600">Floor Area (sq ft)</div>
+                <div className="group text-center p-5 bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl border-2 border-orange-200/50 hover:border-orange-400 hover:shadow-lg transition-all duration-300">
+                  <Maximize2 className="w-8 h-8 text-orange-600 mx-auto mb-2" />
+                  <div className="text-3xl font-black text-orange-700">{property.floorArea}</div>
+                  <div className="text-sm text-gray-700 font-semibold mt-1">Floor Area (sq ft)</div>
                 </div>
               )}
               {property.yearBuilt && (
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-primary">{property.yearBuilt}</div>
-                  <div className="text-sm text-gray-600">Year Built</div>
+                <div className="group text-center p-5 bg-gradient-to-br from-pink-50 to-pink-100/50 rounded-xl border-2 border-pink-200/50 hover:border-pink-400 hover:shadow-lg transition-all duration-300">
+                  <Calendar className="w-8 h-8 text-pink-600 mx-auto mb-2" />
+                  <div className="text-3xl font-black text-pink-700">{property.yearBuilt}</div>
+                  <div className="text-sm text-gray-700 font-semibold mt-1">Year Built</div>
                 </div>
               )}
             </div>
           </div>
 
           {/* Property Features */}
-          <div className="bg-white rounded-xl p-6 shadow-lg border">
-            <h2 className="text-xl font-semibold mb-4">Property Features</h2>
+          <div className="bg-gradient-to-br from-white to-indigo-50/30 rounded-2xl p-8 shadow-xl border-2 border-indigo-100/50 hover:shadow-2xl transition-shadow duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <Home className="w-6 h-6 text-indigo-600" />
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Property Features</h2>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700">Property Type</span>
-                  <span className="font-medium capitalize">{property.propertyType}</span>
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all">
+                  <span className="text-gray-700 font-medium flex items-center gap-2">
+                    <Home className="w-4 h-4 text-indigo-500" />
+                    Property Type
+                  </span>
+                  <span className="font-bold capitalize text-indigo-700">{property.propertyType}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700">Condition</span>
-                  <span className="font-medium capitalize">{property.conditionStatus}</span>
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all">
+                  <span className="text-gray-700 font-medium flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-emerald-500" />
+                    Condition
+                  </span>
+                  <span className="font-bold capitalize text-emerald-700">{property.conditionStatus}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700">Floor Number</span>
-                  <span className="font-medium">{property.floorNumber}</span>
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all">
+                  <span className="text-gray-700 font-medium flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-blue-500" />
+                    Floor Number
+                  </span>
+                  <span className="font-bold text-blue-700">{property.floorNumber}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700">Furnished</span>
-                  <span className={`px-2 py-1 rounded-full text-xs ${property.furnished ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                    {property.furnished ? 'Yes' : 'No'}
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all">
+                  <span className="text-gray-700 font-medium flex items-center gap-2">
+                    <Home className="w-4 h-4 text-purple-500" />
+                    Furnished
+                  </span>
+                  <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${property.furnished ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' : 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-md'}`}>
+                    {property.furnished ? '✓ Yes' : '✗ No'}
                   </span>
                 </div>
               </div>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700">Pet Friendly</span>
-                  <span className={`px-2 py-1 rounded-full text-xs ${property.petFriendly ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                    {property.petFriendly ? 'Yes' : 'No'}
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all">
+                  <span className="text-gray-700 font-medium flex items-center gap-2">
+                    <PawPrint className="w-4 h-4 text-amber-500" />
+                    Pet Friendly
+                  </span>
+                  <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${property.petFriendly ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' : 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-md'}`}>
+                    {property.petFriendly ? '✓ Yes' : '✗ No'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700">Smoking Allowed</span>
-                  <span className={`px-2 py-1 rounded-full text-xs ${property.smokingAllowed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                    {property.smokingAllowed ? 'Yes' : 'No'}
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all">
+                  <span className="text-gray-700 font-medium flex items-center gap-2">
+                    <Cigarette className="w-4 h-4 text-gray-500" />
+                    Smoking Allowed
+                  </span>
+                  <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${property.smokingAllowed ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' : 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-md'}`}>
+                    {property.smokingAllowed ? '✓ Yes' : '✗ No'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700">Negotiable</span>
-                  <span className={`px-2 py-1 rounded-full text-xs ${property.negotiable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                    {property.negotiable ? 'Yes' : 'No'}
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all">
+                  <span className="text-gray-700 font-medium flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-green-500" />
+                    Negotiable
+                  </span>
+                  <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${property.negotiable ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' : 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-md'}`}>
+                    {property.negotiable ? '✓ Yes' : '✗ No'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700">Featured</span>
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all">
+                  <span className="text-gray-700 font-medium flex items-center gap-2">
+                    <Award className="w-4 h-4 text-yellow-500" />
+                    Featured
+                  </span>
                   <span className={`px-2 py-1 rounded-full text-xs ${property.featured ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`}>
                     {property.featured ? 'Yes' : 'No'}
                   </span>
@@ -1003,7 +1047,7 @@ export const CardDetails = () => {
             )}
 
             {/* Contact Information - Only show if ownerId exists AND owner object exists (not null or undefined) */}
-            {property.ownerId && property.owner !== null && property.owner !== undefined && Object.keys(property.owner || {}).length > 0 && (
+            {/* {property.ownerId && property.owner !== null && property.owner !== undefined && Object.keys(property.owner || {}).length > 0 && (
               <div className="bg-white rounded-xl p-6 shadow-lg border">
                 <h3 className="font-semibold mb-4">Contact Information</h3>
                 <div className="space-y-3">
@@ -1042,7 +1086,7 @@ export const CardDetails = () => {
                   </button>
                 </div>
               </div>
-            )}
+            )} */}
           </div>
         </div>
       </div>

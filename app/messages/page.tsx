@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchConversations, setCurrentConversationUserId, clearCurrentConversation } from '@/store/slices/messageSlice';
@@ -10,7 +10,7 @@ import MainLayout from '../mainLayout';
 import { BreadCrumbs } from '@/components/BreadCrumbs';
 import { MessageSquare } from 'lucide-react';
 
-export default function MessagesPage() {
+function MessagesContent() {
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const { currentConversationUserId } = useAppSelector((state) => state.messages);
@@ -116,6 +116,20 @@ export default function MessagesPage() {
         </div>
       </div>
     </MainLayout>
+  );
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    }>
+      <MessagesContent />
+    </Suspense>
   );
 }
 

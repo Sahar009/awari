@@ -6,7 +6,7 @@ export interface Booking {
   propertyId: string;
   userId: string;
   ownerId: string;
-  bookingType: 'shortlet' | 'hotel' | 'sale_inspection';
+  bookingType: 'shortlet' | 'hotel' | 'rental' | 'sale_inspection';
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'rejected' | 'expired';
   checkInDate?: string;
   checkOutDate?: string;
@@ -40,6 +40,17 @@ export interface Booking {
     title: string;
     address: string;
     images: string[];
+    propertyType?: string;
+    listingType?: string;
+    bedrooms?: number;
+    bathrooms?: number;
+    toilets?: number;
+    parkingSpaces?: number;
+    floorArea?: number;
+    cancellationPolicy?: string;
+    petFriendly?: boolean;
+    smokingAllowed?: boolean;
+    furnished?: boolean;
     owner: {
       id: string;
       firstName: string;
@@ -92,7 +103,7 @@ export interface BookingFilters {
 
 export interface CreateBookingRequest {
   propertyId: string;
-  bookingType: 'shortlet' | 'hotel' | 'sale_inspection';
+  bookingType: 'shortlet' | 'hotel' | 'rental' | 'sale_inspection';
   checkInDate?: string;
   checkOutDate?: string;
   inspectionDate?: string;
@@ -216,7 +227,8 @@ export const fetchUserBookings = createAsyncThunk<
   'bookings/fetchUserBookings',
   async (filters: BookingFilters = {}, { rejectWithValue }) => {
     try {
-      console.log('🔄 Fetching user bookings with filters:', filters);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🔄 [THUNK] Fetching user bookings with filters:', filters);
       
       const queryParams = new URLSearchParams();
       
@@ -230,6 +242,10 @@ export const fetchUserBookings = createAsyncThunk<
       if (filters.sortBy) queryParams.append('sortBy', filters.sortBy);
       if (filters.sortOrder) queryParams.append('sortOrder', filters.sortOrder);
 
+      const url = `/bookings?${queryParams.toString()}`;
+      console.log('🌐 [THUNK] API URL:', url);
+      console.log('⏳ [THUNK] Calling apiService.get...');
+      
       const response = await apiService.get<{
         success: boolean;
         message: string;
@@ -237,12 +253,24 @@ export const fetchUserBookings = createAsyncThunk<
           bookings: Booking[];
           pagination: BookingPagination;
         };
-      }>(`/bookings?${queryParams.toString()}`);
+      }>(url);
 
-      console.log('✅ User bookings fetched successfully:', response.data);
+      console.log('📦 [THUNK] Raw response received:', response);
+      console.log('✅ [THUNK] Response data:', response.data);
+      console.log('📊 [THUNK] Bookings data:', response.data.data);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
       return response.data.data;
     } catch (error: unknown) {
-      console.error('❌ Fetch user bookings error:', error);
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.error('❌ [THUNK] Fetch user bookings error:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error instance:', error instanceof Error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch bookings';
       return rejectWithValue(errorMessage);
     }
@@ -496,6 +524,14 @@ const bookingSlice = createSlice({
     setCurrentBooking: (state, action: PayloadAction<Booking>) => {
       state.currentBooking = action.payload;
     },
+    setBookings: (state, action: PayloadAction<{ bookings: Booking[]; pagination: BookingPagination }>) => {
+      console.log('📝 setBookings reducer called with:', action.payload);
+      state.bookings = action.payload.bookings;
+      state.pagination = action.payload.pagination;
+      state.isLoading = false;
+      state.error = null;
+      console.log('✅ State updated - bookings count:', state.bookings.length);
+    },
   },
   extraReducers: (builder) => {
     // Create Booking
@@ -518,17 +554,25 @@ const bookingSlice = createSlice({
     // Fetch User Bookings
     builder
       .addCase(fetchUserBookings.pending, (state) => {
+        console.log('📋 fetchUserBookings.pending - Setting isLoading to true');
         state.isLoading = true;
         state.error = null;
       })
       .addCase(fetchUserBookings.fulfilled, (state, action) => {
+        console.log('✅ fetchUserBookings.fulfilled - Payload received:', {
+          bookingsCount: action.payload.bookings?.length,
+          pagination: action.payload.pagination,
+          firstBooking: action.payload.bookings?.[0]
+        });
         state.isLoading = false;
         state.bookings = action.payload.bookings;
         state.pagination = action.payload.pagination;
         state.lastFetch = Date.now();
         state.error = null;
+        console.log('✅ State updated - bookings count:', state.bookings.length);
       })
       .addCase(fetchUserBookings.rejected, (state, action) => {
+        console.error('❌ fetchUserBookings.rejected - Error:', action.payload);
         state.isLoading = false;
         state.error = action.payload || 'Failed to fetch bookings';
       });
@@ -703,6 +747,7 @@ export const {
   clearFilters,
   clearError,
   setCurrentBooking,
+  setBookings,
 } = bookingSlice.actions;
 
 // Selectors

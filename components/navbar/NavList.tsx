@@ -8,16 +8,12 @@ interface NavListProps {
 
 const NavListData: NavListProps[] = [
   {
-    link: "",
-    label: "Home"
+    link: "/browse-listing",
+    label: "Properties"
   },
   {
-    link: "",
+    link: "/rentals",
     label: "Rentals"
-  },
-  {
-    link: "",
-    label: "Sales"
   },
   {
     link: "/shortlets",
@@ -28,25 +24,17 @@ const NavListData: NavListProps[] = [
     label: "Hotels"
   },
   {
-    link: "",
+    link: "/about",
     label: "About"
-  },
-  {
-    link: "",
-    label: "Contact"
-  },
-  {
-    link: "",
-    label: "FAQ"
   },
 ]
 
 
 const NavList = () => {
     return(
-    <div className="hidden lg:flex flex-row items-center gap-6 font-semibold text-lg">
+    <div className="hidden lg:flex flex-row items-center gap-6 font-medium text-sm">
         {NavListData.map((data, index) => (
-            <a className="cursor-pointer" key={index} href={data.link}>{data.label}</a>
+            <a className="cursor-pointer text-slate-700 hover:text-primary transition-colors duration-200" key={index} href={data.link}>{data.label}</a>
         ))}
     </div>
     )
