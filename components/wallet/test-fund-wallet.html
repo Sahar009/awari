@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Paystack Integration</title>
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+</head>
+<body>
+    <h1>Test Paystack Payment</h1>
+    <button onclick="payWithPaystack()">Pay ₦1000</button>
+    
+    <div id="result"></div>
+
+    <script>
+        function payWithPaystack() {
+            const handler = PaystackPop.setup({
+                key: 'YOUR_PUBLIC_KEY_HERE', // Replace with your public key
+                email: 'test@example.com',
+                amount: 100000, // 1000 naira in kobo
+                currency: 'NGN',
+                ref: 'test-' + Math.floor((Math.random() * 1000000000) + 1),
+                callback: function(response) {
+                    console.log('Payment successful!', response);
+                    document.getElementById('result').innerHTML = 
+                        '<h2>Payment Successful!</h2>' +
+                        '<p>Reference: ' + response.reference + '</p>' +
+                        '<p>Transaction: ' + response.transaction + '</p>' +
+                        '<p>Status: ' + response.status + '</p>';
+                },
+                onClose: function() {
+                    console.log('Payment cancelled');
+                    document.getElementById('result').innerHTML = 
+                        '<h2>Payment Cancelled</h2>';
+                }
+            });
+            handler.openIframe();
+        }
+    </script>
+</body>
+</html>

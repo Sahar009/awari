@@ -41,9 +41,15 @@ import {
   Camera,
   Trash2,
   PenTool,
-  Eye
+  Eye,
+  Wallet,
+  TrendingUp,
+  ArrowUpRight,
+  ArrowDownRight
 } from 'lucide-react';
 import Image from 'next/image';
+import FundWalletModal from '@/components/wallet/FundWalletModal';
+import WithdrawModal from '@/components/wallet/WithdrawModal';
 
 interface ProfileFormData {
   firstName: string;
@@ -82,6 +88,13 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState<'profile' | 'kyc'>('profile');
   const [showKycUploadModal, setShowKycUploadModal] = useState(false);
   
+  // Wallet state
+  const [walletData, setWalletData] = useState<any>(null);
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
+  const [showFundWalletModal, setShowFundWalletModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  
   // Location state
   const [states, setStates] = useState<NigerianState[]>([]);
   const [cities, setCities] = useState<string[]>([]);
@@ -107,7 +120,58 @@ const ProfilePage = () => {
     dispatch(getProfile());
     dispatch(fetchKycDocuments({}));
     dispatch(fetchKycStatus());
+    fetchWalletData();
   }, [dispatch]);
+
+  // Fetch wallet data
+  const fetchWalletData = async () => {
+    setWalletLoading(true);
+    setWalletError(null);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setWalletError('Please log in to view wallet');
+        setWalletLoading(false);
+        return;
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+      console.log('Fetching wallet from:', `${apiUrl}/wallet`);
+
+      const response = await fetch(`${apiUrl}/wallet`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Wallet API response status:', response.status);
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Wallet endpoint not found. Please ensure the backend server is running.');
+        }
+        if (response.status === 401) {
+          throw new Error('Authentication failed. Please log in again.');
+        }
+        throw new Error(`Failed to fetch wallet data (${response.status})`);
+      }
+
+      const data = await response.json();
+      console.log('Wallet data received:', data);
+      
+      if (data.success) {
+        setWalletData(data.data);
+      } else {
+        throw new Error(data.message || 'Failed to fetch wallet data');
+      }
+    } catch (error) {
+      console.error('Error fetching wallet:', error);
+      setWalletError(error instanceof Error ? error.message : 'Failed to load wallet');
+    } finally {
+      setWalletLoading(false);
+    }
+  };
 
   // Load Nigerian states on component mount
   useEffect(() => {
@@ -447,15 +511,19 @@ const ProfilePage = () => {
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border mb-8">
-          <div className="px-6 py-8">
+        <div className="relative overflow-hidden bg-white rounded-2xl shadow-xl border border-gray-100 mb-8">
+          {/* Decorative background gradient */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5 pointer-events-none" />
+          
+          <div className="relative px-6 py-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div className="flex items-center space-x-6">
-                <div className="relative">
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-600 rounded-full blur opacity-25 group-hover:opacity-40 transition duration-300" />
+                  <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-primary via-blue-500 to-purple-600 flex items-center justify-center ring-4 ring-white shadow-lg">
                     {user.avatarUrl ? (
                       <Image
                         src={user.avatarUrl}
@@ -468,16 +536,16 @@ const ProfilePage = () => {
                       <UserIcon className="h-12 w-12 text-white" />
                     )}
                   </div>
-                  <button className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-shadow">
-                    <Camera className="h-4 w-4 text-gray-600" />
+                  <button className="absolute bottom-0 right-0 bg-white rounded-full p-2.5 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 border-2 border-gray-100 hover:border-primary">
+                    <Camera className="h-4 w-4 text-gray-600 hover:text-primary transition-colors" />
                   </button>
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">
                     {user.firstName} {user.lastName}
                   </h1>
-                  <div className="flex items-center gap-4 mt-2">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getRoleColor(user.role)}`}>
+                  <div className="flex items-center gap-3 mt-3">
+                    <span className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide ${getRoleColor(user.role)} shadow-sm`}>
                       {user.role.replace('_', ' ')}
                     </span>
                     <div className="flex items-center gap-1">
@@ -494,12 +562,12 @@ const ProfilePage = () => {
                   </div>
                 </div>
               </div>
-              <div className="mt-4 md:mt-0">
+              <div className="mt-6 md:mt-0">
                 <button
                   onClick={() => setIsEditing(!isEditing)}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                  className="group flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-blue-600 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 font-medium"
                 >
-                  <Edit3 className="h-4 w-4" />
+                  <Edit3 className="h-4 w-4 group-hover:rotate-12 transition-transform" />
                   {isEditing ? 'Cancel Edit' : 'Edit Profile'}
                 </button>
               </div>
@@ -508,23 +576,23 @@ const ProfilePage = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex space-x-1 mb-8">
+        <div className="flex space-x-2 mb-8 bg-white/60 backdrop-blur-sm p-1.5 rounded-2xl shadow-sm border border-gray-100">
           <button
             onClick={() => setActiveTab('profile')}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+            className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
               activeTab === 'profile'
-                ? 'bg-white text-primary border-2 border-primary'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-gradient-to-r from-primary to-blue-600 text-white shadow-lg shadow-primary/30 scale-105'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-white/80'
             }`}
           >
             Profile Details
           </button>
           <button
             onClick={() => setActiveTab('kyc')}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+            className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
               activeTab === 'kyc'
-                ? 'bg-white text-primary border-2 border-primary'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-gradient-to-r from-primary to-blue-600 text-white shadow-lg shadow-primary/30 scale-105'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-white/80'
             }`}
           >
             KYC Documents
@@ -536,9 +604,12 @@ const ProfilePage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Personal Information */}
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-xl shadow-sm border">
-                <div className="px-6 py-4 border-b">
-                  <h2 className="text-xl font-semibold text-gray-900">Personal Information</h2>
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <UserIcon className="h-5 w-5 text-primary" />
+                    Personal Information
+                  </h2>
                 </div>
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -552,7 +623,7 @@ const ProfilePage = () => {
                           name="firstName"
                           value={formData.firstName}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 bg-gray-50 focus:bg-white hover:border-gray-300"
                         />
                       ) : (
                         <p className="text-gray-900 py-2">{user.firstName}</p>
@@ -568,7 +639,7 @@ const ProfilePage = () => {
                           name="lastName"
                           value={formData.lastName}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 bg-gray-50 focus:bg-white hover:border-gray-300"
                         />
                       ) : (
                         <p className="text-gray-900 py-2">{user.lastName}</p>
@@ -584,7 +655,7 @@ const ProfilePage = () => {
                           name="phone"
                           value={formData.phone}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 bg-gray-50 focus:bg-white hover:border-gray-300"
                         />
                       ) : (
                         <div className="flex items-center gap-2 py-2">
@@ -607,7 +678,7 @@ const ProfilePage = () => {
                             name="dateOfBirth"
                             value={formData.dateOfBirth}
                             onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 bg-gray-50 focus:bg-white hover:border-gray-300"
                           />
                           <p className="text-xs text-gray-500 mt-1">
                             You must be at least 18 years old
@@ -631,7 +702,7 @@ const ProfilePage = () => {
                           name="gender"
                           value={formData.gender || ''}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 bg-gray-50 focus:bg-white hover:border-gray-300"
                         >
                           <option value="">Select gender</option>
                           <option value="male">Male</option>
@@ -651,7 +722,7 @@ const ProfilePage = () => {
                           name="language"
                           value={formData.language}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 bg-gray-50 focus:bg-white hover:border-gray-300"
                         >
                           <option value="en">English</option>
                           <option value="fr">French</option>
@@ -674,7 +745,7 @@ const ProfilePage = () => {
                         value={formData.bio}
                         onChange={handleInputChange}
                         rows={4}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 bg-gray-50 focus:bg-white hover:border-gray-300 resize-none"
                         placeholder="Tell us about yourself..."
                       />
                     ) : (
@@ -685,9 +756,12 @@ const ProfilePage = () => {
               </div>
 
               {/* Address Information */}
-              <div className="bg-white rounded-xl shadow-sm border mt-6">
-                <div className="px-6 py-4 border-b">
-                  <h2 className="text-xl font-semibold text-gray-900">Address Information</h2>
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 mt-6 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-primary" />
+                    Address Information
+                  </h2>
                 </div>
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -700,7 +774,7 @@ const ProfilePage = () => {
                           name="state"
                           value={formData.state}
                           onChange={handleStateChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 bg-gray-50 focus:bg-white hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                           disabled={isLoadingLocations}
                         >
                           <option value="">Select state</option>
@@ -723,7 +797,7 @@ const ProfilePage = () => {
                           name="city"
                           value={formData.city}
                           onChange={handleCityChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 bg-gray-50 focus:bg-white hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                           disabled={!formData.state || isLoadingLocations}
                         >
                           <option value="">Select city</option>
@@ -749,7 +823,7 @@ const ProfilePage = () => {
                             value={formData.address}
                             onChange={handleAddressInputChange}
                             onFocus={() => setShowAddressDropdown(addressSuggestions.length > 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 bg-gray-50 focus:bg-white hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                             placeholder={formData.state && formData.city ? "Enter your address" : "Select state and city first"}
                             disabled={!formData.state || !formData.city}
                           />
@@ -801,60 +875,174 @@ const ProfilePage = () => {
 
             {/* Sidebar */}
             <div className="lg:col-span-1">
+              {/* Wallet Section */}
+              <div className="bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg mb-6 overflow-hidden">
+                <div className="px-6 py-4 border-b border-white/20">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="h-5 w-5 text-white" />
+                    <h3 className="text-lg font-semibold text-white">My Wallet</h3>
+                  </div>
+                </div>
+                <div className="p-6">
+                  {walletLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                    </div>
+                  ) : walletError ? (
+                    <div className="text-center py-4">
+                      <AlertCircle className="h-8 w-8 text-white/70 mx-auto mb-2" />
+                      <p className="text-sm text-white/80">{walletError}</p>
+                      <button
+                        onClick={fetchWalletData}
+                        className="mt-3 text-sm text-white underline hover:no-underline"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : walletData ? (
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-sm text-white/80 mb-1">Available Balance</p>
+                        <p className="text-3xl font-bold text-white">
+                          ₦{parseFloat(walletData.balance || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-xs text-white/60 mt-1">{walletData.currency || 'NGN'}</p>
+                      </div>
+                      
+                      {walletData.accountNumber && (
+                        <div className="pt-4 border-t border-white/20">
+                          <p className="text-xs text-white/80 mb-2">Fund via Bank Transfer</p>
+                          <div className="bg-white/10 rounded-lg p-3 space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-white/70">Account Number</span>
+                              <span className="text-sm font-mono font-semibold text-white">{walletData.accountNumber}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-white/70">Bank Name</span>
+                              <span className="text-sm font-medium text-white">{walletData.bankName}</span>
+                            </div>
+                            {walletData.accountName && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-white/70">Account Name</span>
+                                <span className="text-sm font-medium text-white">{walletData.accountName}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="pt-4 space-y-2">
+                        <button 
+                          onClick={() => setShowFundWalletModal(true)}
+                          className="w-full bg-white text-primary py-2.5 rounded-lg font-medium hover:bg-white/90 transition-colors flex items-center justify-center gap-2 hover:shadow-lg"
+                        >
+                          <ArrowUpRight className="h-4 w-4" />
+                          Fund Wallet
+                        </button>
+                        <button 
+                          onClick={() => setShowWithdrawModal(true)}
+                          className="w-full bg-white/10 text-white py-2.5 rounded-lg font-medium hover:bg-white/20 transition-colors flex items-center justify-center gap-2 border border-white/20 hover:shadow-lg"
+                        >
+                          <ArrowDownRight className="h-4 w-4" />
+                          Withdraw
+                        </button>
+                      </div>
+                      
+                      <div className="pt-4 border-t border-white/20">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-white/70">Status</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            walletData.status === 'active' 
+                              ? 'bg-green-500/20 text-green-100' 
+                              : 'bg-yellow-500/20 text-yellow-100'
+                          }`}>
+                            {walletData.status || 'Active'}
+                          </span>
+                        </div>
+                        {walletData.lastTransactionAt && (
+                          <div className="flex items-center justify-between text-sm mt-2">
+                            <span className="text-white/70">Last Transaction</span>
+                            <span className="text-white/90 text-xs">
+                              {new Date(walletData.lastTransactionAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <Wallet className="h-8 w-8 text-white/70 mx-auto mb-2" />
+                      <p className="text-sm text-white/80">No wallet data available</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Account Status */}
-              <div className="bg-white rounded-xl shadow-sm border mb-6">
-                <div className="px-6 py-4 border-b">
-                  <h3 className="text-lg font-semibold text-gray-900">Account Status</h3>
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 mb-6 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50">
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-green-600" />
+                    Account Status
+                  </h3>
                 </div>
                 <div className="p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Email Verified</span>
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-white hover:shadow-sm transition-shadow">
+                    <span className="text-sm font-medium text-gray-700">Email Verified</span>
                     <div className="flex items-center gap-2">
                       {user.emailVerified ? (
                         <CheckCircle className="h-5 w-5 text-green-500" />
                       ) : (
                         <XCircle className="h-5 w-5 text-red-500" />
                       )}
-                      <span className="text-sm font-medium">
+                      <span className={`text-sm font-semibold ${
+                        user.emailVerified ? 'text-green-600' : 'text-red-600'
+                      }`}>
                         {user.emailVerified ? 'Verified' : 'Not Verified'}
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Phone Verified</span>
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-white hover:shadow-sm transition-shadow">
+                    <span className="text-sm font-medium text-gray-700">Phone Verified</span>
                     <div className="flex items-center gap-2">
                       {user.phoneVerified ? (
                         <CheckCircle className="h-5 w-5 text-green-500" />
                       ) : (
                         <XCircle className="h-5 w-5 text-red-500" />
                       )}
-                      <span className="text-sm font-medium">
+                      <span className={`text-sm font-semibold ${
+                        user.phoneVerified ? 'text-green-600' : 'text-red-600'
+                      }`}>
                         {user.phoneVerified ? 'Verified' : 'Not Verified'}
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">KYC Verified</span>
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-white hover:shadow-sm transition-shadow">
+                    <span className="text-sm font-medium text-gray-700">KYC Verified</span>
                     <div className="flex items-center gap-2">
                       {user.kycVerified ? (
                         <CheckCircle className="h-5 w-5 text-green-500" />
                       ) : (
                         <XCircle className="h-5 w-5 text-red-500" />
                       )}
-                      <span className="text-sm font-medium">
+                      <span className={`text-sm font-semibold ${
+                        user.kycVerified ? 'text-green-600' : 'text-red-600'
+                      }`}>
                         {user.kycVerified ? 'Verified' : 'Not Verified'}
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Profile Completed</span>
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-white hover:shadow-sm transition-shadow">
+                    <span className="text-sm font-medium text-gray-700">Profile Completed</span>
                     <div className="flex items-center gap-2">
                       {user.profileCompleted ? (
                         <CheckCircle className="h-5 w-5 text-green-500" />
                       ) : (
                         <XCircle className="h-5 w-5 text-red-500" />
                       )}
-                      <span className="text-sm font-medium">
+                      <span className={`text-sm font-semibold ${
+                        user.profileCompleted ? 'text-green-600' : 'text-red-600'
+                      }`}>
                         {user.profileCompleted ? 'Completed' : 'Incomplete'}
                       </span>
                     </div>
@@ -863,24 +1051,27 @@ const ProfilePage = () => {
               </div>
 
               {/* Account Statistics */}
-              <div className="bg-white rounded-xl shadow-sm border">
-                <div className="px-6 py-4 border-b">
-                  <h3 className="text-lg font-semibold text-gray-900">Account Statistics</h3>
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                    Account Statistics
+                  </h3>
                 </div>
                 <div className="p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Login Count</span>
-                    <span className="text-sm font-medium">{user.loginCount || 0}</span>
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-white hover:shadow-sm transition-shadow">
+                    <span className="text-sm font-medium text-gray-700">Login Count</span>
+                    <span className="text-lg font-bold text-primary">{user.loginCount || 0}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Member Since</span>
-                    <span className="text-sm font-medium">
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-white hover:shadow-sm transition-shadow">
+                    <span className="text-sm font-medium text-gray-700">Member Since</span>
+                    <span className="text-sm font-semibold text-gray-900">
                       {new Date(user.createdAt).toLocaleDateString()}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Last Login</span>
-                    <span className="text-sm font-medium">
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-white hover:shadow-sm transition-shadow">
+                    <span className="text-sm font-medium text-gray-700">Last Login</span>
+                    <span className="text-sm font-semibold text-gray-900">
                       {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
                     </span>
                   </div>
@@ -1098,10 +1289,35 @@ const ProfilePage = () => {
         )}
 
         {/* KYC Upload Modal */}
-        <KycUploadModal
-          isOpen={showKycUploadModal}
-          onClose={() => setShowKycUploadModal(false)}
-          onSuccess={handleKycUploadSuccess}
+        {showKycUploadModal && (
+          <KycUploadModal
+            isOpen={showKycUploadModal}
+            onClose={() => setShowKycUploadModal(false)}
+            onSuccess={handleKycUploadSuccess}
+          />
+        )}
+
+        {/* Fund Wallet Modal */}
+        <FundWalletModal
+          isOpen={showFundWalletModal}
+          onClose={() => setShowFundWalletModal(false)}
+          userEmail={user?.email || ''}
+          userName={`${user?.firstName} ${user?.lastName}` || ''}
+          onSuccess={() => {
+            fetchWalletData();
+            toast.success('Success', 'Wallet funded successfully!');
+          }}
+        />
+
+        {/* Withdraw Modal */}
+        <WithdrawModal
+          isOpen={showWithdrawModal}
+          onClose={() => setShowWithdrawModal(false)}
+          walletBalance={walletData?.balance || 0}
+          onSuccess={() => {
+            fetchWalletData();
+            toast.success('Success', 'Withdrawal request submitted successfully!');
+          }}
         />
       </div>
       </div>
