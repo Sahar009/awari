@@ -1,7 +1,7 @@
 'use client';
 
 interface StructuredDataProps {
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
 export default function StructuredData({ data }: StructuredDataProps) {
@@ -51,13 +51,27 @@ export const websiteSchema = {
   },
 };
 
-export function generatePropertySchema(property: any) {
+export function generatePropertySchema(property: {
+  title: string;
+  description?: string;
+  images?: Array<{ url?: string } | string>;
+  address?: string;
+  city?: string;
+  state?: string;
+  location?: { lat: number; lng: number };
+  price?: number;
+  isAvailable?: boolean;
+  bedrooms?: number;
+  size?: number;
+  amenities?: string[];
+  bookingType?: string;
+}) {
   return {
     '@context': 'https://schema.org',
     '@type': property.bookingType === 'hotel' ? 'Hotel' : 'RealEstateListing',
     name: property.title,
     description: property.description,
-    image: property.images?.map((img: any) => img.url || img) || [],
+    image: property.images?.map((img) => (typeof img === 'string' ? img : img.url || '')) || [],
     address: {
       '@type': 'PostalAddress',
       streetAddress: property.address,
@@ -102,7 +116,12 @@ export function generateBreadcrumbSchema(items: Array<{ name: string; url: strin
   };
 }
 
-export function generateReviewSchema(reviews: any[]) {
+export function generateReviewSchema(reviews: Array<{
+  rating: number;
+  user?: { firstName?: string };
+  createdAt: string;
+  comment: string;
+}>) {
   if (!reviews || reviews.length === 0) return null;
 
   const aggregateRating = {

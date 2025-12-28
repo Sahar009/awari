@@ -3,18 +3,13 @@
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 
-interface SEOHeadProps {
-  title?: string;
-  description?: string;
-}
-
-export default function SEOHead({ title, description }: SEOHeadProps) {
+export default function SEOHead() {
   const pathname = usePathname();
 
   useEffect(() => {
     // Track page views for analytics
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('config', process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID, {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('config', process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || '', {
         page_path: pathname,
       });
     }

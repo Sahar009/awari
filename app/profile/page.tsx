@@ -89,7 +89,16 @@ const ProfilePage = () => {
   const [showKycUploadModal, setShowKycUploadModal] = useState(false);
   
   // Wallet state
-  const [walletData, setWalletData] = useState<any>(null);
+  const [walletData, setWalletData] = useState<{
+    balance: string | number;
+    currency: string;
+    accountNumber?: string;
+    bankName?: string;
+    accountName?: string;
+    status?: string;
+    lastTransactionAt?: string;
+    transactions?: unknown[];
+  } | null>(null);
   const [walletLoading, setWalletLoading] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
   const [showFundWalletModal, setShowFundWalletModal] = useState(false);
@@ -904,7 +913,7 @@ const ProfilePage = () => {
                       <div>
                         <p className="text-sm text-white/80 mb-1">Available Balance</p>
                         <p className="text-3xl font-bold text-white">
-                          ₦{parseFloat(walletData.balance || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ₦{parseFloat(String(walletData.balance || 0)).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                         <p className="text-xs text-white/60 mt-1">{walletData.currency || 'NGN'}</p>
                       </div>
@@ -1313,7 +1322,7 @@ const ProfilePage = () => {
         <WithdrawModal
           isOpen={showWithdrawModal}
           onClose={() => setShowWithdrawModal(false)}
-          walletBalance={walletData?.balance || 0}
+          walletBalance={typeof walletData?.balance === 'number' ? walletData.balance : parseFloat(String(walletData?.balance || 0))}
           onSuccess={() => {
             fetchWalletData();
             toast.success('Success', 'Withdrawal request submitted successfully!');

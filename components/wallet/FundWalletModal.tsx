@@ -12,9 +12,26 @@ interface FundWalletModalProps {
 }
 
 // Declare PaystackPop type
+interface PaystackHandler {
+  openIframe: () => void;
+}
+
+interface PaystackConfig {
+  key: string;
+  email: string;
+  amount: number;
+  currency?: string;
+  ref?: string;
+  metadata?: Record<string, unknown>;
+  callback?: (response: { reference: string; transaction?: string; status?: string }) => void;
+  onClose?: () => void;
+}
+
 declare global {
   interface Window {
-    PaystackPop: any;
+    PaystackPop: {
+      setup: (config: PaystackConfig) => PaystackHandler;
+    };
   }
 }
 
@@ -56,7 +73,7 @@ const FundWalletModal: React.FC<FundWalletModalProps> = ({
     };
   }, []);
 
-  const onPaystackSuccess = async (reference: any) => {
+  const onPaystackSuccess = async (reference: { reference: string; transaction?: string; status?: string }) => {
     console.log('🎉 Paystack payment successful!', reference);
     
     // Don't close modal, show processing state
@@ -108,9 +125,10 @@ const FundWalletModal: React.FC<FundWalletModalProps> = ({
       } else {
         throw new Error(data.message || 'Failed to credit wallet');
       }
-    } catch (error) {
-      console.error('❌ Error crediting wallet:', error);
-      setError(error instanceof Error ? error.message : 'Failed to credit wallet');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to credit wallet';
+      console.error('Error crediting wallet:', error);
+      setError(errorMessage);
       setIsProcessing(false);
     }
   };
@@ -170,7 +188,7 @@ const FundWalletModal: React.FC<FundWalletModalProps> = ({
           }
         ]
       },
-      callback: function(response: any) {
+      callback: function(response: { reference: string; transaction?: string; status?: string }) {
         console.log('✅ Paystack callback triggered!', response);
         onPaystackSuccess(response);
       },

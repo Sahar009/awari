@@ -28,7 +28,7 @@ export function generateMetadata({
     description,
     keywords: keywords.length > 0 ? keywords : undefined,
     openGraph: {
-      type,
+      type: type === 'product' ? 'website' : type,
       url: fullUrl,
       title,
       description,
@@ -64,7 +64,22 @@ export function generateMetadata({
   };
 }
 
-export function generatePropertyMetadata(property: any): Metadata {
+interface PropertyData {
+  id: string;
+  title: string;
+  description?: string;
+  city: string;
+  state: string;
+  bookingType: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  price?: number;
+  propertyType?: string;
+  amenities?: string[];
+  images?: Array<{ url?: string } | string>;
+}
+
+export function generatePropertyMetadata(property: PropertyData): Metadata {
   const title = `${property.title} - ${property.city}, ${property.state}`;
   const description = property.description?.substring(0, 160) || 
     `${property.bookingType} in ${property.city}. ${property.bedrooms} bedrooms, ${property.bathrooms} bathrooms. ₦${property.price?.toLocaleString()}`;
@@ -77,9 +92,10 @@ export function generatePropertyMetadata(property: any): Metadata {
     `${property.bedrooms} bedroom`,
     property.propertyType,
     ...(property.amenities || []),
-  ];
+  ].filter((k): k is string => k !== undefined && k !== null);
 
-  const image = property.images?.[0]?.url || property.images?.[0] || '/assets/images/og-image.png';
+  const firstImage = property.images?.[0];
+  const image = typeof firstImage === 'string' ? firstImage : (firstImage?.url || '/assets/images/og-image.png');
 
   return generateMetadata({
     title,
@@ -91,10 +107,19 @@ export function generatePropertyMetadata(property: any): Metadata {
   });
 }
 
-export function generateBlogMetadata(post: any): Metadata {
+interface BlogPost {
+  title: string;
+  slug: string;
+  excerpt?: string;
+  content?: string;
+  tags?: string[];
+  featuredImage?: string;
+}
+
+export function generateBlogMetadata(post: BlogPost): Metadata {
   return generateMetadata({
     title: post.title,
-    description: post.excerpt || post.content?.substring(0, 160),
+    description: post.excerpt || post.content?.substring(0, 160) || '',
     keywords: post.tags || [],
     image: post.featuredImage || '/assets/images/og-image.png',
     url: `/blog/${post.slug}`,
