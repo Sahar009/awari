@@ -102,21 +102,21 @@ const performanceStats = [
 
 const About = () => {
   return (
-    <section className="relative overflow-hidden py-20 md:py-32">
+    <section className="relative overflow-hidden py-20 md:py-32 px-4 sm:px-6 lg:px-8">
       {/* Background with curved edges */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/95 to-purple-900 rounded-[3rem] md:rounded-[4rem] lg:rounded-[5rem] mx-4 md:mx-6 lg:mx-8"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/95 to-purple-900 rounded-[2rem] sm:rounded-[3rem] md:rounded-[4rem] lg:rounded-[5rem] mx-4 sm:mx-6 md:mx-8"></div>
       
       {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden rounded-[3rem] md:rounded-[4rem] lg:rounded-[5rem] mx-4 md:mx-6 lg:mx-8">
+      <div className="absolute inset-0 overflow-hidden rounded-[2rem] sm:rounded-[3rem] md:rounded-[4rem] lg:rounded-[5rem] mx-4 sm:mx-6 md:mx-8">
         <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-white/5 blur-3xl animate-pulse" />
         <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-secondary-color/10 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
         <div className="absolute top-1/2 left-1/2 h-96 w-96 rounded-full bg-white/5 blur-3xl -translate-x-1/2 -translate-y-1/2" />
       </div>
       
       {/* Decorative border gradient */}
-      <div className="absolute inset-0 rounded-[3rem] md:rounded-[4rem] lg:rounded-[5rem] mx-4 md:mx-6 lg:mx-8 border-2 border-white/10 pointer-events-none"></div>
+      <div className="absolute inset-0 rounded-[2rem] sm:rounded-[3rem] md:rounded-[4rem] lg:rounded-[5rem] mx-4 sm:mx-6 md:mx-8 border-2 border-white/10 pointer-events-none"></div>
 
-      <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 z-10">
+      <div className="relative mx-auto w-full max-w-7xl px-6 sm:px-8 md:px-10 lg:px-12 z-10">
         <div className="flex flex-col gap-16 lg:flex-row lg:items-center lg:gap-20">
           
           {/* Left Side - Image */}

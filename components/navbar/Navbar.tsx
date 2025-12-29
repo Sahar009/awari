@@ -77,7 +77,7 @@ export const Navbar = () => {
   return (
     <>
     
-      <div className={`fixed z-50 w-full py-4 transition-all duration-300 ease-out ${
+      <div className={`fixed z-[200] w-full py-4 transition-all duration-300 ease-out ${
         isScrolled 
           ? 'bg-white/95 backdrop-blur-md shadow-xl border-b border-slate-200/50' 
           : 'bg-white shadow-lg'
@@ -287,7 +287,7 @@ export const Navbar = () => {
 
       {/* Enhanced Mobile Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full w-80 bg-white shadow-2xl transform transition-all duration-500 ease-[cubic-bezier(0.77,0,0.175,1)] z-50 ${
+        className={`fixed top-0 left-0 h-full w-80 bg-white shadow-2xl transform transition-all duration-500 ease-[cubic-bezier(0.77,0,0.175,1)] z-[250] ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -435,7 +435,7 @@ export const Navbar = () => {
 
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-all duration-300"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[240] transition-all duration-300"
           onClick={() => setIsOpen(false)}
         ></div>
       )}
