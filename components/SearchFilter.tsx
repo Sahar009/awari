@@ -88,9 +88,10 @@ export const SearchFilter = ({
     return () => clearTimeout(debounceTimer);
   }, [locationQuery]);
 
-  // Calculate check-out date based on duration
+  // Calculate check-out date based on duration - only when duration is manually changed
   useEffect(() => {
-    if (checkInDate && duration && durationUnit) {
+    if (checkInDate && checkOutDate && duration && durationUnit) {
+      // Only recalculate if both dates are already set and user changes duration
       const startDate = new Date(checkInDate);
       let daysToAdd = duration;
       
@@ -106,7 +107,7 @@ export const SearchFilter = ({
       const endDateStr = endDate.toISOString().split('T')[0];
       setCheckOutDate(endDateStr);
     }
-  }, [checkInDate, duration, durationUnit]);
+  }, [duration, durationUnit]);
 
   // Close popups when clicking outside
   useEffect(() => {
@@ -193,13 +194,22 @@ export const SearchFilter = ({
     const dateStr = date.toISOString().split('T')[0];
     
     if (!checkInDate || (checkInDate && checkOutDate)) {
+      // First date selection or resetting range
       setCheckInDate(dateStr);
       setCheckOutDate("");
+      // Keep modal open for second date selection
     } else if (checkInDate && dateStr > checkInDate) {
+      // Second date selected - complete the range
       setCheckOutDate(dateStr);
+      // Auto-close modal after range is complete
+      // setTimeout(() => {
+      //   setActiveSection(null);
+      // }, 700);
     } else if (dateStr < checkInDate) {
+      // User selected earlier date - reset range
       setCheckInDate(dateStr);
       setCheckOutDate("");
+      // Keep modal open for second date selection
     }
   };
 
@@ -412,6 +422,7 @@ export const SearchFilter = ({
           {activeSection === 'when' && (
             <div 
               className="absolute top-full left-0 right-0 md:right-auto mt-2 bg-white rounded-2xl md:rounded-3xl shadow-2xl border border-gray-200 z-[100] p-4 md:p-6 w-full md:w-[680px] max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="flex flex-col md:flex-row gap-4 md:gap-8 mb-4 md:mb-6">
                 {/* Month 1 */}
